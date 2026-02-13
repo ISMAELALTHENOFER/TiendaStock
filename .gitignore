@@ -1,6 +1,5 @@
 # Ignorar archivos de entorno y configuraciones sensibles
 .env
-.env.*
 src/config.php
 # Archivos y carpetas comunes a ignorar
 node_modules/
