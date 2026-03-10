@@ -17,7 +17,7 @@
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex">
+    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex bg-gradient-to-br from-gray-50 to-purple-50">
         <!-- Sidebar -->
         @include('layouts.sidebar')
 

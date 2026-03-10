@@ -1,10 +1,10 @@
-<div class="bg-white shadow-sm border-b border-gray-200">
+<div class="bg-white shadow-md border-b border-purple-100">
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Mobile menu button -->
                 <div class="flex items-center md:hidden">
-                    <button @click="sidebarOpen = !sidebarOpen" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                    <button @click="sidebarOpen = !sidebarOpen" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500 transition-colors duration-200">
                         <span class="sr-only">Open main menu</span>
                         <svg class="block h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -17,8 +17,8 @@
             <div class="flex items-center">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center">
+                        <button class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200">
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center shadow-md">
                                 <span class="text-sm font-medium text-white">{{ substr(Auth::user()->name, 0, 1) }}</span>
                             </div>
                             <span class="ml-2 text-gray-700 text-sm font-medium">{{ Auth::user()->name }}</span>

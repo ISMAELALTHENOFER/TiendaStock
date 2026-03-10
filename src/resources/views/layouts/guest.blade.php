@@ -17,15 +17,15 @@
 </head>
 
 <body class="font-sans text-gray-900 antialiased">
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-purple-50 via-white to-pink-50">
         <div class="w-full sm:max-w-md px-6 py-4">
             <!-- Logo -->
             <div class="flex justify-center mb-8">
-                <x-application-logo class="w-16 h-16 text-indigo-600" />
+                <x-application-logo class="w-16 h-16 text-purple-600" />
             </div>
 
             <!-- Card -->
-            <div class="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+            <div class="bg-white shadow-2xl rounded-2xl overflow-hidden border border-purple-100">
                 <div class="px-8 py-6">
                     {{ $slot }}
                 </div>
