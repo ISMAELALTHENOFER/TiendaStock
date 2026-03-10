@@ -17,6 +17,7 @@ class Producto extends Model
         'cantidad',
         'talle',
         'color',
+        'activo',
     ];
 
     public function categoria()

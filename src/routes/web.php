@@ -14,7 +14,7 @@ Route::get('/dashboard', function () {
         'productosCount' => \App\Models\Producto::count(),
         'categoriasCount' => \App\Models\Categoria::count(),
         'productosActivos' => \App\Models\Producto::where('activo', true)->count(),
-        'valorTotal' => \App\Models\Producto::sum('precio'),
+        'valorTotal' => \App\Models\Producto::sum('precio_venta'),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
