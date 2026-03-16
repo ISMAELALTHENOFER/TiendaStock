@@ -11,13 +11,23 @@ class ProductoController extends Controller
     public function index()
     {
         $productos = Producto::with('categoria')->orderBy('nombre')->paginate(10);
-        return view('productos.index', compact('productos'));
+        return view('app', [
+            'pageName' => 'Productos/Index',
+            'pageProps' => [
+                'productos' => $productos->toArray(),
+            ]
+        ]);
     }
 
     public function create()
     {
         $categorias = Categoria::orderBy('nombre')->get();
-        return view('productos.create', compact('categorias'));
+        return view('app', [
+            'pageName' => 'Productos/Create',
+            'pageProps' => [
+                'categorias' => $categorias->toArray(),
+            ]
+        ]);
     }
 
     public function store(Request $request)
@@ -41,13 +51,25 @@ class ProductoController extends Controller
 
     public function show(Producto $producto)
     {
-        return view('productos.show', compact('producto'));
+        $producto->load('categoria');
+        return view('app', [
+            'pageName' => 'Productos/Show',
+            'pageProps' => [
+                'producto' => $producto->toArray(),
+            ]
+        ]);
     }
 
     public function edit(Producto $producto)
     {
         $categorias = Categoria::orderBy('nombre')->get();
-        return view('productos.edit', compact('producto', 'categorias'));
+        return view('app', [
+            'pageName' => 'Productos/Edit',
+            'pageProps' => [
+                'producto' => $producto->toArray(),
+                'categorias' => $categorias->toArray(),
+            ]
+        ]);
     }
 
     public function update(Request $request, Producto $producto)
