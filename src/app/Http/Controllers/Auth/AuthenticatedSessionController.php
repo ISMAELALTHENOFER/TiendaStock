@@ -13,13 +13,7 @@ class AuthenticatedSessionController extends Controller
 {
     public function create(): View
     {
-        return view('app', [
-            'pageName' => 'Auth/Login',
-            'pageProps' => [
-                'canResetPassword' => true,
-                'status' => null,
-            ]
-        ]);
+        return view('auth.login');
     }
 
     public function store(LoginRequest $request): RedirectResponse

@@ -10,20 +10,12 @@ class CategoriaController extends Controller
     public function index()
     {
         $categorias = Categoria::withCount('productos')->orderBy('nombre')->paginate(12);
-        return view('app', [
-            'pageName' => 'Categorias/Index',
-            'pageProps' => [
-                'categorias' => $categorias->toArray(),
-            ]
-        ]);
+        return view('categorias.index', compact('categorias'));
     }
 
     public function create()
     {
-        return view('app', [
-            'pageName' => 'Categorias/Create',
-            'pageProps' => []
-        ]);
+        return view('categorias.create');
     }
 
     public function store(Request $request)
@@ -42,22 +34,12 @@ class CategoriaController extends Controller
     public function show(Categoria $categoria)
     {
         $categoria->load('productos');
-        return view('app', [
-            'pageName' => 'Categorias/Show',
-            'pageProps' => [
-                'categoria' => $categoria->toArray(),
-            ]
-        ]);
+        return view('categorias.show', compact('categoria'));
     }
 
     public function edit(Categoria $categoria)
     {
-        return view('app', [
-            'pageName' => 'Categorias/Edit',
-            'pageProps' => [
-                'categoria' => $categoria->toArray(),
-            ]
-        ]);
+        return view('categorias.edit', compact('categoria'));
     }
 
     public function update(Request $request, Categoria $categoria)

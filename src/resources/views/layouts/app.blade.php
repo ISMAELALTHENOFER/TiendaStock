@@ -16,15 +16,28 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased">
-    <div id="app"></div>
-    
-    <script>
-        window.pageName = {!! json_encode($pageName ?? 'Dashboard') !!};
-        window.pageProps = {!! json_encode($pageProps ?? []) !!};
-        window.csrfToken = {!! json_encode(csrf_token()) !!};
-        window.flashSuccess = {!! json_encode(session('success')) !!};
-    </script>
+<body class="font-sans antialiased bg-gray-50">
+    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex bg-gradient-to-br from-gray-50 to-purple-50">
+        <!-- Sidebar -->
+        @include('layouts.sidebar')
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navigation -->
+            @include('layouts.topbar')
+
+            <!-- Page Content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+                @isset($header)
+                <div class="mb-8">
+                    {{ $header }}
+                </div>
+                @endisset
+
+                {{ $slot }}
+            </main>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -13,13 +13,8 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
-        return view('app', [
-            'pageName' => 'Profile/Edit',
-            'pageProps' => [
-                'user' => $request->user()->toArray(),
-                'mustVerifyEmail' => $request->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail,
-                'status' => session('status'),
-            ]
+        return view('profile.edit', [
+            'user' => $request->user(),
         ]);
     }
 
