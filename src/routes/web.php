@@ -10,7 +10,12 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return view('dashboard', [
+        'productosCount' => \App\Models\Producto::count(),
+        'categoriasCount' => \App\Models\Categoria::count(),
+        'productosActivos' => \App\Models\Producto::where('activo', true)->count(),
+        'valorTotal' => \App\Models\Producto::sum('precio_venta'),
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
