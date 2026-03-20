@@ -8,7 +8,14 @@
     </div>
 
     <!-- Session Status -->
-    <x-auth-session-status class="mb-6" :status="session('status')" />
+    @if (session('status'))
+    <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-center gap-3">
+        <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        {{ session('status') }}
+    </div>
+    @endif
 
     <form method="POST" action="{{ route('login') }}" class="space-y-5">
         @csrf
@@ -26,7 +33,11 @@
                 autocomplete="username"
                 placeholder="tu@email.com"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            @if ($errors->has('email'))
+                @foreach ($errors->get('email') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Password -->
@@ -40,7 +51,11 @@
                 autocomplete="current-password"
                 placeholder="••••••••"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            @if ($errors->has('password'))
+                @foreach ($errors->get('password') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Remember Me -->
