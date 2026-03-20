@@ -28,7 +28,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="nombre" value="{{ old('nombre') }}"
-                                placeholder="Ej: Remera Deportiva, Zapatillas..."
+                                placeholder="Ej: Body de algodón"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('nombre') border-red-500 @enderror">
                             @error('nombre') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
@@ -87,25 +87,25 @@
                         {{-- Talle --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3">
-                                Talle (Opcional)
+                                Talle
+                                <span class="text-red-500">*</span>
                             </label>
-                            <select name="talle"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
-                                <option value="">-- Sin talle --</option>
-                                @foreach(['XS','S','M','L','XL','XXL','XXXL','Único'] as $t)
-                                <option value="{{ $t }}" {{ old('talle') == $t ? 'selected' : '' }}>{{ $t }}</option>
-                                @endforeach
-                            </select>
+                            <input type="text" name="talle" value="{{ old('talle') }}"step="0.01" min="0"
+                                placeholder="Ej: Talle 1, Talle 4..."
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('talle') border-red-500 @enderror">
+                            @error('talle') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
                         {{-- Color --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3">
-                                Color (Opcional)
+                                Color
+                                <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="color" value="{{ old('color') }}"
                                 placeholder="Ej: Rojo, Azul marino, Verde..."
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('color') border-red-500 @enderror">
+                            @error('color') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
                         {{-- Descripción --}}

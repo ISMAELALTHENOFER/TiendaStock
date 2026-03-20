@@ -28,8 +28,8 @@ class ProductoController extends Controller
             'precio_compra' => 'required|numeric|min:0',
             'precio_venta'  => 'required|numeric|min:0',
             'cantidad'      => 'required|integer|min:0',
-            'talle'         => 'nullable|string|max:20',
-            'color'         => 'nullable|string|max:50',
+            'talle'         => 'required|string|max:20',
+            'color'         => 'required|string|max:50',
             'descripcion'   => 'nullable|string|max:500',
         ]);
 
@@ -58,8 +58,8 @@ class ProductoController extends Controller
             'precio_compra' => 'required|numeric|min:0',
             'precio_venta'  => 'required|numeric|min:0',
             'cantidad'      => 'required|integer|min:0',
-            'talle'         => 'nullable|string|max:20',
-            'color'         => 'nullable|string|max:50',
+            'talle'         => 'required|string|max:20',
+            'color'         => 'required|string|max:50',
             'descripcion'   => 'nullable|string|max:500',
         ]);
 
