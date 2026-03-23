@@ -87,23 +87,21 @@
 
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3">
-                                Talle (Opcional)
+                                Talle
+                                <span class="text-red-500">*</span>
                             </label>
-                            <select name="talle"
+                            <input type="text" name="talle" value="{{ old('talle', $producto->talle) }}"step="0.01" min="0"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200">
-                                <option value="">-- Sin talle --</option>
-                                @foreach(['XS','S','M','L','XL','XXL','XXXL','Único'] as $t)
-                                <option value="{{ $t }}" {{ old('talle', $producto->talle) == $t ? 'selected' : '' }}>{{ $t }}</option>
-                                @endforeach
-                            </select>
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3">
-                                Color (Opcional)
+                                Color
+                                <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="color" value="{{ old('color', $producto->color) }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('color') border-red-500 @enderror">
+                            @error('color') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="col-span-2">

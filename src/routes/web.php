@@ -6,7 +6,7 @@ use App\Http\Controllers\CategoriaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
 
 Route::get('/dashboard', function () {
@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::resource('/categorias', CategoriaController::class);
     Route::resource('/productos', ProductoController::class);
+    Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
 });
 
 require __DIR__ . '/auth.php';
