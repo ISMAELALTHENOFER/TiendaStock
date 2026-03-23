@@ -8,10 +8,26 @@ use Illuminate\Http\Request;
 
 class ProductoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $productos = Producto::with('categoria')->orderBy('nombre')->paginate(10);
-        return view('productos.index', compact('productos'));
+        $query = Producto::with('categoria');
+
+        if ($request->has('buscar') && strlen($request->buscar) >= 2) {
+            $searchTerm = '%' . $request->buscar . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('nombre', 'like', $searchTerm)
+                  ->orWhere('color', 'like', $searchTerm)
+                  ->orWhere('talle', 'like', $searchTerm)
+                  ->orWhereHas('categoria', function($q) use ($searchTerm) {
+                      $q->where('nombre', 'like', $searchTerm);
+                  });
+            });
+        }
+
+        $productos = $query->orderBy('nombre')->paginate(10);
+        $categorias = Categoria::orderBy('nombre')->get();
+
+        return view('productos.index', compact('productos', 'categorias'));
     }
 
     public function create()
@@ -74,5 +90,29 @@ class ProductoController extends Controller
         $producto->delete();
         return redirect()->route('productos.index')
             ->with('success', 'Producto eliminado correctamente.');
+    }
+
+    public function search(Request $request)
+    {
+        $productos = collect([]);
+
+        if ($request->has('q') && strlen($request->q) >= 2) {
+            $searchTerm = '%' . $request->q . '%';
+
+            $productos = Producto::with('categoria')
+                ->where(function($query) use ($searchTerm) {
+                    $query->where('nombre', 'like', $searchTerm)
+                          ->orWhere('color', 'like', $searchTerm)
+                          ->orWhere('talle', 'like', $searchTerm)
+                          ->orWhereHas('categoria', function($q) use ($searchTerm) {
+                              $q->where('nombre', 'like', $searchTerm);
+                          });
+                })
+                ->orderBy('nombre')
+                ->limit(10)
+                ->get();
+        }
+
+        return response()->json($productos);
     }
 }

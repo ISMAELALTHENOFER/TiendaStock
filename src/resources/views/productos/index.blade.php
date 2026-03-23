@@ -35,6 +35,69 @@
             </div>
             @endif
 
+            {{-- Buscador en tiempo real --}}
+            <form method="GET" action="{{ route('productos.index') }}" id="search-form" class="mb-6">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        name="buscar"
+                        id="search-input"
+                        value="{{ request('buscar') }}"
+                        placeholder="Buscar productos por nombre, categoría, talle o color..."
+                        class="w-full px-5 py-3 pl-12 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-gray-700"
+                        autocomplete="off"
+                    >
+                    <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    
+                    @if(request('buscar'))
+                    <button type="button" onclick="clearSearch()" class="absolute right-4 top-3 text-gray-400 hover:text-gray-600">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    @endif
+                </div>
+            </form>
+
+            <script>
+                let searchTimeout;
+                const searchInput = document.getElementById('search-input');
+                const searchForm = document.getElementById('search-form');
+
+                searchInput.addEventListener('input', function(e) {
+                    const value = e.target.value;
+                    
+                    if (searchTimeout) clearTimeout(searchTimeout);
+                    
+                    if (value.length < 3) {
+                        return;
+                    }
+                    
+                    searchTimeout = setTimeout(() => {
+                        searchForm.submit();
+                    }, 400);
+                });
+
+                function clearSearch() {
+                    searchInput.value = '';
+                    searchForm.submit();
+                }
+            </script>
+
+            {{-- Indicador de resultados --}}
+            @if(request('buscar'))
+                <div class="mb-4 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
+                    <span class="text-purple-700">
+                        <strong>{{ $productos->count() }}</strong> producto(s) encontrado(s) para "<strong>{{ request('buscar') }}</strong>"
+                    </span>
+                    <a href="{{ route('productos.index') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                        Ver todos
+                    </a>
+                </div>
+            @endif
+
             @if($productos->count() > 0)
             <div class="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -53,7 +116,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            @forelse($productos as $producto)
+                            @foreach($productos as $producto)
                             <tr class="hover:bg-purple-50 transition-colors duration-200">
                                 <td class="px-6 py-4 font-semibold text-gray-900">{{ $producto->nombre }}</td>
                                 <td class="px-6 py-4">
@@ -106,25 +169,17 @@
                                     </div>
                                 </td>
                             </tr>
-                            @empty
-                            <tr>
-                                <td colspan="9" class="px-6 py-12 text-center">
-                                    <div class="flex flex-col items-center">
-                                        <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                                        </svg>
-                                        <p class="text-gray-500 text-lg font-medium">No hay productos cargados aún</p>
-                                        <p class="text-gray-400 text-sm mt-2">Comienza creando tu primer producto</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
 
                 <div class="p-6 bg-gray-50 border-t border-gray-200">
-                    {{ $productos->links() }}
+                    @if(request('buscar'))
+                        {{ $productos->appends(['buscar' => request('buscar')])->links() }}
+                    @else
+                        {{ $productos->links() }}
+                    @endif
                 </div>
             </div>
             @else
@@ -133,15 +188,24 @@
                     <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                     </svg>
-                    <p class="text-gray-500 text-lg font-medium">No hay productos en el sistema</p>
-                    <p class="text-gray-400 text-sm mt-2">Crea tu primer producto para comenzar</p>
-                    <a href="{{ route('productos.create') }}"
-                        class="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Crear Primer Producto
-                    </a>
+                    @if(request('buscar'))
+                        <p class="text-gray-500 text-lg font-medium">No se encontraron productos para "<strong>{{ request('buscar') }}</strong>"</p>
+                        <p class="text-gray-400 text-sm mt-2">Intenta con otros términos de búsqueda</p>
+                        <a href="{{ route('productos.index') }}"
+                            class="mt-6 inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded-lg transition-all duration-200">
+                            Ver todos los productos
+                        </a>
+                    @else
+                        <p class="text-gray-500 text-lg font-medium">No hay productos en el sistema</p>
+                        <p class="text-gray-400 text-sm mt-2">Crea tu primer producto para comenzar</p>
+                        <a href="{{ route('productos.create') }}"
+                            class="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Crear Primer Producto
+                        </a>
+                    @endif
                 </div>
             </div>
             @endif
