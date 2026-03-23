@@ -23,7 +23,11 @@
                 autocomplete="name"
                 placeholder="Tu nombre"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            @if ($errors->has('name'))
+                @foreach ($errors->get('name') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Email Address -->
@@ -38,7 +42,11 @@
                 autocomplete="username"
                 placeholder="tu@email.com"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            @if ($errors->has('email'))
+                @foreach ($errors->get('email') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Password -->
@@ -52,7 +60,11 @@
                 autocomplete="new-password"
                 placeholder="••••••••"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            @if ($errors->has('password'))
+                @foreach ($errors->get('password') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Confirm Password -->
@@ -66,7 +78,11 @@
                 autocomplete="new-password"
                 placeholder="••••••••"
                 class="block mt-2 w-full" />
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+            @if ($errors->has('password_confirmation'))
+                @foreach ($errors->get('password_confirmation') as $error)
+                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
+                @endforeach
+            @endif
         </div>
 
         <!-- Submit Button -->
