@@ -10,24 +10,26 @@ class ProductoController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Producto::with('categoria');
-
-        if ($request->has('buscar') && strlen($request->buscar) >= 2) {
-            $searchTerm = '%'.$request->buscar.'%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('nombre', 'like', $searchTerm)
-                    ->orWhere('color', 'like', $searchTerm)
-                    ->orWhere('talle', 'like', $searchTerm)
-                    ->orWhereHas('categoria', function ($q) use ($searchTerm) {
-                        $q->where('nombre', 'like', $searchTerm);
-                    });
-            });
-        }
-
-        $productos = $query->orderBy('nombre')->paginate(10);
+        // El catálogo se carga vía fetch (ver data()) para sacarlo del HTML:
+        // primero paint más rápido y cacheable por el navegador. Acá solo
+        // pasamos las categorías (lista pequeña, necesaria de inmediato para
+        // el select de filtros).
         $categorias = Categoria::orderBy('nombre')->get();
 
-        return view('productos.index', compact('productos', 'categorias'));
+        return view('productos.index', compact('categorias'));
+    }
+
+    /**
+     * Devuelve el catálogo completo como JSON para filtrado client-side.
+     * Es read-only y no depende del usuario => cacheable por el navegador,
+     * así el segundo ingreso a /productos es instantáneo.
+     */
+    public function data()
+    {
+        $productos = Producto::with('categoria')->orderBy('nombre')->get();
+
+        return response()->json($productos)
+            ->header('Cache-Control', 'public, max-age=300');
     }
 
     public function create()
