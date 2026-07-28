@@ -1,0 +1,36 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Laravel 12, PHP 8.2, Blade templates, Tailwind CSS v3, Alpine.js, Vite + laravel-vite-plugin
+  Architecture: MVC with Eloquent ORM, resource controllers, Form Requests
+  Testing: PHPUnit 11.5 with Laravel test helpers (RefreshDatabase), two test suites (Unit + Feature)
+  Style: Blade templates, custom purple/pink Tailwind theme, Spanish UI copy, Eloquent models with Spanish table/column names
+  Build: Vite for asset bundling, PostCSS + Tailwind for CSS, Laravel Pint for PHP code style
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - State impact on existing routes, controllers, views, and models
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Cover both success and error paths for resource controllers
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Keep Blade view structure consistent with existing patterns
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Separate backend (controller/model/migration) from frontend (view/component) tasks
+  apply:
+    - Follow existing code patterns (resource controllers, Eloquent scopes, Form Requests)
+    tdd: true
+    test_command: "php artisan test --parallel --compact"
+  verify:
+    test_command: "php artisan test --parallel --compact"
+    build_command: "npm run build && php artisan config:cache"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
