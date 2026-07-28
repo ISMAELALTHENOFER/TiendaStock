@@ -17,9 +17,9 @@
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-8">
+                <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Modificar Producto</h3>
-                    <p class="text-amber-100 text-sm mt-1">Actualiza los detalles del producto</p>
+                    <p class="text-white/80 text-sm mt-1">Actualiza los detalles del producto</p>
                 </div>
 
                 <form action="{{ route('productos.update', $producto) }}" method="POST" class="p-8">
@@ -34,7 +34,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="nombre" value="{{ old('nombre', $producto->nombre) }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('nombre') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('nombre') border-red-500 @enderror">
                             @error('nombre') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
@@ -44,7 +44,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <select name="categoria_id"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('categoria_id') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('categoria_id') border-red-500 @enderror">
                                 <option value="">-- Seleccionar --</option>
                                 @foreach($categorias as $cat)
                                 <option value="{{ $cat->id }}" {{ old('categoria_id', $producto->categoria_id) == $cat->id ? 'selected' : '' }}>
@@ -61,7 +61,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="number" name="cantidad" value="{{ old('cantidad', $producto->cantidad) }}" min="0"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('cantidad') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('cantidad') border-red-500 @enderror">
                             @error('cantidad') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
@@ -71,7 +71,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="number" name="precio_compra" value="{{ old('precio_compra', $producto->precio_compra) }}" step="0.01" min="0"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('precio_compra') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('precio_compra') border-red-500 @enderror">
                             @error('precio_compra') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
@@ -81,7 +81,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="number" name="precio_venta" value="{{ old('precio_venta', $producto->precio_venta) }}" step="0.01" min="0"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('precio_venta') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('precio_venta') border-red-500 @enderror">
                             @error('precio_venta') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
@@ -91,7 +91,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="talle" value="{{ old('talle', $producto->talle) }}"step="0.01" min="0"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200">
                         </div>
 
                         <div>
@@ -100,7 +100,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <input type="text" name="color" value="{{ old('color', $producto->color) }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('color') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('color') border-red-500 @enderror">
                             @error('color') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
 
@@ -109,18 +109,18 @@
                                 Descripción (Opcional)
                             </label>
                             <textarea name="descripcion" rows="3"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200">{{ old('descripcion', $producto->descripcion) }}</textarea>
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200">{{ old('descripcion', $producto->descripcion) }}</textarea>
                         </div>
 
                     </div>
 
                     <div class="flex gap-4 mt-8 pt-6 border-t border-gray-200">
                         <a href="{{ route('productos.index') }}"
-                            class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                            class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
                             Cancelar
                         </a>
                         <button type="submit"
-                            class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                            class="flex-1 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
                             Actualizar Producto
                         </button>
                     </div>

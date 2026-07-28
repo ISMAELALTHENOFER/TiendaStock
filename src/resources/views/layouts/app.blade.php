@@ -16,8 +16,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased bg-gray-50">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex bg-gradient-to-br from-gray-50 to-purple-50">
+<body class="font-sans antialiased bg-slate-50">
+    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex bg-gradient-to-br from-slate-50 to-sky-50">
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
@@ -27,7 +27,7 @@
             @include('layouts.topbar')
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50/50 p-6">
                 @isset($header)
                 <div class="mb-8">
                     {{ $header }}

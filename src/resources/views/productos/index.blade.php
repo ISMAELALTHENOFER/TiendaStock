@@ -2,13 +2,13 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
                     Inventario de Productos
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Gestiona todos tus productos en un solo lugar</p>
             </div>
             <a href="{{ route('productos.create') }}"
-                class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105">
+                class="inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -44,7 +44,7 @@
                         id="search-input"
                         value="{{ request('buscar') }}"
                         placeholder="Buscar productos por nombre, categoría, talle o color..."
-                        class="w-full px-5 py-3 pl-12 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-gray-700"
+                        class="w-full px-5 py-3 pl-12 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700"
                         autocomplete="off"
                     >
                     <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,39 +88,39 @@
 
             {{-- Indicador de resultados --}}
             @if(request('buscar'))
-                <div class="mb-4 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
-                    <span class="text-purple-700">
+                <div class="mb-4 px-4 py-3 bg-brand-50 border border-brand-200 rounded-lg flex items-center justify-between">
+                    <span class="text-brand-700">
                         <strong>{{ $productos->count() }}</strong> producto(s) encontrado(s) para "<strong>{{ request('buscar') }}</strong>"
                     </span>
-                    <a href="{{ route('productos.index') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                    <a href="{{ route('productos.index') }}" class="text-brand-600 hover:text-brand-800 text-sm font-medium">
                         Ver todos
                     </a>
                 </div>
             @endif
 
             @if($productos->count() > 0)
-            <div class="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-200">
+                        <thead class="bg-sky-50 border-b border-sky-100">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider">Nombre</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider">Categoría</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider">Talle</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider">Color</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold text-purple-900 uppercase tracking-wider">P. Compra</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold text-purple-900 uppercase tracking-wider">P. Venta</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold text-purple-900 uppercase tracking-wider">Ganancia</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-purple-900 uppercase tracking-wider">Stock</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-purple-900 uppercase tracking-wider">Acciones</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nombre</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Categoría</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Talle</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Color</th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Compra</th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Venta</th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Ganancia</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @foreach($productos as $producto)
-                            <tr class="hover:bg-purple-50 transition-colors duration-200">
+                            <tr class="hover:bg-sky-50/50 transition-colors duration-200">
                                 <td class="px-6 py-4 font-semibold text-gray-900">{{ $producto->nombre }}</td>
                                 <td class="px-6 py-4">
-                                    <span class="inline-block bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 rounded-full px-3 py-1 text-xs font-semibold">
+                                    <span class="inline-block bg-brand-100 text-brand-700 rounded-full px-3 py-1 text-xs font-semibold">
                                         {{ $producto->categoria->nombre }}
                                     </span>
                                 </td>
@@ -141,7 +141,7 @@
                                     <div class="flex justify-center gap-2">
                                         <a href="{{ route('productos.show', $producto) }}"
                                             title="Ver detalles"
-                                            class="text-purple-600 hover:text-purple-800 hover:bg-purple-50 p-2 rounded-lg transition-colors duration-200">
+                                            class="text-brand-300 hover:text-brand-400 hover:bg-brand-50 p-2 rounded-lg transition-colors duration-200">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -149,7 +149,7 @@
                                         </a>
                                         <a href="{{ route('productos.edit', $producto) }}"
                                             title="Editar"
-                                            class="text-pink-600 hover:text-pink-800 hover:bg-pink-50 p-2 rounded-lg transition-colors duration-200">
+                                            class="text-sky-500 hover:text-sky-600 hover:bg-sky-50 p-2 rounded-lg transition-colors duration-200">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
@@ -183,7 +183,7 @@
                 </div>
             </div>
             @else
-            <div class="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
                 <div class="p-12 text-center">
                     <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -199,7 +199,7 @@
                         <p class="text-gray-500 text-lg font-medium">No hay productos en el sistema</p>
                         <p class="text-gray-400 text-sm mt-2">Crea tu primer producto para comenzar</p>
                         <a href="{{ route('productos.create') }}"
-                            class="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
+                            class="mt-6 inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>

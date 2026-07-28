@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent mb-3">
             TiendaStock
         </h1>
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Crear tu cuenta</h2>
@@ -96,7 +96,7 @@
         <div class="text-center pt-4 border-t border-gray-100">
             <p class="text-sm text-gray-600 mt-4">
                 ¿Ya tienes cuenta?
-                <a href="{{ route('login') }}" class="text-purple-600 hover:text-purple-700 font-semibold transition-colors duration-200">
+                <a href="{{ route('login') }}" class="text-brand-500 hover:text-brand-600 font-semibold transition-colors duration-200">
                     Inicia sesión aquí
                 </a>
             </p>
