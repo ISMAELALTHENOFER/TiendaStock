@@ -1,0 +1,71 @@
+schema: spec-driven
+
+context: |
+  TiendaStock — inventario y gestión de stock para tienda de ropa.
+  Laravel 12 + Blade + Tailwind CSS 3.x + Alpine.js, PHP 8.2.
+  Auth: email/password via Laravel Breeze (session-based, App\Models\User).
+  DB: SQLite (dev/prod), migraciones estándar Laravel.
+  UI: español, layout con sidebar + topbar, paleta púrpura/rosa.
+  Modelos: User (auth), Categoria (jerarquía), Producto (stock con talle/color/precios).
+  Controladores: CategoriaController (CRUD), ProductoController (CRUD + search AJAX).
+  Migraciones: users, categorias, productos (con FK a categorias + activo).
+
+testing:
+  strict_tdd: true
+  runner:
+    framework: phpunit
+    version: "11.5"
+    command: vendor/bin/phpunit
+    suites:
+      - Unit
+      - Feature
+  coverage:
+    available: false
+    command: ''
+  layers:
+    - layer: Unit
+      available: true
+      tool: PHPUnit
+    - layer: Integration
+      available: true
+      tool: PHPUnit (Feature tests, SQLite in-memory)
+    - layer: E2E
+      available: false
+      tool: ''
+  quality:
+    - tool: Linter
+      available: true
+      command: vendor/bin/pint --test
+    - tool: Type checker
+      available: false
+      command: ''
+    - tool: Formatter
+      available: true
+      command: vendor/bin/pint
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing Laravel MVC conventions
+    - Use Eloquent ORM for queries
+    - Validate via Form Requests or $request->validate()
+    - Return Blade views; AJAX endpoints return JSON
+    - Spanish flash messages on success/error
+    tdd: true
+    test_command: vendor/bin/phpunit
+  verify:
+    test_command: vendor/bin/phpunit
+    build_command: composer install --no-dev --optimize-autoloader
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
