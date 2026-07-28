@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\CategoriaController;
@@ -22,9 +23,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::resource('/categorias', CategoriaController::class);
-    Route::resource('/productos', ProductoController::class);
-    Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
+
+    Route::middleware('role:ADMIN,Control Stock')->group(function () {
+        Route::resource('/categorias', CategoriaController::class);
+        Route::resource('/productos', ProductoController::class);
+        Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
+    });
+
+    Route::middleware(['role:ADMIN'])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function () {
+            Route::resource('users', AdminUserController::class)
+                ->except(['show', 'destroy']);
+        });
 });
 
 require __DIR__ . '/auth.php';
