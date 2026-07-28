@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Producto;
 use App\Models\Categoria;
+use App\Models\Producto;
 use Illuminate\Http\Request;
 
 class ProductoController extends Controller
@@ -13,14 +13,14 @@ class ProductoController extends Controller
         $query = Producto::with('categoria');
 
         if ($request->has('buscar') && strlen($request->buscar) >= 2) {
-            $searchTerm = '%' . $request->buscar . '%';
-            $query->where(function($q) use ($searchTerm) {
+            $searchTerm = '%'.$request->buscar.'%';
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('nombre', 'like', $searchTerm)
-                  ->orWhere('color', 'like', $searchTerm)
-                  ->orWhere('talle', 'like', $searchTerm)
-                  ->orWhereHas('categoria', function($q) use ($searchTerm) {
-                      $q->where('nombre', 'like', $searchTerm);
-                  });
+                    ->orWhere('color', 'like', $searchTerm)
+                    ->orWhere('talle', 'like', $searchTerm)
+                    ->orWhereHas('categoria', function ($q) use ($searchTerm) {
+                        $q->where('nombre', 'like', $searchTerm);
+                    });
             });
         }
 
@@ -33,20 +33,21 @@ class ProductoController extends Controller
     public function create()
     {
         $categorias = Categoria::orderBy('nombre')->get();
+
         return view('productos.create', compact('categorias'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'        => 'required|string|max:255',
-            'categoria_id'  => 'required|exists:categorias,id',
+            'nombre' => 'required|string|max:255',
+            'categoria_id' => 'required|exists:categorias,id',
             'precio_compra' => 'required|numeric|min:0',
-            'precio_venta'  => 'required|numeric|min:0',
-            'cantidad'      => 'required|integer|min:0',
-            'talle'         => 'required|string|max:20',
-            'color'         => 'required|string|max:50',
-            'descripcion'   => 'nullable|string|max:500',
+            'precio_venta' => 'required|numeric|min:0',
+            'cantidad' => 'required|integer|min:0',
+            'talle' => 'required|string|max:20',
+            'color' => 'required|string|max:50',
+            'descripcion' => 'nullable|string|max:500',
         ]);
 
         Producto::create($request->all());
@@ -63,20 +64,21 @@ class ProductoController extends Controller
     public function edit(Producto $producto)
     {
         $categorias = Categoria::orderBy('nombre')->get();
+
         return view('productos.edit', compact('producto', 'categorias'));
     }
 
     public function update(Request $request, Producto $producto)
     {
         $request->validate([
-            'nombre'        => 'required|string|max:255',
-            'categoria_id'  => 'required|exists:categorias,id',
+            'nombre' => 'required|string|max:255',
+            'categoria_id' => 'required|exists:categorias,id',
             'precio_compra' => 'required|numeric|min:0',
-            'precio_venta'  => 'required|numeric|min:0',
-            'cantidad'      => 'required|integer|min:0',
-            'talle'         => 'required|string|max:20',
-            'color'         => 'required|string|max:50',
-            'descripcion'   => 'nullable|string|max:500',
+            'precio_venta' => 'required|numeric|min:0',
+            'cantidad' => 'required|integer|min:0',
+            'talle' => 'required|string|max:20',
+            'color' => 'required|string|max:50',
+            'descripcion' => 'nullable|string|max:500',
         ]);
 
         $producto->update($request->all());
@@ -88,6 +90,7 @@ class ProductoController extends Controller
     public function destroy(Producto $producto)
     {
         $producto->delete();
+
         return redirect()->route('productos.index')
             ->with('success', 'Producto eliminado correctamente.');
     }
@@ -97,16 +100,16 @@ class ProductoController extends Controller
         $productos = collect([]);
 
         if ($request->has('q') && strlen($request->q) >= 2) {
-            $searchTerm = '%' . $request->q . '%';
+            $searchTerm = '%'.$request->q.'%';
 
             $productos = Producto::with('categoria')
-                ->where(function($query) use ($searchTerm) {
+                ->where(function ($query) use ($searchTerm) {
                     $query->where('nombre', 'like', $searchTerm)
-                          ->orWhere('color', 'like', $searchTerm)
-                          ->orWhere('talle', 'like', $searchTerm)
-                          ->orWhereHas('categoria', function($q) use ($searchTerm) {
-                              $q->where('nombre', 'like', $searchTerm);
-                          });
+                        ->orWhere('color', 'like', $searchTerm)
+                        ->orWhere('talle', 'like', $searchTerm)
+                        ->orWhereHas('categoria', function ($q) use ($searchTerm) {
+                            $q->where('nombre', 'like', $searchTerm);
+                        });
                 })
                 ->orderBy('nombre')
                 ->limit(10)

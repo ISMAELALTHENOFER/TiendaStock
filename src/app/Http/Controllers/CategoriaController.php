@@ -10,6 +10,7 @@ class CategoriaController extends Controller
     public function index()
     {
         $categorias = Categoria::withCount('productos')->orderBy('nombre')->paginate(12);
+
         return view('categorias.index', compact('categorias'));
     }
 
@@ -21,7 +22,7 @@ class CategoriaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'      => 'required|string|max:255|unique:categorias',
+            'nombre' => 'required|string|max:255|unique:categorias',
             'descripcion' => 'nullable|string|max:500',
         ]);
 
@@ -34,6 +35,7 @@ class CategoriaController extends Controller
     public function show(Categoria $categoria)
     {
         $categoria->load('productos');
+
         return view('categorias.show', compact('categoria'));
     }
 
@@ -45,7 +47,7 @@ class CategoriaController extends Controller
     public function update(Request $request, Categoria $categoria)
     {
         $request->validate([
-            'nombre'      => 'required|string|max:255|unique:categorias,nombre,' . $categoria->id,
+            'nombre' => 'required|string|max:255|unique:categorias,nombre,'.$categoria->id,
             'descripcion' => 'nullable|string|max:500',
         ]);
 
@@ -63,6 +65,7 @@ class CategoriaController extends Controller
         }
 
         $categoria->delete();
+
         return redirect()->route('categorias.index')
             ->with('success', 'Categoría eliminada correctamente.');
     }

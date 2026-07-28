@@ -2,10 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductoFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Producto extends Model
 {
+    /** @use HasFactory<ProductoFactory> */
+    use HasFactory;
+
     protected $table = 'productos';
 
     protected $fillable = [
@@ -23,6 +29,11 @@ class Producto extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class);
+    }
+
+    public function ventaItems(): HasMany
+    {
+        return $this->hasMany(VentaItem::class);
     }
 
     // Ganancia calculada automáticamente
