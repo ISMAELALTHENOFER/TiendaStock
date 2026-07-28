@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
+    Route::get('/productos/data', [ProductoController::class, 'data'])->name('productos.data');
 
     Route::middleware('role:ADMIN,Control Stock')->group(function () {
         Route::resource('/categorias', CategoriaController::class);
