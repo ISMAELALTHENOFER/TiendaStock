@@ -16,6 +16,14 @@
                             </svg>
                             Dashboard
                         </a>
+                        @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas']))
+                        <a href="{{ route('ventas.index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('ventas.*') ? 'bg-slate-800 text-brand-300 border-l-2 border-brand-300' : 'text-slate-300 hover:text-white hover:bg-slate-800' }} transition-all duration-200">
+                            <svg class="mr-3 h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            Ventas
+                        </a>
+                        @endif
                         @if(in_array(Auth::user()->role, ['ADMIN', 'Control Stock']))
                         <a href="{{ route('productos.index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('productos.*') ? 'bg-slate-800 text-brand-300 border-l-2 border-brand-300' : 'text-slate-300 hover:text-white hover:bg-slate-800' }} transition-all duration-200">
                             <svg class="mr-3 h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,6 +85,14 @@
                         </svg>
                         Dashboard
                     </a>
+                    @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas']))
+                    <a href="{{ route('ventas.index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('ventas.*') ? 'bg-slate-800 text-brand-300 border-l-2 border-brand-300' : 'text-slate-300 hover:text-white hover:bg-slate-800' }} transition-all duration-200">
+                        <svg class="mr-3 h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        Ventas
+                    </a>
+                    @endif
                     @if(in_array(Auth::user()->role, ['ADMIN', 'Control Stock']))
                     <a href="{{ route('productos.index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('productos.*') ? 'bg-slate-800 text-brand-300 border-l-2 border-brand-300' : 'text-slate-300 hover:text-white hover:bg-slate-800' }} transition-all duration-200">
                         <svg class="mr-3 h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -99,6 +99,19 @@
                 </h3>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas']))
+                <a href="{{ route('ventas.pos') }}" class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-green-500 hover:shadow-md transition-all duration-200">
+                    <div class="h-10 w-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">Nueva Venta (POS)</p>
+                        <p class="text-xs text-gray-500">Abrir el punto de venta</p>
+                    </div>
+                </a>
+                @endif
                 @if(in_array(Auth::user()->role, ['ADMIN', 'Control Stock']))
                 <a href="{{ route('productos.create') }}" class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-brand-300 hover:shadow-md transition-all duration-200">
                     <div class="h-10 w-10 bg-brand-300 rounded-full flex items-center justify-center">
