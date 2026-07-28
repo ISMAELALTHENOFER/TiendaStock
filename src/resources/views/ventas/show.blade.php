@@ -102,6 +102,7 @@
                 {{-- Método de pago y procesado por --}}
                 <div class="mt-6 pt-4 border-t border-gray-200 space-y-1 text-sm text-gray-600">
                     <p><strong>Método de pago:</strong> {{ ucfirst($venta->metodo_pago) }}</p>
+                    <p><strong>Tipo de entrega:</strong> {{ $venta->etiquetaTipoEntrega() }}</p>
                     <p><strong>Procesado por:</strong> {{ $venta->user->name }}</p>
                 </div>
 

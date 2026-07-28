@@ -120,6 +120,7 @@ class VentaPosTest extends TestCase
             'total' => 75.00,
             'pago_con' => 100.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertRedirect();
@@ -130,6 +131,7 @@ class VentaPosTest extends TestCase
             'pago_con' => 100.00,
             'cambio' => 25.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
             'estado' => 'completada',
         ]);
 
@@ -144,6 +146,74 @@ class VentaPosTest extends TestCase
         $this->assertEquals(7, $this->producto->cantidad);
     }
 
+    public function test_missing_tipo_entrega_returns_validation_error(): void
+    {
+        $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'items' => [
+                ['producto_id' => $this->producto->id, 'cantidad' => 1],
+            ],
+            'subtotal' => 25.00,
+            'total' => 25.00,
+            'pago_con' => 25.00,
+            'metodo_pago' => 'efectivo',
+        ]);
+
+        $response->assertSessionHasErrors('tipo_entrega');
+        $this->assertDatabaseCount('ventas', 0);
+    }
+
+    public function test_can_create_sale_with_uber_tipo_entrega(): void
+    {
+        $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'items' => [
+                ['producto_id' => $this->producto->id, 'cantidad' => 1],
+            ],
+            'subtotal' => 25.00,
+            'total' => 25.00,
+            'pago_con' => 25.00,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'uber',
+        ]);
+
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('ventas', [
+            'user_id' => $this->userVentas->id,
+            'tipo_entrega' => 'uber',
+            'estado' => 'completada',
+        ]);
+    }
+
+    public function test_pos_page_shows_tipo_entrega_options(): void
+    {
+        $response = $this->actingAs($this->userVentas)->get('/ventas/pos');
+        $response->assertOk();
+        $response->assertSee('Tipo de entrega');
+        $response->assertSee('En el local');
+        $response->assertSee('Envío por Uber');
+    }
+
+    public function test_receipt_shows_tipo_entrega_label(): void
+    {
+        $venta = Venta::factory()->create([
+            'user_id' => $this->userVentas->id,
+            'tipo_entrega' => 'uber',
+            'total' => 50.00,
+            'pago_con' => 50.00,
+        ]);
+        VentaItem::factory()->create([
+            'venta_id' => $venta->id,
+            'producto_id' => $this->producto->id,
+            'cantidad' => 2,
+            'precio_unitario' => 25.00,
+            'subtotal' => 50.00,
+        ]);
+
+        $response = $this->actingAs($this->userVentas)->get("/ventas/{$venta->id}");
+        $response->assertOk();
+        $response->assertSee('Envío por Uber');
+    }
+
     public function test_empty_cart_returns_validation_error(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
@@ -152,6 +222,7 @@ class VentaPosTest extends TestCase
             'total' => 0,
             'pago_con' => 0,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertSessionHasErrors('items');
@@ -167,6 +238,7 @@ class VentaPosTest extends TestCase
             'total' => 999 * 25.00,
             'pago_con' => 999 * 25.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertSessionHasErrors('items.0.cantidad');
@@ -185,6 +257,7 @@ class VentaPosTest extends TestCase
             'total' => 25.00,
             'pago_con' => 10.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertSessionHasErrors('pago_con');
@@ -204,6 +277,7 @@ class VentaPosTest extends TestCase
             'total' => 999 * 25.00,
             'pago_con' => 999 * 25.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertSessionHasErrors('items.0.cantidad');
@@ -225,6 +299,7 @@ class VentaPosTest extends TestCase
             'total' => 125.00,
             'pago_con' => 150.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertRedirect();
@@ -247,6 +322,7 @@ class VentaPosTest extends TestCase
             'total' => 100.00,
             'pago_con' => 100.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'uber',
         ]);
 
         $response->assertRedirect();
@@ -276,6 +352,7 @@ class VentaPosTest extends TestCase
             'total' => 50.00,
             'pago_con' => 50.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertRedirect();
@@ -448,6 +525,7 @@ class VentaPosTest extends TestCase
             'total' => 25.00,
             'pago_con' => 25.00,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
         $response->assertForbidden();
     }

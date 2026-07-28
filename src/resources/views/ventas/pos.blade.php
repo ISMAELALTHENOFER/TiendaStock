@@ -174,6 +174,38 @@
 
                             {{-- Datos de pago --}}
                             <div x-show="cart.length > 0" class="mt-4 space-y-3 pt-4 border-t border-gray-200">
+                                {{-- Tipo de entrega: local o envio por Uber --}}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Tipo de entrega
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="flex items-center gap-2 border-2 rounded-lg px-3 py-2.5 cursor-pointer transition-all"
+                                            :class="tipoEntrega === 'local'
+                                                ? 'border-brand-300 bg-brand-50 text-gray-900'
+                                                : 'border-slate-200 hover:border-brand-200 text-gray-700'">
+                                            <input type="checkbox"
+                                                :checked="tipoEntrega === 'local'"
+                                                @change="tipoEntrega = ($el.checked ? 'local' : '')"
+                                                class="w-4 h-4 rounded text-brand-300 focus:ring-brand-300">
+                                            <span class="text-sm font-medium">En el local</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 border-2 rounded-lg px-3 py-2.5 cursor-pointer transition-all"
+                                            :class="tipoEntrega === 'uber'
+                                                ? 'border-brand-300 bg-brand-50 text-gray-900'
+                                                : 'border-slate-200 hover:border-brand-200 text-gray-700'">
+                                            <input type="checkbox"
+                                                :checked="tipoEntrega === 'uber'"
+                                                @change="tipoEntrega = ($el.checked ? 'uber' : '')"
+                                                class="w-4 h-4 rounded text-brand-300 focus:ring-brand-300">
+                                            <span class="text-sm font-medium">Envío por Uber</span>
+                                        </label>
+                                    </div>
+                                    <p x-show="!tipoEntrega" class="text-xs text-gray-400 mt-1">
+                                        Seleccione una opción para cerrar la venta.
+                                    </p>
+                                </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
                                     <select x-model="metodoPago"
@@ -230,6 +262,7 @@ document.addEventListener('alpine:init', () => {
         searching: false,
         cart: [],
         metodoPago: 'efectivo',
+        tipoEntrega: '',
         pagoCon: 0,
         pagoConDisplay: '',
         descuento: 0,
@@ -257,6 +290,7 @@ document.addEventListener('alpine:init', () => {
         get canSubmit() {
             return this.cart.length > 0
                 && this.total > 0
+                && (this.tipoEntrega === 'local' || this.tipoEntrega === 'uber')
                 && parseFloat(this.pagoCon || 0) >= this.total
                 && !this.submitting;
         },
@@ -375,6 +409,11 @@ document.addEventListener('alpine:init', () => {
         async submitSale() {
             if (!this.canSubmit) return;
 
+            if (this.tipoEntrega !== 'local' && this.tipoEntrega !== 'uber') {
+                alert('Debe indicar si la venta fue en el local o envío por Uber.');
+                return;
+            }
+
             this.submitting = true;
 
             const payload = {
@@ -388,6 +427,7 @@ document.addEventListener('alpine:init', () => {
                 total: this.total,
                 pago_con: parseFloat(this.pagoCon),
                 metodo_pago: this.metodoPago,
+                tipo_entrega: this.tipoEntrega,
             };
 
             try {
