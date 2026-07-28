@@ -28,7 +28,7 @@
 
             <!-- Información Principal -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-6">
-                <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-8">
+                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Información del Producto</h3>
                 </div>
 
@@ -76,9 +76,9 @@
 
                 <!-- Precio de Venta -->
                 <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div class="bg-purple-50 px-6 py-6">
-                        <p class="text-sm font-bold text-purple-600 uppercase tracking-wider">Precio de Venta</p>
-                        <p class="text-3xl font-bold text-purple-700 mt-2">${{ number_format($producto->precio_venta, 2) }}</p>
+                    <div class="bg-brand-50 px-6 py-6">
+                        <p class="text-sm font-bold text-brand-300 uppercase tracking-wider">Precio de Venta</p>
+                        <p class="text-3xl font-bold text-brand-300 mt-2">${{ number_format($producto->precio_venta, 2) }}</p>
                     </div>
                 </div>
 
@@ -94,7 +94,7 @@
             <!-- Descripción -->
             @if($producto->descripcion)
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-cyan-600 to-cyan-700 px-6 py-6">
+                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-6">
                     <h3 class="text-white font-bold text-lg">Descripción</h3>
                 </div>
                 <div class="p-8">

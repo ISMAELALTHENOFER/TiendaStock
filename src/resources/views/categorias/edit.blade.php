@@ -17,9 +17,9 @@
     <div class="py-12">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-8">
+                <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Modificar Categoría</h3>
-                    <p class="text-amber-100 text-sm mt-1">Actualiza los detalles de la categoría</p>
+                    <p class="text-white/80 text-sm mt-1">Actualiza los detalles de la categoría</p>
                 </div>
 
                 <form action="{{ route('categorias.update', $categoria) }}" method="POST" class="p-8">
@@ -35,7 +35,7 @@
                             </label>
                             <input type="text" id="nombre" name="nombre" value="{{ old('nombre', $categoria->nombre) }}"
                                 placeholder="Ej: Ropa, Electrónica, Alimentos..."
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('nombre') border-red-500 @enderror">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('nombre') border-red-500 @enderror">
                             @error('nombre')
                             <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p>
                             @enderror
@@ -48,7 +48,7 @@
                             </label>
                             <textarea id="descripcion" name="descripcion" rows="4"
                                 placeholder="Describe los tipos de productos que incluirá esta categoría..."
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 @error('descripcion') border-red-500 @enderror">{{ old('descripcion', $categoria->descripcion) }}</textarea>
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('descripcion') border-red-500 @enderror">{{ old('descripcion', $categoria->descripcion) }}</textarea>
                             @error('descripcion')
                             <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p>
                             @enderror
@@ -61,7 +61,7 @@
                             Cancelar
                         </a>
                         <button type="submit"
-                            class="flex-1 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                            class="flex-1 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
                             Actualizar Categoría
                         </button>
                     </div>

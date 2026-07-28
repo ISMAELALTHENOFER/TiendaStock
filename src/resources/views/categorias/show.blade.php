@@ -27,7 +27,7 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <!-- Información de la Categoría -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-8">
-                <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-8">
+                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Información de la Categoría</h3>
                 </div>
 
@@ -38,7 +38,7 @@
                     </div>
                     <div>
                         <dt class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2">Total de Productos</dt>
-                        <dd class="text-2xl font-bold text-indigo-600">{{ $categoria->productos()->count() }}</dd>
+                        <dd class="text-2xl font-bold text-brand-300">{{ $categoria->productos()->count() }}</dd>
                     </div>
                     @if($categoria->descripcion)
                     <div class="col-span-1 md:col-span-2">
@@ -51,9 +51,9 @@
 
             <!-- Productos de la Categoría -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-8">
+                <div class="bg-gradient-to-r from-brand-300 to-brand-400 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Productos en esta Categoría</h3>
-                    <p class="text-purple-100 text-sm mt-1">{{ $categoria->productos()->count() }} producto(s)</p>
+                    <p class="text-white/80 text-sm mt-1">{{ $categoria->productos()->count() }} producto(s)</p>
                 </div>
 
                 @if($categoria->productos()->count() > 0)

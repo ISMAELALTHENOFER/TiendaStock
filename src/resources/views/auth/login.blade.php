@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent mb-3">
             TiendaStock
         </h1>
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
@@ -20,21 +20,21 @@
     <form method="POST" action="{{ route('login') }}" class="space-y-5">
         @csrf
 
-        <!-- Email Address -->
+        <!-- Username -->
         <div>
-            <x-input-label for="email" :value="__('Correo electrónico')" />
+            <x-input-label for="username" :value="__('Usuario')" />
             <x-text-input
-                id="email"
-                type="email"
-                name="email"
-                :value="old('email')"
+                id="username"
+                type="text"
+                name="username"
+                :value="old('username')"
                 required
                 autofocus
                 autocomplete="username"
-                placeholder="tu@email.com"
+                placeholder="tu_usuario"
                 class="block mt-2 w-full" />
-            @if ($errors->has('email'))
-                @foreach ($errors->get('email') as $error)
+            @if ($errors->has('username'))
+                @foreach ($errors->get('username') as $error)
                     <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
                 @endforeach
             @endif
@@ -64,13 +64,13 @@
                 <input
                     id="remember_me"
                     type="checkbox"
-                    class="rounded border-purple-300 text-purple-600 shadow-sm focus:ring-purple-500 w-4 h-4 cursor-pointer transition-colors duration-200"
+                    class="rounded border-sky-300 text-brand-300 shadow-sm focus:ring-brand-300 w-4 h-4 cursor-pointer transition-colors duration-200"
                     name="remember">
                 <span class="ml-2 text-sm text-gray-600 select-none">Recordarme</span>
             </label>
 
             @if (Route::has('password.request'))
-            <a class="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200" href="{{ route('password.request') }}">
+            <a class="text-sm text-brand-500 hover:text-brand-600 font-medium transition-colors duration-200" href="{{ route('password.request') }}">
                 ¿Olvidaste tu contraseña?
             </a>
             @endif
@@ -84,16 +84,6 @@
                 </svg>
                 Iniciar sesión
             </x-primary-button>
-        </div>
-
-        <!-- Sign Up Link -->
-        <div class="text-center pt-4 border-t border-gray-100">
-            <p class="text-sm text-gray-600 mt-4">
-                ¿No tienes cuenta?
-                <a href="{{ route('register') }}" class="text-purple-600 hover:text-purple-700 font-semibold transition-colors duration-200">
-                    Regístrate ahora
-                </a>
-            </p>
         </div>
     </form>
 </x-guest-layout>
