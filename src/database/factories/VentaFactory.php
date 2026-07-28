@@ -24,6 +24,7 @@ class VentaFactory extends Factory
             'pago_con' => 100.00,
             'cambio' => 0,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => Venta::TIPO_ENTREGA_LOCAL,
             'estado' => 'completada',
         ];
     }

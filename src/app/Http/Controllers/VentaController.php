@@ -65,6 +65,7 @@ class VentaController extends Controller
                     'pago_con' => $validated['pago_con'],
                     'cambio' => $validated['pago_con'] - $validated['total'],
                     'metodo_pago' => $validated['metodo_pago'],
+                    'tipo_entrega' => $validated['tipo_entrega'],
                     'estado' => 'completada',
                 ]);
 

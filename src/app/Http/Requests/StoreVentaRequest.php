@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Producto;
+use App\Models\Venta;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreVentaRequest extends FormRequest
@@ -26,6 +27,7 @@ class StoreVentaRequest extends FormRequest
             'total' => 'required|numeric|min:0',
             'pago_con' => 'required|numeric|min:0',
             'metodo_pago' => 'required|string|in:efectivo,tarjeta,transferencia',
+            'tipo_entrega' => ['required', 'string', 'in:'.implode(',', Venta::TIPOS_ENTREGA)],
         ];
     }
 
@@ -44,6 +46,8 @@ class StoreVentaRequest extends FormRequest
             'pago_con.min' => 'El monto recibido debe ser mayor a cero.',
             'metodo_pago.required' => 'Debe seleccionar un método de pago.',
             'metodo_pago.in' => 'Método de pago inválido. Use efectivo, tarjeta o transferencia.',
+            'tipo_entrega.required' => 'Debe indicar si la venta fue en el local o envío por Uber.',
+            'tipo_entrega.in' => 'Tipo de entrega inválido. Use "local" o "uber".',
         ];
     }
 

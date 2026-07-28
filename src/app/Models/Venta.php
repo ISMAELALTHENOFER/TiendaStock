@@ -13,6 +13,15 @@ class Venta extends Model
     /** @use HasFactory<VentaFactory> */
     use HasFactory;
 
+    public const TIPO_ENTREGA_LOCAL = 'local';
+    public const TIPO_ENTREGA_UBER = 'uber';
+
+    /** @var list<string> */
+    public const TIPOS_ENTREGA = [
+        self::TIPO_ENTREGA_LOCAL,
+        self::TIPO_ENTREGA_UBER,
+    ];
+
     protected $table = 'ventas';
 
     protected $fillable = [
@@ -25,6 +34,7 @@ class Venta extends Model
         'pago_con',
         'cambio',
         'metodo_pago',
+        'tipo_entrega',
         'estado',
     ];
 
@@ -59,5 +69,27 @@ class Venta extends Model
     public function isAnulada(): bool
     {
         return $this->estado === 'anulada';
+    }
+
+    public function isLocal(): bool
+    {
+        return $this->tipo_entrega === self::TIPO_ENTREGA_LOCAL;
+    }
+
+    public function isUber(): bool
+    {
+        return $this->tipo_entrega === self::TIPO_ENTREGA_UBER;
+    }
+
+    /**
+     * Etiqueta legible para mostrar en vistas/reporte.
+     */
+    public function etiquetaTipoEntrega(): string
+    {
+        return match ($this->tipo_entrega) {
+            self::TIPO_ENTREGA_LOCAL => 'En el local',
+            self::TIPO_ENTREGA_UBER => 'Envío por Uber',
+            default => 'No especificado',
+        };
     }
 }

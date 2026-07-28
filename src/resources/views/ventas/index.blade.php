@@ -82,6 +82,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Fecha</th>
                                 <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Items</th>
                                 <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Total</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Entrega</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Procesado por</th>
                                 <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Estado</th>
                                 <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
@@ -94,6 +95,19 @@
                                 <td class="px-6 py-4 text-gray-600">{{ $venta->created_at->format('d/m/Y H:i') }}</td>
                                 <td class="px-6 py-4 text-center text-gray-600">{{ $venta->items->count() }}</td>
                                 <td class="px-6 py-4 text-right font-semibold text-gray-900">{{ formato_pesos($venta->total) }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    @if($venta->isLocal())
+                                        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-700">
+                                            En el local
+                                        </span>
+                                    @elseif($venta->isUber())
+                                        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                            Uber
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-gray-400">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-gray-600">{{ $venta->user->name }}</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="inline-block px-3 py-1 rounded-full text-xs font-bold
@@ -129,7 +143,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                     <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                     </svg>

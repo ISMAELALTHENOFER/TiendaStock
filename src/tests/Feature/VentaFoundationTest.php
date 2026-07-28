@@ -29,7 +29,7 @@ class VentaFoundationTest extends TestCase
         $expected = [
             'id', 'user_id', 'cliente_nombre', 'subtotal', 'descuento',
             'impuesto', 'total', 'pago_con', 'cambio', 'metodo_pago',
-            'estado', 'created_at', 'updated_at',
+            'tipo_entrega', 'estado', 'created_at', 'updated_at',
         ];
 
         foreach ($expected as $column) {
@@ -91,6 +91,7 @@ class VentaFoundationTest extends TestCase
             'pago_con' => 100.00,
             'cambio' => 0,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => Venta::TIPO_ENTREGA_LOCAL,
             'estado' => 'completada',
         ]);
 
@@ -323,6 +324,7 @@ class VentaFoundationTest extends TestCase
         $this->assertArrayHasKey('items.*.cantidad', $rules);
         $this->assertArrayHasKey('pago_con', $rules);
         $this->assertArrayHasKey('metodo_pago', $rules);
+        $this->assertArrayHasKey('tipo_entrega', $rules);
         $this->assertArrayHasKey('cliente_nombre', $rules);
     }
 
@@ -335,6 +337,8 @@ class VentaFoundationTest extends TestCase
         $this->assertStringContainsString('producto', $messages['items.required']);
         $this->assertArrayHasKey('metodo_pago.in', $messages);
         $this->assertStringContainsString('efectivo', $messages['metodo_pago.in']);
+        $this->assertArrayHasKey('tipo_entrega.required', $messages);
+        $this->assertArrayHasKey('tipo_entrega.in', $messages);
     }
 
     public function test_store_venta_request_validates_items_required(): void
@@ -350,6 +354,7 @@ class VentaFoundationTest extends TestCase
             'items' => [],
             'pago_con' => 100,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
             'total' => 100,
             'subtotal' => 100,
         ]);
@@ -378,6 +383,7 @@ class VentaFoundationTest extends TestCase
             'total' => 100,
             'pago_con' => 100,
             'metodo_pago' => 'cripto',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertStatus(422);
@@ -404,6 +410,7 @@ class VentaFoundationTest extends TestCase
             'total' => 100,
             'pago_con' => 50,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertStatus(422);
@@ -430,6 +437,7 @@ class VentaFoundationTest extends TestCase
             'total' => 500,
             'pago_con' => 500,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
         ]);
 
         $response->assertStatus(422);
@@ -456,7 +464,92 @@ class VentaFoundationTest extends TestCase
             'total' => 100,
             'pago_con' => 100,
             'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
             'cliente_nombre' => 'Cliente Test',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['ok' => true]);
+    }
+
+    // ──────────────────────────────────────────────
+    // T3.2 — StoreVentaRequest: tipo_entrega validation
+    // ──────────────────────────────────────────────
+
+    public function test_store_venta_request_requires_tipo_entrega(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $routeUrl = '/_test/ventas/validate-tipo-entrega-required';
+
+        Route::post($routeUrl, function (StoreVentaRequest $request) {
+            return response()->json(['ok' => true]);
+        })->middleware('web');
+
+        $producto = Producto::factory()->create([
+            'precio_venta' => 50.00,
+            'cantidad' => 10,
+        ]);
+
+        $response = $this->actingAs($user)->postJson($routeUrl, [
+            'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
+            'subtotal' => 50,
+            'total' => 50,
+            'pago_con' => 50,
+            'metodo_pago' => 'efectivo',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['tipo_entrega']);
+    }
+
+    public function test_store_venta_request_rejects_invalid_tipo_entrega(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $routeUrl = '/_test/ventas/validate-tipo-entrega-invalid';
+
+        Route::post($routeUrl, function (StoreVentaRequest $request) {
+            return response()->json(['ok' => true]);
+        })->middleware('web');
+
+        $producto = Producto::factory()->create([
+            'precio_venta' => 50.00,
+            'cantidad' => 10,
+        ]);
+
+        $response = $this->actingAs($user)->postJson($routeUrl, [
+            'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
+            'subtotal' => 50,
+            'total' => 50,
+            'pago_con' => 50,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'domicilio',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['tipo_entrega']);
+    }
+
+    public function test_store_venta_request_accepts_uber_tipo_entrega(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $routeUrl = '/_test/ventas/validate-tipo-entrega-uber';
+
+        Route::post($routeUrl, function (StoreVentaRequest $request) {
+            return response()->json(['ok' => true]);
+        })->middleware('web');
+
+        $producto = Producto::factory()->create([
+            'precio_venta' => 50.00,
+            'cantidad' => 10,
+        ]);
+
+        $response = $this->actingAs($user)->postJson($routeUrl, [
+            'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
+            'subtotal' => 50,
+            'total' => 50,
+            'pago_con' => 50,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'uber',
         ]);
 
         $response->assertStatus(200);
