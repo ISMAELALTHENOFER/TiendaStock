@@ -57,6 +57,31 @@ class CategoriaController extends Controller
             ->with('success', 'Categoría actualizada correctamente.');
     }
 
+    /**
+     * Inline category creation from the product create/edit form.
+     *
+     * Returns JSON `{id, nombre}` (201) on success or 422 on validation error
+     * so the Alpine modal can push the new option into the <select> without
+     * leaving the page. Reusing the categorias.store redirect would break AJAX.
+     */
+    public function storeInline(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255|unique:categorias,nombre',
+        ], [
+            'nombre.required' => 'El nombre de la categoría es obligatorio.',
+            'nombre.unique' => 'Ya existe una categoría con ese nombre.',
+            'nombre.max' => 'El nombre no puede superar los 255 caracteres.',
+        ]);
+
+        $categoria = Categoria::create($validated);
+
+        return response()->json([
+            'id' => $categoria->id,
+            'nombre' => $categoria->nombre,
+        ], 201);
+    }
+
     public function destroy(Categoria $categoria)
     {
         if ($categoria->productos()->count() > 0) {

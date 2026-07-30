@@ -162,9 +162,12 @@
                                 </div>
                                 <div class="flex justify-between items-center text-sm text-gray-600">
                                     <span>Descuento:</span>
-                                    <input type="number" x-model="descuento"
-                                        @input="updateTotals"
-                                        class="w-24 text-right border-2 border-slate-200 rounded-lg px-2 py-1 text-sm" step="0.01" min="0">
+                                    <div x-data="moneyInput(0)" x-init="$watch('raw', v => descuento = v)" class="w-24">
+                                        <input type="text" :value="display" @input="onInput($event)" @blur="onBlur()"
+                                            inputmode="decimal"
+                                            placeholder="0,00"
+                                            class="w-full text-right border-2 border-slate-200 rounded-lg px-2 py-1 text-sm font-semibold">
+                                    </div>
                                 </div>
                                 <div class="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                                     <span>Total:</span>
@@ -217,13 +220,12 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Pago con</label>
-                                    <div class="relative">
-                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">$</span>
-                                        <input type="text" x-model="pagoConDisplay"
-                                            @input="updatePagoCon"
+                                    <div x-data="moneyInput(0)" x-init="$watch('raw', v => pagoCon = v)">
+                                        <input type="text" :value="display" @input="onInput($event)" @blur="onBlur()"
                                             @focus="$el.select()"
+                                            inputmode="decimal"
                                             placeholder="0,00"
-                                            class="w-full pl-8 pr-3 py-2 border-2 border-slate-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-right font-semibold">
+                                            class="w-full pl-3 pr-3 py-2 border-2 border-slate-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-right font-semibold">
                                     </div>
                                 </div>
                                 <div class="flex justify-between text-lg pt-2" x-show="pagoCon > 0">
@@ -264,7 +266,6 @@ document.addEventListener('alpine:init', () => {
         metodoPago: 'efectivo',
         tipoEntrega: '',
         pagoCon: 0,
-        pagoConDisplay: '',
         descuento: 0,
         submitting: false,
 
@@ -378,34 +379,6 @@ document.addEventListener('alpine:init', () => {
             // Trigger reactivity
         },
 
-        updateTotals() {
-            // Trigger reactivity
-        },
-
-        updatePagoCon() {
-            // Allow only digits and comma
-            let raw = this.pagoConDisplay.replace(/[^\d,]/g, '');
-
-            if (raw === '' || raw === '0') {
-                this.pagoConDisplay = '';
-                this.pagoCon = 0;
-                return;
-            }
-
-            // Split integer and decimal parts (comma is decimal separator in AR)
-            let commaIndex = raw.indexOf(',');
-            let integerPart = commaIndex >= 0 ? raw.slice(0, commaIndex) : raw;
-            let decimalPart = commaIndex >= 0 ? raw.slice(commaIndex, commaIndex + 3) : '';
-
-            // Store raw numeric value
-            let numericStr = integerPart + (decimalPart ? '.' + decimalPart.slice(1) : '');
-            this.pagoCon = parseFloat(numericStr) || 0;
-
-            // Format integer with dots as thousands separators
-            let formattedInt = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-            this.pagoConDisplay = formattedInt + decimalPart;
-        },
-
         async submitSale() {
             if (!this.canSubmit) return;
 
@@ -460,3 +433,12 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 </script>
+
+{{--
+    Shared moneyInput: register the single Argentine money mask component
+    used by the "Pago con" and "Descuento" inputs above, so live formatting
+    and caret preservation are identical to the product create/edit forms.
+--}}
+@once
+    @include('partials._money-input')
+@endonce

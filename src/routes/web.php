@@ -32,7 +32,15 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:ADMIN,Control Stock')->group(function () {
         Route::resource('/categorias', CategoriaController::class);
+        Route::post('/categorias/inline', [CategoriaController::class, 'storeInline'])->name('categorias.inline');
+        // Duplicate detection on the create flow: advises the user to edit an
+        // existing product (active OR soft-disabled) instead of re-creating it.
+        // Declared BEFORE the resource so the static path wins over the
+        // `productos/{producto}` show wildcard.
+        Route::get('/productos/check-duplicate', [ProductoController::class, 'checkDuplicate'])->name('productos.check-duplicate');
         Route::resource('/productos', ProductoController::class);
+        // Reactivación: re-enable a soft-disabled product without re-creating it.
+        Route::patch('/productos/{producto}/activate', [ProductoController::class, 'activate'])->name('productos.activate');
     });
 
     Route::middleware(['role:ADMIN'])
