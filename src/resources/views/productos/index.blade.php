@@ -56,6 +56,15 @@
                     <button type="button" @click="cargarProductos()" class="text-red-700 font-semibold underline">Reintentar</button>
                 </div>
 
+                {{-- Toggle "Ver inactivos": filtra el catálogo a SOLO productos desactivados --}}
+                <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer select-none"
+                    :class="verInactivos && 'text-slate-900 font-bold'">
+                    <input type="checkbox" x-model="verInactivos"
+                        class="w-4 h-4 rounded text-brand-300 focus:ring-brand-300">
+                    <span x-show="!verInactivos">Ver inactivos</span>
+                    <span x-show="verInactivos" x-cloak>Viendo solo inactivos</span>
+                </label>
+
                 {{-- Barra de búsqueda: input estático, sobrevive al re-render de la lista --}}
                 <div x-ref="barraBusqueda" class="space-y-4">
                     <div class="relative">
@@ -142,6 +151,7 @@
                         <table class="w-full">
                             <thead class="bg-sky-50 border-b border-sky-100">
                                 <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Imagen</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nombre</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Categoría</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Talle</th>
@@ -156,7 +166,27 @@
                             <tbody class="divide-y divide-gray-200">
                                 <template x-for="producto in productosPagina" :key="producto.id">
                                     <tr class="hover:bg-sky-50/50 transition-colors duration-200">
-                                        <td class="px-6 py-4 font-semibold text-gray-900" x-text="producto.nombre"></td>
+                                        <td class="px-6 py-4">
+                                            <template x-if="producto.imagen">
+                                                <img :src="'/storage/' + producto.imagen"
+                                                    :alt="producto.nombre"
+                                                    class="h-12 w-12 object-cover rounded-lg border border-slate-200">
+                                            </template>
+                                            <template x-if="!producto.imagen">
+                                                <span class="inline-block h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-300">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </span>
+                                            </template>
+                                        </td>
+                                        <td class="px-6 py-4 font-semibold text-gray-900">
+                                            <span x-text="producto.nombre"></span>
+                                            <span x-show="producto.activo === false" x-cloak
+                                                class="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600">
+                                                Inactivo
+                                            </span>
+                                        </td>
                                         <td class="px-6 py-4">
                                             <span class="inline-block bg-brand-100 text-brand-700 rounded-full px-3 py-1 text-xs font-semibold" x-text="producto.categoria?.nombre ?? '—'"></span>
                                         </td>
@@ -191,22 +221,58 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                                     </svg>
                                                 </a>
-                                                <form
-                                                    :action="`/productos/${producto.id}`"
-                                                    method="POST"
-                                                    style="display:inline;"
-                                                    onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto?')"
-                                                >
-                                                    <input type="hidden" name="_token" :value="csrfToken">
-                                                    <input type="hidden" name="_method" value="DELETE">
-                                                    <button type="submit"
-                                                        title="Eliminar"
-                                                        class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                        </svg>
-                                                    </button>
-                                                </form>
+
+                                                {{-- Desactivar: visible solo para productos activos. --}}
+                                                <template x-if="producto.activo">
+                                                    <form
+                                                        :id="`disable-form-${producto.id}`"
+                                                        :action="`/productos/${producto.id}`"
+                                                        method="POST"
+                                                        style="display:inline;"
+                                                    >
+                                                        <input type="hidden" name="_token" :value="csrfToken">
+                                                        <input type="hidden" name="_method" value="DELETE">
+                                                        <button type="button"
+                                                            title="Desactivar"
+                                                            class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
+                                                            @click="confirmDialogShow(
+                                                                'Desactivar producto',
+                                                                'El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.',
+                                                                'Sí, desactivar',
+                                                                'bg-red-600 hover:bg-red-700'
+                                                            ).then(r => r && document.getElementById('disable-form-' + producto.id).submit())">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </template>
+
+                                                {{-- Activar: reactivación de un producto soft-disabled. --}}
+                                                <template x-if="!producto.activo">
+                                                    <form
+                                                        :id="`activate-form-${producto.id}`"
+                                                        :action="`/productos/${producto.id}/activate`"
+                                                        method="POST"
+                                                        style="display:inline;"
+                                                    >
+                                                        <input type="hidden" name="_token" :value="csrfToken">
+                                                        <input type="hidden" name="_method" value="PATCH">
+                                                        <button type="button"
+                                                            title="Activar"
+                                                            class="text-green-600 hover:text-green-800 hover:bg-green-50 p-2 rounded-lg transition-colors duration-200"
+                                                            @click="confirmDialogShow(
+                                                                'Activar producto',
+                                                                '¿Activar el producto para que vuelva a estar disponible?',
+                                                                'Sí, activar',
+                                                                'bg-green-600 hover:bg-green-700'
+                                                            ).then(r => r && document.getElementById('activate-form-' + producto.id).submit())">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </template>
                                             </div>
                                         </td>
                                     </tr>
@@ -293,6 +359,9 @@ document.addEventListener('alpine:init', () => {
         filtroTalle: '',
         filtroColor: '',
 
+        // Toggle administrativo: incluir productos desactivados en el fetch.
+        verInactivos: false,
+
         // Página actual del paginado cliente. Se resetea a 1 al cambiar filtros.
         paginaActual: 1,
 
@@ -306,6 +375,8 @@ document.addEventListener('alpine:init', () => {
             this.$watch('filtroCategoria', () => { this.paginaActual = 1; });
             this.$watch('filtroTalle', () => { this.paginaActual = 1; });
             this.$watch('filtroColor', () => { this.paginaActual = 1; });
+            // Re-fetch del catálogo al toggle: la visibilidad de inactivos cambia el conjunto.
+            this.$watch('verInactivos', () => { this.cargarProductos(); });
         },
 
         /**
@@ -316,8 +387,18 @@ document.addEventListener('alpine:init', () => {
             this.cargando = true;
             this.errorCarga = false;
             try {
-                const response = await fetch('{{ route('productos.data') }}', {
+                const url = new URL('{{ route('productos.data') }}', window.location.origin);
+                if (this.verInactivos) {
+                    url.searchParams.set('inactivos', '1');
+                }
+                const response = await fetch(url.toString(), {
                     headers: { 'Accept': 'application/json' },
+                    // El catálogo muta con cada edit/activate/destroy; nunca
+                    // servir una versión cacheada por el navegador. El backend
+                    // ya envía Cache-Control: no-store, pero `cache: 'no-store'
+                    // refuerza la intención desde el cliente y evita heurísticas
+                    // de caché en navegadores antiguos o proxies.
+                    cache: 'no-store',
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 this.productos = await response.json();

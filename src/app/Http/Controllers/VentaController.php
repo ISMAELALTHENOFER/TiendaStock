@@ -88,7 +88,12 @@ class VentaController extends Controller
                         'subtotal' => $item['cantidad'] * $producto->precio_venta,
                     ]);
 
-                    $producto->decrement('cantidad', $item['cantidad']);
+                    // Asignar y save() (no decrement()) para disparar el
+                    // evento 'saving' del modelo Producto, que fuerza activo=false
+                    // cuando la cantidad llega a 0. La transacción + lockForUpdate
+                    // garantizan atomicidad equivalente al decrement().
+                    $producto->cantidad -= $item['cantidad'];
+                    $producto->save();
                 }
 
                 return $venta;

@@ -116,7 +116,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <div class="flex justify-center gap-2">
+                                    <div class="inline-flex justify-between items-center gap-2 w-20">
                                         <a href="{{ route('ventas.show', $venta) }}"
                                             title="Ver detalle"
                                             class="text-brand-300 hover:text-brand-400 hover:bg-brand-50 p-2 rounded-lg transition-colors duration-200">
