@@ -1,4 +1,4 @@
-<div id="flash-toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-none" style="display:none;"></div>
+<div id="flash-toast-container" class="fixed z-[100] flex flex-col gap-3 pointer-events-none" aria-live="polite" aria-atomic="true" style="display:none; top: max(0.75rem, env(safe-area-inset-top)); right: max(0.75rem, env(safe-area-inset-right)); bottom: env(safe-area-inset-bottom); left: max(0.75rem, env(safe-area-inset-left));"></div>
 
 <script>
 function showFlash(type, message) {
@@ -15,7 +15,7 @@ function showFlash(type, message) {
     const c = colors[type] || colors.info;
 
     const toast = document.createElement('div');
-    toast.className = `pointer-events-auto ${c.bg} border-l-4 ${c.border} ${c.text} p-4 rounded-xl shadow-xl flex items-start gap-3 max-w-md transition-all duration-300 opacity-0 translate-x-8`;
+     toast.className = `pointer-events-auto ${c.bg} border-l-4 ${c.border} ${c.text} p-4 rounded-xl shadow-lg flex items-start gap-3 max-w-[calc(100vw-24px)] sm:max-w-md transition-all duration-200 opacity-0 translate-x-8`;
     toast.style.transform = 'translateX(32px)';
     toast.style.opacity = '0';
 
@@ -35,7 +35,7 @@ function showFlash(type, message) {
         <div class="flex-1 pt-0.5">
             <p class="text-sm font-medium">${message}</p>
         </div>
-        <button onclick="this.parentElement.remove()" class="flex-shrink-0 ${c.text} hover:opacity-70 transition-opacity">
+        <button type="button" aria-label="Cerrar notificación" onclick="this.parentElement.remove()" class="flex-shrink-0 min-w-11 min-h-11 -m-2 flex items-center justify-center ${c.text} hover:opacity-70 transition-opacity">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     `;

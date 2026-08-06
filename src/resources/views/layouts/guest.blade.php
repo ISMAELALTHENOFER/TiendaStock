@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'TiendaStock') }}</title>
@@ -17,16 +17,16 @@
 </head>
 
 <body class="font-sans text-gray-900 antialiased">
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-brand-50 via-white to-sky-50">
-        <div class="w-full sm:max-w-md px-6 py-4">
+    <div class="min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 bg-stone-50" style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));">
+        <div class="w-full max-w-md">
             <!-- Logo -->
-            <div class="flex justify-center mb-8">
-                <x-application-logo class="w-16 h-16 text-brand-300" />
+            <div class="flex justify-center mb-6">
+                <x-application-logo class="w-14 h-14 text-brand-600" />
             </div>
 
             <!-- Card -->
-            <div class="bg-white shadow-2xl rounded-2xl overflow-hidden border border-brand-100">
-                <div class="px-8 py-6">
+            <div class="surface-panel overflow-hidden">
+                <div class="px-5 py-6 sm:px-8 sm:py-8">
                     {{ $slot }}
                 </div>
             </div>

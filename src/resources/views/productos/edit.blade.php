@@ -1,21 +1,21 @@
 @use('Illuminate\Support\Facades\Storage')
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     Editar Producto
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">{{ $producto->nombre }}</p>
             </div>
             <a href="{{ route('productos.index') }}"
-                class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors duration-200 text-center sm:text-left">
                 ← Volver
             </a>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                 <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
@@ -30,7 +30,7 @@
                                   'Editar producto',
                                   '¿Confirmar los cambios en este producto?',
                                   'Sí, guardar',
-                                  'bg-brand-300 hover:bg-brand-400'
+                                   'bg-brand-600 hover:bg-brand-700'
                               );
                           }
                       }"
@@ -91,13 +91,13 @@
                                         placeholder="Nombre de la categoría"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200">
                                     <p x-show="error" x-text="error" class="text-red-500 text-sm font-medium mt-2"></p>
-                                    <div class="flex gap-3 mt-6">
+                                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
                                         <button type="button" @click="open = false"
-                                            class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition-colors duration-200">
+                                            class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl transition-colors duration-200">
                                             Cancelar
                                         </button>
                                         <button type="button" @click="submit()" :disabled="submitting"
-                                            class="flex-1 bg-brand-300 hover:bg-brand-400 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md">
+                                            class="flex-1 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 shadow-md">
                                             <span x-text="submitting ? 'Guardando...' : 'Crear'"></span>
                                         </button>
                                     </div>
@@ -201,13 +201,13 @@
 
                     </div>
 
-                    <div class="flex gap-4 mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
                         <a href="{{ route('productos.index') }}"
-                            class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                            class="flex-1 w-full sm:w-auto text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
                             Cancelar
                         </a>
                         <button type="submit"
-                            class="flex-1 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
+                            class="flex-1 w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
                             Actualizar Producto
                         </button>
                     </div>

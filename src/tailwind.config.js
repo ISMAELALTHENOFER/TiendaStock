@@ -16,6 +16,9 @@ export default {
             },
             colors: {
                 brand: {
+                    DEFAULT: '#D8A62A',
+                    light: '#FFF4D6',
+                    dark: '#7A5610',
                     50: '#FFF9EB',
                     100: '#FFF0CC',
                     200: '#FFE3A0',
@@ -28,6 +31,9 @@ export default {
                     900: '#4C3600',
                 },
                 sky: {
+                    DEFAULT: '#4F91A5',
+                    light: '#E8F4F6',
+                    dark: '#286779',
                     50: '#F0F8FA',
                     100: '#DAEEF4',
                     200: '#C3E4ED',
@@ -40,6 +46,9 @@ export default {
                     900: '#086984',
                 },
                 blush: {
+                    DEFAULT: '#C96F89',
+                    light: '#FFF0F4',
+                    dark: '#9E3F5C',
                     50: '#FFF0F4',
                     100: '#FDE4EB',
                     200: '#FCD2DF',
@@ -61,6 +70,7 @@ export default {
                 "sky-glow": "0 0 20px rgba(170, 214, 226, 0.3)",
             },
             transitionDuration: {
+                150: "150ms",
                 200: "200ms",
                 300: "300ms",
             },

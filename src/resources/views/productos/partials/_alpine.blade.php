@@ -81,7 +81,7 @@ document.addEventListener('alpine:init', () => {
                     'Producto existente',
                     `Ya existe un producto llamado '${data.nombre}'. ¿Deseas editarlo en lugar de crear uno nuevo?`,
                     'Sí, editar',
-                    'bg-brand-300 hover:bg-brand-400',
+                    'bg-brand-600 hover:bg-brand-700',
                 );
                 if (confirm) {
                     window.location.href = '/productos/' + data.id + '/edit';

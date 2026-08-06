@@ -2,11 +2,11 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">Categorías de Productos</h1>
+             <h1 class="page-title">Categorías de Productos</h1>
                 <p class="mt-1 text-sm text-gray-600">Gestiona todas tus categorías de productos</p>
             </div>
             <div class="mt-4 sm:mt-0">
-                <a href="{{ route('categorias.create') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-brand-300 hover:bg-brand-400 text-white font-semibold rounded-lg shadow-md transition-all duration-200">
+                <a href="{{ route('categorias.create') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
@@ -16,7 +16,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <!-- Alertas -->
@@ -44,7 +44,7 @@
                 <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group border border-sky-100 hover:border-sky-200">
                     <div class="h-24 bg-gradient-to-r from-brand-300 via-sky-300 to-sky-100 opacity-90 group-hover:opacity-100 transition-opacity"></div>
 
-                    <div class="p-6">
+                    <div class="p-4 sm:p-6">
                         <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $categoria->nombre }}</h3>
 
                         @if($categoria->descripcion)
@@ -57,7 +57,7 @@
 
                         <div class="flex gap-2 mt-6">
                             <a href="{{ route('categorias.show', $categoria) }}"
-                                class="flex-1 inline-flex justify-center items-center gap-2 bg-sky-50 text-sky-600 hover:bg-sky-100 font-semibold py-2 px-3 rounded-lg transition-colors duration-200">
+                                class="flex-1 inline-flex justify-center items-center gap-2 bg-sky-50 text-sky-600 hover:bg-sky-100 font-semibold py-3 px-3 rounded-lg transition-colors duration-200">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -65,7 +65,7 @@
                                 Ver
                             </a>
                             <a href="{{ route('categorias.edit', $categoria) }}"
-                                class="flex-1 inline-flex justify-center items-center gap-2 bg-brand-50 text-brand-600 hover:bg-brand-100 font-semibold py-2 px-3 rounded-lg transition-colors duration-200">
+                                class="flex-1 inline-flex justify-center items-center gap-2 bg-brand-50 text-brand-600 hover:bg-brand-100 font-semibold py-3 px-3 rounded-lg transition-colors duration-200">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
@@ -75,7 +75,7 @@
                                 onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta categoría?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="w-full inline-flex justify-center items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-2 px-3 rounded-lg transition-colors duration-200">
+                                <button type="submit" class="w-full inline-flex justify-center items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-3 px-3 rounded-lg transition-colors duration-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
@@ -93,14 +93,14 @@
             </div>
             @else
             <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
-                <div class="p-12 text-center">
+                <div class="p-8 sm:p-12 text-center">
                     <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.5a2 2 0 00-1 .267"></path>
                     </svg>
                     <p class="text-gray-500 text-lg font-medium">No hay categorías creadas aún</p>
                     <p class="text-gray-400 text-sm mt-2">Comienza creando tu primera categoría</p>
                     <a href="{{ route('categorias.create') }}"
-                        class="mt-6 inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200">
+                        class="mt-6 inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>

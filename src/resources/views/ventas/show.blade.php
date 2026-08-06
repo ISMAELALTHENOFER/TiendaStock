@@ -1,22 +1,22 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     Venta #{{ $venta->id }}
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">{{ $venta->created_at->format('d/m/Y H:i') }}</p>
             </div>
-            <div class="flex gap-2 no-print">
+            <div class="flex flex-col sm:flex-row gap-2 no-print">
                 <button onclick="window.print()"
-                    class="inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
+                    class="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                     </svg>
                     Imprimir
                 </button>
                 <a href="{{ route('ventas.index') }}"
-                    class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
+                    class="inline-flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -26,11 +26,11 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
 
             {{-- Recibo --}}
-            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-8" id="recibo">
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 sm:p-8" id="recibo">
                 {{-- Cabecera del recibo --}}
                 <div class="text-center border-b border-gray-200 pb-6 mb-6">
                     <h1 class="text-2xl font-bold text-gray-900">TiendaStock</h1>
@@ -58,10 +58,10 @@
                     <tbody>
                         @foreach($venta->items as $item)
                         <tr class="border-b border-gray-100">
-                            <td class="py-3 text-gray-900">{{ $item->producto->nombre }}</td>
-                            <td class="py-3 text-right text-gray-600">{{ formato_pesos($item->precio_unitario) }}</td>
-                            <td class="py-3 text-right text-gray-600">{{ $item->cantidad }}</td>
-                            <td class="py-3 text-right font-semibold text-gray-900">{{ formato_pesos($item->subtotal) }}</td>
+                            <td class="py-3 text-gray-900 text-sm sm:text-base">{{ $item->producto->nombre }}</td>
+                            <td class="py-3 text-right text-gray-600 text-xs sm:text-sm">{{ formato_pesos($item->precio_unitario) }}</td>
+                            <td class="py-3 text-right text-gray-600 text-xs sm:text-sm">{{ $item->cantidad }}</td>
+                            <td class="py-3 text-right font-semibold text-gray-900 text-sm sm:text-base">{{ formato_pesos($item->subtotal) }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -125,7 +125,7 @@
                     @csrf
                     <button type="button"
                         onclick="confirmDialogShow('Anular venta #{{ $venta->id }}', '¿Anular esta venta por {{ formato_pesos($venta->total) }}? Se restaurará el stock automáticamente.', 'Sí, anular', 'bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('cancel-form-show').submit())"
-                        class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all duration-200">
+                        class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>

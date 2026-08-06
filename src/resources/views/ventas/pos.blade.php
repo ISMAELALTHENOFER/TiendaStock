@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     Punto de Venta
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Registra nuevas ventas en el sistema</p>
             </div>
             <a href="{{ route('ventas.index') }}"
-                class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
+                class="inline-flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
@@ -17,7 +17,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if($errors->any())
@@ -36,10 +36,10 @@
             @endif
 
             <div x-data="posApp" class="space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
 
                     {{-- COLUMNA IZQUIERDA (3/5): Búsqueda y resultados --}}
-                    <div class="lg:col-span-3 space-y-4">
+                    <div class="order-2 lg:order-1 lg:col-span-3 space-y-4">
                         <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4">
                             <div class="relative">
                                 <input type="text"
@@ -64,7 +64,7 @@
                         </div>
 
                         {{-- Resultados --}}
-                        <div x-show="!searching && searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div x-show="!searching && searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                             <template x-for="product in searchResults" :key="product.id">
                                 <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 flex items-center justify-between hover:shadow-md transition-shadow duration-200">
                                     <div class="flex-1 min-w-0">
@@ -78,7 +78,7 @@
                                         </p>
                                     </div>
                                     <button @click="addToCart(product)"
-                                        class="ml-3 flex-shrink-0 bg-brand-300 hover:bg-brand-400 text-white px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-200">
+                                        class="ml-3 flex-shrink-0 bg-brand-600 hover:bg-brand-700 text-white px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-200">
                                         + Agregar
                                     </button>
                                 </div>
@@ -102,8 +102,8 @@
                     </div>
 
                     {{-- COLUMNA DERECHA (2/5): Carrito --}}
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 sticky top-4">
+                    <div class="order-1 lg:order-2 lg:col-span-2 space-y-4">
+                        <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
                             <h3 class="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
                                 <svg class="w-6 h-6 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"></path>
@@ -122,30 +122,31 @@
 
                             {{-- Items del carrito --}}
                             <template x-for="(item, index) in cart" :key="item.producto_id">
-                                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                                    <div class="flex-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-2 py-3 border-b border-gray-100 last:border-b-0">
+                                    <div class="basis-full min-w-0">
                                         <p class="font-medium text-gray-900 truncate" x-text="item.nombre"></p>
                                         <p class="text-sm text-gray-500">$<span x-text="formatCurrency(item.precio_venta)"></span> c/u</p>
                                     </div>
-                                    <div class="flex items-center gap-2 ml-3">
+                                    <div class="flex min-w-0 flex-wrap items-center gap-2">
                                         <button @click="decreaseQty(index)"
                                             :disabled="item.cantidad <= 1"
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-colors"
+                                            class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-colors"
                                             :class="item.cantidad <= 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'">−</button>
                                         <input type="number" x-model="item.cantidad"
                                             @input.debounce="updateCart"
                                             min="1" :max="item.stock_disponible"
-                                            class="w-14 text-center border-2 border-slate-200 rounded-lg py-1 text-sm font-semibold">
+                                            class="w-16 h-10 text-center border-2 border-slate-200 rounded-lg text-sm font-semibold">
                                         <button @click="increaseQty(index)"
                                             :disabled="item.cantidad >= item.stock_disponible"
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-colors"
+                                            class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-colors"
                                             :class="item.cantidad >= item.stock_disponible ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'">+</button>
                                     </div>
-                                    <div class="text-right ml-3 min-w-[80px]">
+                                    <div class="ml-auto min-w-[80px] text-right">
                                         <p class="font-bold text-gray-900">$<span x-text="formatCurrency(item.cantidad * item.precio_venta)"></span></p>
                                     </div>
                                     <button @click="removeFromCart(index)"
-                                        class="ml-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors p-2 rounded-lg"
+                                        aria-label="Quitar producto"
+                                        class="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors p-3 rounded-lg"
                                         title="Quitar producto">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -183,8 +184,8 @@
                                         Tipo de entrega
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <label class="flex items-center gap-2 border-2 rounded-lg px-3 py-2.5 cursor-pointer transition-all"
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <label class="flex items-center gap-2 border-2 rounded-lg px-4 py-3 cursor-pointer transition-all"
                                             :class="tipoEntrega === 'local'
                                                 ? 'border-brand-300 bg-brand-50 text-gray-900'
                                                 : 'border-slate-200 hover:border-brand-200 text-gray-700'">
@@ -194,7 +195,7 @@
                                                 class="w-4 h-4 rounded text-brand-300 focus:ring-brand-300">
                                             <span class="text-sm font-medium">En el local</span>
                                         </label>
-                                        <label class="flex items-center gap-2 border-2 rounded-lg px-3 py-2.5 cursor-pointer transition-all"
+                                        <label class="flex items-center gap-2 border-2 rounded-lg px-4 py-3 cursor-pointer transition-all"
                                             :class="tipoEntrega === 'uber'
                                                 ? 'border-brand-300 bg-brand-50 text-gray-900'
                                                 : 'border-slate-200 hover:border-brand-200 text-gray-700'">
@@ -238,7 +239,7 @@
                             <div class="mt-6 space-y-2">
                                 <button @click="submitSale"
                                     :disabled="!canSubmit"
-                                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold text-lg transition-all duration-200"
+                                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-400 text-white py-3 rounded-lg font-bold text-lg transition-all duration-200"
                                     x-text="submitting ? 'Procesando...' : 'Cobrar'">
                                 </button>
                                 <button @click="clearCart"

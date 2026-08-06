@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     Historial de Ventas
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Consulta y gestiona todas las ventas realizadas</p>
             </div>
             <a href="{{ route('ventas.pos') }}"
-                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
+                class="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -17,7 +17,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             {{-- Filtros --}}
@@ -33,25 +33,25 @@
                 }
             }"
             @submit.prevent="validar() && $el.submit()">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 items-end">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
                         <input type="text" id="filtro-desde" name="desde" value="{{ request('desde') }}"
                             x-model="desde"
-                            class="w-full px-4 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
+                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
                             placeholder="Seleccionar fecha">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
                         <input type="text" id="filtro-hasta" name="hasta" value="{{ request('hasta') }}"
                             x-model="hasta"
-                            class="w-full px-4 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
+                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
                             placeholder="Seleccionar fecha">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
                         <select name="estado"
-                            class="w-full px-4 py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700">
+                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700">
                             <option value="">Todos los estados</option>
                             <option value="completada" {{ request('estado') == 'completada' ? 'selected' : '' }}>Completadas</option>
                             <option value="anulada" {{ request('estado') == 'anulada' ? 'selected' : '' }}>Anuladas</option>
@@ -59,21 +59,21 @@
                     </div>
                     <div>
                         <button type="submit"
-                            class="w-full bg-brand-300 hover:bg-brand-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200">
+                            class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 md:py-2 px-4 rounded-lg transition-all duration-200">
                             Filtrar
                         </button>
                     </div>
                     <div>
                         <a href="{{ route('ventas.index') }}"
-                            class="w-full inline-block text-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-all duration-200">
+                            class="w-full inline-block text-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 md:py-2 px-4 rounded-lg transition-all duration-200">
                             Limpiar
                         </a>
                     </div>
                 </div>
             </form>
 
-            {{-- Tabla de ventas --}}
-            <div class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
+            {{-- Desktop: tabla --}}
+            <div class="hidden md:block bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-sky-50 border-b border-sky-100">
@@ -159,13 +159,67 @@
                         </tbody>
                     </table>
                 </div>
-
-                @if($ventas->hasPages())
-                <div class="p-6 bg-gray-50 border-t border-gray-200">
-                    {{ $ventas->appends(request()->query())->links() }}
-                </div>
-                @endif
             </div>
+
+            {{-- Mobile: cards --}}
+            <div class="md:hidden space-y-3">
+                @forelse($ventas as $venta)
+                <div class="bg-white rounded-xl border border-sky-100 p-4 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-gray-500">Venta #{{ $venta->id }}</span>
+                            <p class="font-semibold text-gray-900">{{ $venta->created_at->format('d/m/Y H:i') }}</p>
+                        </div>
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $venta->isCompletada() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                            {{ $venta->isCompletada() ? 'Completada' : 'Anulada' }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm">
+                            <span class="text-gray-500">{{ $venta->items->count() }} items</span>
+                            <span class="mx-2 text-gray-300">|</span>
+                            @if($venta->isLocal())
+                                <span class="text-sky-700 font-medium">En el local</span>
+                            @elseif($venta->isUber())
+                                <span class="text-amber-700 font-medium">Uber</span>
+                            @endif
+                        </div>
+                        <p class="text-lg font-bold text-gray-900">{{ formato_pesos($venta->total) }}</p>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">{{ $venta->user->name }}</span>
+                        <div class="flex gap-3">
+                            <a href="{{ route('ventas.show', $venta) }}" class="text-brand-300 hover:text-brand-400 font-semibold py-2 px-3">Ver</a>
+                            @if($venta->isCompletada())
+                            <form action="{{ route('ventas.cancel', $venta) }}" method="POST" id="card-cancel-{{ $venta->id }}" style="display:inline">
+                                @csrf
+                                <button type="button" onclick="confirmDialogShow('Anular venta','¿Anular venta #{{ $venta->id }} por {{ formato_pesos($venta->total) }}? Se restaurará el stock.','Sí, anular').then(r => r && document.getElementById('card-cancel-{{ $venta->id }}').submit())" class="text-red-600 hover:text-red-800 font-semibold py-2 px-3">Anular</button>
+                            </form>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="bg-white rounded-xl border border-sky-100 p-8 text-center text-gray-500">
+                    <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <p class="text-lg font-medium">No hay ventas registradas.</p>
+                    <p class="text-sm text-gray-400 mt-1">Las ventas realizadas aparecerán aquí.</p>
+                    <a href="{{ route('ventas.pos') }}"
+                        class="mt-6 inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all duration-200">
+                        Realizar primera venta
+                    </a>
+                </div>
+                @endforelse
+            </div>
+
+            {{-- Paginación compartida --}}
+            @if($ventas->hasPages())
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+                {{ $ventas->appends(request()->query())->links() }}
+            </div>
+            @endif
 
         </div>
     </div>
