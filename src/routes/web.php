@@ -10,7 +10,7 @@ use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('auth.login');
+    return view('landing');
 });
 
 Route::get('/dashboard', function () {
