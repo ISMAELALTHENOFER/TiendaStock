@@ -1,37 +1,37 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>
-                <h2 class="font-bold text-3xl text-gray-900 leading-tight">
+                <h2 class="page-title">
                     {{ $categoria->nombre }}
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Detalles de la categoría</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-col sm:flex-row gap-2 sm:ml-auto">
                 <a href="{{ route('categorias.edit', $categoria) }}"
-                    class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-4 rounded-lg transition-colors duration-200">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
                     Editar
                 </a>
                 <a href="{{ route('categorias.index') }}"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                    class="w-full sm:w-auto inline-flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg transition-colors duration-200">
                     Volver
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <!-- Información de la Categoría -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-8">
-                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-8">
+                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-4 py-6 sm:px-6 sm:py-8">
                     <h3 class="text-white font-bold text-lg">Información de la Categoría</h3>
                 </div>
 
-                <dl class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 sm:p-8">
                     <div class="border-b md:border-b-0 pb-4 md:pb-0">
                         <dt class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-2">Nombre</dt>
                         <dd class="text-2xl font-bold text-gray-900">{{ $categoria->nombre }}</dd>
@@ -51,13 +51,14 @@
 
             <!-- Productos de la Categoría -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-brand-300 to-brand-400 px-6 py-8">
+                <div class="bg-gradient-to-r from-brand-300 to-brand-400 px-4 py-6 sm:px-6 sm:py-8">
                     <h3 class="text-white font-bold text-lg">Productos en esta Categoría</h3>
                     <p class="text-white/80 text-sm mt-1">{{ $categoria->productos()->count() }} producto(s)</p>
                 </div>
 
                 @if($categoria->productos()->count() > 0)
-                <div class="overflow-x-auto">
+                <!-- Desktop: tabla -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
@@ -90,6 +91,37 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile: cards -->
+                <div class="md:hidden space-y-3 p-4">
+                    @foreach($categoria->productos as $producto)
+                    <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-gray-900">{{ $producto->nombre }}</h4>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $producto->cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
+                                {{ $producto->cantidad }} u.
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-500 text-xs">P. Compra</span>
+                                <p class="font-medium">${{ number_format($producto->precio_compra, 2) }}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 text-xs">P. Venta</span>
+                                <p class="font-medium">${{ number_format($producto->precio_venta, 2) }}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 text-xs">Ganancia</span>
+                                <p class="font-bold text-green-600">${{ number_format($producto->ganancia, 2) }}</p>
+                            </div>
+                            <div class="flex items-end justify-end">
+                                <a href="{{ route('productos.show', $producto) }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium py-2 px-3">Ver →</a>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
                 @else
                 <div class="p-8 text-center">

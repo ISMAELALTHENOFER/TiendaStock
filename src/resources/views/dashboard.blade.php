@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-                <h1 class="text-4xl font-bold bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">Dashboard</h1>
+                <h1 class="page-title">Dashboard</h1>
                 <p class="mt-1 text-sm text-gray-600">Visualiza el estado general de tu inventario</p>
             </div>
         </div>
@@ -12,7 +12,7 @@
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Productos -->
-            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-6 hover:shadow-md hover:border-sky-200 transition-all duration-300">
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 sm:p-6 hover:shadow-md hover:border-sky-200 transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Total Productos</p>
@@ -27,7 +27,7 @@
             </div>
 
             <!-- Categorías -->
-            <div class="bg-white rounded-xl shadow-sm border border-blush-100 p-6 hover:shadow-md hover:border-blush-200 transition-all duration-300">
+            <div class="bg-white rounded-xl shadow-sm border border-blush-100 p-4 sm:p-6 hover:shadow-md hover:border-blush-200 transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Categorías</p>
@@ -42,7 +42,7 @@
             </div>
 
             <!-- Productos Activos -->
-            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-6 hover:shadow-md hover:border-sky-200 transition-all duration-300">
+            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 sm:p-6 hover:shadow-md hover:border-sky-200 transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Productos Activos</p>
@@ -57,7 +57,7 @@
             </div>
 
             <!-- Valor Total -->
-            <div class="bg-gradient-to-br from-brand-300 to-sky-300 rounded-xl shadow-md p-6 text-white hover:shadow-lg transition-all duration-300">
+            <div class="bg-gradient-to-br from-brand-300 to-sky-300 rounded-xl shadow-md p-4 sm:p-6 text-white hover:shadow-lg transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-white/80 mb-1">Valor Total</p>
@@ -74,7 +74,7 @@
 
         <!-- Null-role fallback -->
         @if(!Auth::user()->role)
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
             <div class="mb-4">
                 <h3 class="text-xl font-bold text-gray-900 flex items-center">
                     <div class="w-1 h-6 bg-brand-300 rounded mr-3"></div>
@@ -91,7 +91,7 @@
 
         <!-- Role-Specific Quick Actions -->
         @if(Auth::user()->role)
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
             <div class="mb-6">
                 <h3 class="text-xl font-bold text-gray-900 flex items-center">
                     <div class="w-1 h-6 bg-brand-300 rounded mr-3"></div>
@@ -154,7 +154,7 @@
         @endif
 
         <!-- Recent Activity -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
             <div class="mb-6">
                 <h3 class="text-xl font-bold text-gray-900 flex items-center">
                     <div class="w-1 h-6 bg-brand-300 rounded mr-3"></div>
@@ -162,7 +162,7 @@
                 </h3>
             </div>
             <div class="space-y-4">
-                <div class="flex items-center space-x-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-brand-300">
+                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-brand-300">
                     <div class="flex-shrink-0">
                         <div class="h-10 w-10 bg-brand-300 rounded-full flex items-center justify-center">
                             <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +175,7 @@
                         <p class="text-sm text-gray-500">Producto "Ejemplo" fue creado hace 2 horas</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-sky-400">
+                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-sky-400">
                     <div class="flex-shrink-0">
                         <div class="h-10 w-10 bg-sky-500 rounded-full flex items-center justify-center">
                             <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

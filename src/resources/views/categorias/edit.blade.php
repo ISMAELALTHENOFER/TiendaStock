@@ -1,20 +1,20 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>
-                <h2 class="font-bold text-3xl text-gray-900 leading-tight">
+                <h2 class="page-title">
                     Editar Categoría
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">{{ $categoria->nombre }}</p>
             </div>
             <a href="{{ route('categorias.index') }}"
-                class="text-gray-600 hover:text-gray-900 font-medium link">
+                class="text-gray-600 hover:text-gray-900 font-medium link sm:ml-auto">
                 ← Volver
             </a>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                 <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
@@ -55,13 +55,13 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-4 mt-8">
+                    <div class="flex flex-col sm:flex-row gap-4 mt-8">
                         <a href="{{ route('categorias.index') }}"
-                            class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                            class="w-full sm:w-auto text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
                             Cancelar
                         </a>
                         <button type="submit"
-                            class="flex-1 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
+                            class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
                             Actualizar Categoría
                         </button>
                     </div>

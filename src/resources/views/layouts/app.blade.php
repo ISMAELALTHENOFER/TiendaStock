@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'TiendaStock') }}</title>
@@ -26,51 +26,51 @@
             font-family: 'Figtree', sans-serif;
         }
         .flatpickr-monthSelect-month.selected {
-            background: #a855f7;
+            background: #d8a62a;
         }
         .flatpickr-day.selected,
         .flatpickr-day.startRange,
         .flatpickr-day.endRange,
         .flatpickr-day.selected.inRange {
-            background: #a855f7;
-            border-color: #a855f7;
+            background: #d8a62a;
+            border-color: #d8a62a;
         }
         .flatpickr-day.selected:hover,
         .flatpickr-day.startRange:hover,
         .flatpickr-day.endRange:hover {
-            background: #9333ea;
-            border-color: #9333ea;
+            background: #b98213;
+            border-color: #b98213;
         }
         .flatpickr-day.inRange {
-            background: #f3e8ff;
-            border-color: #f3e8ff;
-            box-shadow: -5px 0 0 #f3e8ff, 5px 0 0 #f3e8ff;
+            background: #fff4d6;
+            border-color: #fff4d6;
+            box-shadow: -5px 0 0 #fff4d6, 5px 0 0 #fff4d6;
         }
         .flatpickr-day.prevMonthDay:hover,
         .flatpickr-day.nextMonthDay:hover,
         .flatpickr-day:hover {
-            background: #f5f3ff;
-            border-color: #f5f3ff;
+            background: #f7f4ee;
+            border-color: #f7f4ee;
         }
         .flatpickr-months .flatpickr-month {
             border-radius: 12px;
         }
         .flatpickr-current-month .numInputWrapper span.arrowUp:after {
-            border-bottom-color: #a855f7;
+            border-bottom-color: #d8a62a;
         }
         .flatpickr-current-month .numInputWrapper span.arrowDown:after {
-            border-top-color: #a855f7;
+            border-top-color: #d8a62a;
         }
         .flatpickr-weekday {
             color: #64748b;
             font-weight: 600;
         }
         .flatpickr-day.today {
-            border-color: #a855f7;
+            border-color: #d8a62a;
         }
         .flatpickr-day.today:hover {
-            background: #a855f7;
-            border-color: #a855f7;
+            background: #d8a62a;
+            border-color: #d8a62a;
             color: #fff;
         }
         .flatpickr-monthDropdown-months {
@@ -80,22 +80,28 @@
             cursor: pointer !important;
         }
     </style>
+    <style>
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
 </head>
 
-<body class="font-sans antialiased bg-slate-50">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen flex bg-gradient-to-br from-slate-50 to-sky-50">
+    <body class="font-sans antialiased bg-stone-50">
+    <div x-data="{ sidebarOpen: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-stone-50 md:h-dvh md:overflow-hidden">
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="min-w-0 flex-1 flex flex-col">
             <!-- Top Navigation -->
             @include('layouts.topbar')
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50/50 p-6">
+            <main class="min-w-0 flex-1 overflow-visible bg-stone-50/60 p-4 sm:p-6 lg:p-8 md:overflow-y-auto" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
                 @isset($header)
-                <div class="mb-8">
+                <div class="mb-8 min-w-0">
                     {{ $header }}
                 </div>
                 @endisset

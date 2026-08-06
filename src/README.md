@@ -71,6 +71,14 @@ php artisan storage:link       # creates public/storage -> storage/app/public sy
 npm install && npm run build
 ```
 
+### Mobile LAN development
+
+Vite listens on the LAN by default. Set `VITE_DEV_HOST`, `VITE_DEV_PORT`,
+`VITE_DEV_ORIGIN`, and/or `VITE_HMR_HOST` in the local `.env` when a phone
+needs a reachable development origin; never commit a private IP address.
+For testing compiled assets with `npm run build`, stop Vite and remove
+`public/hot` if it exists so Laravel does not keep using a stale dev-server URL.
+
 ### Post-deploy checklist
 
 | Step | Command | Why |

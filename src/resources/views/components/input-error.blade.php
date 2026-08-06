@@ -1,5 +1,5 @@
 @if ($messages)
-<ul {{ $attributes->merge(['class' => 'text-sm text-red-600 space-y-1 mt-2 ml-1']) }}>
+<ul role="alert" {{ $attributes->merge(['class' => 'text-sm text-red-700 space-y-1 mt-2 ml-1']) }}>
     @foreach ((array) $messages as $message)
     <li class="flex items-center gap-2">
         <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

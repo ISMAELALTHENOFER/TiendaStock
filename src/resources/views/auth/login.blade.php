@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent mb-3">
+        <h1 class="page-title mb-3">
             TiendaStock
         </h1>
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
@@ -59,7 +59,7 @@
         </div>
 
         <!-- Remember Me -->
-        <div class="flex items-center justify-between pt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
             <label for="remember_me" class="flex items-center cursor-pointer">
                 <input
                     id="remember_me"

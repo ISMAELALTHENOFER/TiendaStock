@@ -1,30 +1,30 @@
 @use('Illuminate\Support\Facades\Storage')
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     {{ $producto->nombre }}
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Detalles del producto</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-col sm:flex-row gap-2 sm:ml-auto">
                 <a href="{{ route('productos.edit', $producto) }}"
-                    class="inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md">
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 sm:py-2 px-4 rounded-lg transition-all duration-200 shadow-md">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
                     Editar
                 </a>
                 <a href="{{ route('productos.index') }}"
-                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                    class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 sm:py-2 px-4 rounded-lg transition-colors duration-200 text-center">
                     Volver
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
             <!-- Información Principal -->

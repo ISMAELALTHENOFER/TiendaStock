@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-                <h2 class="font-bold text-3xl bg-gradient-to-r from-brand-300 to-sky-300 bg-clip-text text-transparent">
+                <h2 class="page-title">
                     Inventario de Productos
                 </h2>
                 <p class="text-gray-600 text-sm mt-1">Gestiona todos tus productos en un solo lugar</p>
             </div>
             <a href="{{ route('productos.create') }}"
-                class="inline-flex items-center gap-2 bg-brand-300 hover:bg-brand-400 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200">
+                class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-200 w-full sm:w-auto justify-center sm:justify-start">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -20,7 +20,7 @@
     {{-- Evita parpadeo de bloques x-show/x-cloak antes de que Alpine hidrate --}}
     <style>[x-cloak]{display:none!important}</style>
 
-    <div class="py-12">
+    <div class="py-4 sm:py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if(session('success'))
@@ -74,7 +74,6 @@
                             aria-label="Buscar por nombre, categoría, talle o color"
                             placeholder="Buscar por nombre, categoría, talle o color..."
                             autocomplete="off"
-                            autofocus
                             class="w-full px-5 py-3 pl-12 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700"
                         >
                         <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +82,7 @@
                     </div>
 
                     {{-- Filtros secundarios: categoría, talle y color --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                         <div>
                             <label for="filtro-categoria" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Categoría</label>
                             <select
@@ -147,7 +146,8 @@
 
                 {{-- Tabla de resultados: solo las filas se re-renderizan vía x-for --}}
                 <div x-show="totalFiltrados > 0" class="bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
-                    <div class="overflow-x-auto">
+                    <div class="hidden md:block">
+                        <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-sky-50 border-b border-sky-100">
                                 <tr>
@@ -279,6 +279,82 @@
                                 </template>
                             </tbody>
                         </table>
+                        </div>
+                    </div>
+
+                    {{-- Mobile: cards view --}}
+                    <div class="md:hidden space-y-3 p-4">
+                        <template x-for="producto in productosPagina" :key="producto.id">
+                            <div class="bg-white rounded-xl border border-sky-100 p-4 space-y-3 shadow-sm">
+                                <div class="flex items-start gap-3">
+                                    <template x-if="producto.imagen">
+                                        <img :src="'/storage/' + producto.imagen" :alt="producto.nombre" class="h-14 w-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">
+                                    </template>
+                                    <template x-if="!producto.imagen">
+                                        <span class="inline-flex h-14 w-14 rounded-lg bg-slate-100 items-center justify-center text-slate-300 flex-shrink-0">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </span>
+                                    </template>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate" x-text="producto.nombre"></p>
+                                        <span class="inline-block bg-brand-100 text-brand-700 rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1" x-text="producto.categoria?.nombre ?? '—'"></span>
+                                        <span x-show="producto.activo === false" class="ml-1 inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600">Inactivo</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                        <span class="text-gray-500 text-xs">Talle</span>
+                                        <p class="font-medium text-gray-900" x-text="producto.talle ?? '—'"></p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 text-xs">Color</span>
+                                        <p class="font-medium text-gray-900" x-text="producto.color ?? '—'"></p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 text-xs">P. Compra</span>
+                                        <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_compra)"></p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 text-xs">P. Venta</span>
+                                        <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_venta)"></p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 text-xs">Ganancia</span>
+                                        <p class="font-bold text-green-600" x-text="formatCurrency(calcularGanancia(producto))"></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-gray-500 text-xs">Stock</span>
+                                        <p>
+                                            <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold"
+                                                :class="producto.cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                x-text="producto.cantidad"></span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2 pt-2 border-t border-gray-100">
+                                    <a :href="`/productos/${producto.id}`" class="flex-1 text-center text-brand-300 hover:text-brand-400 hover:bg-brand-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Ver</a>
+                                    <a :href="`/productos/${producto.id}/edit`" class="flex-1 text-center text-sky-500 hover:text-sky-600 hover:bg-sky-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Editar</a>
+                                    <template x-if="producto.activo">
+                                        <form :id="`card-disable-form-${producto.id}`" :action="`/productos/${producto.id}`" method="POST" style="display:contents">
+                                            <input type="hidden" name="_token" :value="csrfToken">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <button type="button" @click="confirmDialogShow('Desactivar producto','El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.','Sí, desactivar','bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('card-disable-form-' + producto.id).submit())" class="flex-1 text-center text-red-600 hover:text-red-800 hover:bg-red-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Desactivar</button>
+                                        </form>
+                                    </template>
+                                    <template x-if="!producto.activo">
+                                        <form :id="`card-activate-form-${producto.id}`" :action="`/productos/${producto.id}/activate`" method="POST" style="display:contents">
+                                            <input type="hidden" name="_token" :value="csrfToken">
+                                            <input type="hidden" name="_method" value="PATCH">
+                                            <button type="button" @click="confirmDialogShow('Activar producto','¿Activar el producto para que vuelva a estar disponible?','Sí, activar','bg-green-600 hover:bg-green-700').then(r => r && document.getElementById('card-activate-form-' + producto.id).submit())" class="flex-1 text-center text-green-600 hover:text-green-800 hover:bg-green-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Activar</button>
+                                        </form>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </div>
 
                     {{-- Paginación client-side de a 50 filas sobre el resultado filtrado.
@@ -287,7 +363,7 @@
                         <button type="button"
                             @click="paginaAnterior()"
                             :disabled="paginaActual === 1"
-                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition-all"
+                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-5 py-3 text-sm font-semibold text-gray-700 transition-all"
                             :class="paginaActual === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 hover:border-brand-300'">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -302,7 +378,7 @@
                         <button type="button"
                             @click="paginaSiguiente()"
                             :disabled="paginaActual === totalPaginas"
-                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition-all"
+                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-5 py-3 text-sm font-semibold text-gray-700 transition-all"
                             :class="paginaActual === totalPaginas ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 hover:border-brand-300'">
                             Siguiente
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
