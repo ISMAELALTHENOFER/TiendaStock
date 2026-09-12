@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
+use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller
 {
@@ -26,10 +28,16 @@ class CategoriaController extends Controller
             'descripcion' => 'nullable|string|max:500',
         ]);
 
-        Categoria::create($request->all());
+        return DB::transaction(function () use ($request) {
+            $categoria = Categoria::create($request->all());
 
-        return redirect()->route('categorias.index')
-            ->with('success', 'Categoría creada correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'category.created', 'Category created', "Category {$categoria->nombre} was created.", $categoria
+            );
+
+            return redirect()->route('categorias.index')
+                ->with('success', 'Categoría creada correctamente.');
+        });
     }
 
     public function show(Categoria $categoria)
@@ -51,10 +59,16 @@ class CategoriaController extends Controller
             'descripcion' => 'nullable|string|max:500',
         ]);
 
-        $categoria->update($request->all());
+        return DB::transaction(function () use ($request, $categoria) {
+            $categoria->update($request->all());
 
-        return redirect()->route('categorias.index')
-            ->with('success', 'Categoría actualizada correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'category.updated', 'Category updated', "Category {$categoria->nombre} was updated.", $categoria
+            );
+
+            return redirect()->route('categorias.index')
+                ->with('success', 'Categoría actualizada correctamente.');
+        });
     }
 
     /**
@@ -74,12 +88,18 @@ class CategoriaController extends Controller
             'nombre.max' => 'El nombre no puede superar los 255 caracteres.',
         ]);
 
-        $categoria = Categoria::create($validated);
+        return DB::transaction(function () use ($validated, $request) {
+            $categoria = Categoria::create($validated);
 
-        return response()->json([
-            'id' => $categoria->id,
-            'nombre' => $categoria->nombre,
-        ], 201);
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'category.created', 'Category created', "Category {$categoria->nombre} was created.", $categoria
+            );
+
+            return response()->json([
+                'id' => $categoria->id,
+                'nombre' => $categoria->nombre,
+            ], 201);
+        });
     }
 
     public function destroy(Categoria $categoria)
@@ -89,9 +109,15 @@ class CategoriaController extends Controller
                 ->with('error', 'No se puede eliminar una categoría que tiene productos.');
         }
 
-        $categoria->delete();
+        return DB::transaction(function () use ($categoria) {
+            $categoria->delete();
 
-        return redirect()->route('categorias.index')
-            ->with('success', 'Categoría eliminada correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                request()->user(), 'category.deleted', 'Category deleted', "Category {$categoria->nombre} was deleted.", $categoria
+            );
+
+            return redirect()->route('categorias.index')
+                ->with('success', 'Categoría eliminada correctamente.');
+        });
     }
 }

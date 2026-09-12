@@ -16,6 +16,6 @@ if (! function_exists('formato_pesos')) {
         // Add dots as thousands separators (Argentine format)
         $formattedInt = preg_replace('/(\d)(?=(\d{3})+(?!\d))/', '$1.', $integer);
 
-        return '$' . $formattedInt . ',' . $decimals;
+        return '$'.$formattedInt.','.$decimals;
     }
 }

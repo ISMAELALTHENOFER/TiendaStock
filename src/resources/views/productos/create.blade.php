@@ -1,5 +1,5 @@
 @use('Illuminate\Support\Facades\Storage')
-<x-app-layout>
+<x-app-layout :categorias="$categorias">
     <x-slot name="header">
         <div>
             <h2 class="page-title">

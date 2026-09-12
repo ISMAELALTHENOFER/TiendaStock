@@ -1,5 +1,5 @@
 @use('Illuminate\Support\Facades\Storage')
-<x-app-layout>
+<x-app-layout :producto="$producto" :categorias="$categorias">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>

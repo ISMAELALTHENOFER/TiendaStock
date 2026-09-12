@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\DashboardActivityController;
+use App\Http\Controllers\DashboardAnalyticsController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VentaController;
@@ -29,6 +31,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
     Route::get('/productos/data', [ProductoController::class, 'data'])->name('productos.data');
+
+    Route::middleware('verified')->group(function () {
+        Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');
+        Route::get('/dashboard/analytics', DashboardAnalyticsController::class)->name('dashboard.analytics');
+    });
 
     Route::middleware('role:ADMIN,Control Stock')->group(function () {
         Route::resource('/categorias', CategoriaController::class);

@@ -1,6 +1,6 @@
 <div id="confirm-dialog-overlay" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" style="display:none;">
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="confirmDialogHide()"></div>
-    <div id="confirm-dialog-box" class="relative bg-[#fffdf9] rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto p-5 sm:p-6 z-10 opacity-0 scale-95 translate-y-4 transition-all duration-200">
+    <div id="confirm-dialog-box" class="relative bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto p-5 sm:p-6 z-10 opacity-0 scale-95 translate-y-4 transition-all duration-200">
         <div id="confirm-dialog-icon" class="mx-auto flex items-center justify-center h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-red-50 mb-3 sm:mb-4">
             <svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>

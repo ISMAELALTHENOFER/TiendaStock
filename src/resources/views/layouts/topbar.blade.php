@@ -1,4 +1,4 @@
-<div class="bg-[#fffdf9] border-b border-stone-200" style="padding-top: env(safe-area-inset-top);">
+<div class="bg-surface border-b border-border" style="padding-top: env(safe-area-inset-top);">
     <div class="px-4 sm:px-6 lg:px-8" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));">
         <div class="flex items-center justify-between min-h-[4rem] py-2">
             <div class="flex">

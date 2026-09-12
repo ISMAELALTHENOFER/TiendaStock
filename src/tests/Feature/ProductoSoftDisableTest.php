@@ -6,6 +6,7 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProductoSoftDisableTest extends TestCase
@@ -83,7 +84,7 @@ class ProductoSoftDisableTest extends TestCase
         ]);
         // Forzar stock 0 bypassando el saving event (simula bypass por
         // decrement u otro camino que no dispare el evento).
-        \Illuminate\Support\Facades\DB::table('productos')
+        DB::table('productos')
             ->where('id', $zeroStock->id)
             ->update(['cantidad' => 0]);
 
@@ -115,7 +116,7 @@ class ProductoSoftDisableTest extends TestCase
             'cantidad' => 10,
             'activo' => true,
         ]);
-        \Illuminate\Support\Facades\DB::table('productos')
+        DB::table('productos')
             ->where('id', $zeroStock->id)
             ->update(['cantidad' => 0]);
 
@@ -189,10 +190,11 @@ class ProductoSoftDisableTest extends TestCase
 
     public function test_index_view_renders_desactivar_label(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('productos.index'));
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        $response->assertOk();
         // The destroy action must be labeled "Desactivar", not "Eliminar".
-        $response->assertSee('Desactivar');
+        $this->assertStringContainsString('Desactivar', $source);
+        $this->assertStringNotContainsString('Eliminar', $source);
+        $this->assertStringContainsString('Sí, desactivar', $source);
     }
 }

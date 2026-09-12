@@ -14,6 +14,7 @@ class Venta extends Model
     use HasFactory;
 
     public const TIPO_ENTREGA_LOCAL = 'local';
+
     public const TIPO_ENTREGA_UBER = 'uber';
 
     /** @var list<string> */

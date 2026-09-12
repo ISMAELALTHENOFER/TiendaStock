@@ -10,76 +10,13 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <style>
-        .flatpickr-calendar {
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-            border: 2px solid #e2e8f0;
-            padding: 12px;
-            font-family: 'Figtree', sans-serif;
-        }
-        .flatpickr-monthSelect-month.selected {
-            background: #d8a62a;
-        }
-        .flatpickr-day.selected,
-        .flatpickr-day.startRange,
-        .flatpickr-day.endRange,
-        .flatpickr-day.selected.inRange {
-            background: #d8a62a;
-            border-color: #d8a62a;
-        }
-        .flatpickr-day.selected:hover,
-        .flatpickr-day.startRange:hover,
-        .flatpickr-day.endRange:hover {
-            background: #b98213;
-            border-color: #b98213;
-        }
-        .flatpickr-day.inRange {
-            background: #fff4d6;
-            border-color: #fff4d6;
-            box-shadow: -5px 0 0 #fff4d6, 5px 0 0 #fff4d6;
-        }
-        .flatpickr-day.prevMonthDay:hover,
-        .flatpickr-day.nextMonthDay:hover,
-        .flatpickr-day:hover {
-            background: #f7f4ee;
-            border-color: #f7f4ee;
-        }
-        .flatpickr-months .flatpickr-month {
-            border-radius: 12px;
-        }
-        .flatpickr-current-month .numInputWrapper span.arrowUp:after {
-            border-bottom-color: #d8a62a;
-        }
-        .flatpickr-current-month .numInputWrapper span.arrowDown:after {
-            border-top-color: #d8a62a;
-        }
-        .flatpickr-weekday {
-            color: #64748b;
-            font-weight: 600;
-        }
-        .flatpickr-day.today {
-            border-color: #d8a62a;
-        }
-        .flatpickr-day.today:hover {
-            background: #d8a62a;
-            border-color: #d8a62a;
-            color: #fff;
-        }
-        .flatpickr-monthDropdown-months {
-            font-family: 'Figtree', sans-serif;
-        }
-        input.flatpickr-input {
-            cursor: pointer !important;
-        }
-    </style>
     <style>
         body {
             padding-top: env(safe-area-inset-top);
@@ -88,8 +25,54 @@
     </style>
 </head>
 
-    <body class="font-sans antialiased bg-stone-50">
-    <div x-data="{ sidebarOpen: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-stone-50 md:h-dvh md:overflow-hidden">
+    <body class="font-sans antialiased bg-canvas">
+    @php
+        $routeName = request()->route()?->getName();
+        $routeDriver = config("frontend.routes.{$routeName}");
+        $useReact = config('frontend.driver', 'blade') === 'react'
+            && ($routeDriver ?? 'react') === 'react';
+    @endphp
+
+    @if ($useReact && in_array($routeName, ['dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
+        @include('react.app', ['props' => [
+            'page' => $routeName,
+            'user' => [
+                'name' => Auth::user()->name,
+                'username' => Auth::user()->username,
+                'role' => Auth::user()->role,
+            ],
+            'metrics' => [
+                'productosCount' => $productosCount ?? 0,
+                'categoriasCount' => $categoriasCount ?? 0,
+                'productosActivos' => $productosActivos ?? 0,
+                'valorTotal' => $valorTotal ?? 0,
+            ],
+            'flash' => collect(['success', 'error', 'warning', 'info'])
+                ->mapWithKeys(fn ($key) => [$key => session($key)])
+                ->filter()
+                ->all(),
+            'routes' => [
+                'dashboard' => route('dashboard'),
+                'ventas' => route('ventas.index'),
+                'ventasPos' => route('ventas.pos'),
+                'productos' => route('productos.index'),
+                'productosCreate' => route('productos.create'),
+                'categorias' => route('categorias.index'),
+                'categoriasCreate' => route('categorias.create'),
+                'users' => route('admin.users.index'),
+                'usersCreate' => route('admin.users.create'),
+            ],
+            'sales' => $ventas?->toArray(),
+            'sale' => $venta?->toArray(),
+            'categorias' => $categorias?->toArray(),
+            'producto' => $producto?->toArray(),
+            'users' => $users?->toArray(),
+            'usuario' => $usuario?->toArray(),
+            'query' => request()->only(['desde', 'hasta', 'estado']),
+            'errors' => $errors->getBag('default')->toArray(),
+        ]])
+    @else
+    <div x-data="{ sidebarOpen: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-canvas md:h-dvh md:overflow-hidden">
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
@@ -99,7 +82,7 @@
             @include('layouts.topbar')
 
             <!-- Page Content -->
-            <main class="min-w-0 flex-1 overflow-visible bg-stone-50/60 p-4 sm:p-6 lg:p-8 md:overflow-y-auto" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+            <main class="min-w-0 flex-1 overflow-visible bg-canvas/60 p-4 sm:p-6 lg:p-8 md:overflow-y-auto" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
                 @isset($header)
                 <div class="mb-8 min-w-0">
                     {{ $header }}
@@ -110,11 +93,14 @@
             </main>
         </div>
     </div>
+    @endif
 
     @stack('scripts')
 
-    <x-confirm-dialog />
-    <x-flash-toast />
+    @if (! $useReact)
+        <x-confirm-dialog />
+        <x-flash-toast />
+    @endif
 
     <!-- Flatpickr -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>

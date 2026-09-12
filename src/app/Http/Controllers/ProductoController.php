@@ -6,7 +6,9 @@ use App\Http\Requests\Producto\StoreProductoRequest;
 use App\Http\Requests\Producto\UpdateProductoRequest;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
@@ -68,16 +70,22 @@ class ProductoController extends Controller
     {
         $data = $request->validated();
 
-        if ($request->hasFile('imagen')) {
-            // Stores under productos/ on the public disk; returns a generated
-            // relative path (never the client filename — path-traversal safe).
-            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
-        }
+        return DB::transaction(function () use ($data, $request) {
+            if ($request->hasFile('imagen')) {
+                // Stores under productos/ on the public disk; returns a generated
+                // relative path (never the client filename — path-traversal safe).
+                $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+            }
 
-        Producto::create($data);
+            $producto = Producto::create($data);
 
-        return redirect()->route('productos.index')
-            ->with('success', 'Producto creado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'product.created', 'Product created', "Product {$producto->nombre} was created.", $producto
+            );
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto creado correctamente.');
+        });
     }
 
     public function show(Producto $producto)
@@ -96,19 +104,25 @@ class ProductoController extends Controller
     {
         $data = $request->validated();
 
-        if ($request->hasFile('imagen')) {
-            // Reemplaza la imagen anterior si existía.
-            if ($producto->imagen) {
-                Storage::disk('public')->delete($producto->imagen);
+        return DB::transaction(function () use ($data, $request, $producto) {
+            if ($request->hasFile('imagen')) {
+                // Reemplaza la imagen anterior si existía.
+                if ($producto->imagen) {
+                    Storage::disk('public')->delete($producto->imagen);
+                }
+                $data['imagen'] = $request->file('imagen')->store('productos', 'public');
             }
-            $data['imagen'] = $request->file('imagen')->store('productos', 'public');
-        }
-        // Sin archivo nuevo => NO se toca `imagen`; se preserva el path existente.
+            // Sin archivo nuevo => NO se toca `imagen`; se preserva el path existente.
 
-        $producto->update($data);
+            $producto->update($data);
 
-        return redirect()->route('productos.index')
-            ->with('success', 'Producto actualizado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'product.updated', 'Product updated', "Product {$producto->nombre} was updated.", $producto
+            );
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto actualizado correctamente.');
+        });
     }
 
     /**
@@ -118,10 +132,16 @@ class ProductoController extends Controller
      */
     public function destroy(Producto $producto)
     {
-        $producto->update(['activo' => false]);
+        return DB::transaction(function () use ($producto) {
+            $producto->update(['activo' => false]);
 
-        return redirect()->route('productos.index')
-            ->with('success', 'Producto desactivado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                request()->user(), 'product.deactivated', 'Product deactivated', "Product {$producto->nombre} was deactivated.", $producto
+            );
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto desactivado correctamente.');
+        });
     }
 
     /**
@@ -140,10 +160,16 @@ class ProductoController extends Controller
                 ->with('error', 'No se puede activar un producto sin stock.');
         }
 
-        $producto->update(['activo' => true]);
+        return DB::transaction(function () use ($producto) {
+            $producto->update(['activo' => true]);
 
-        return redirect()->route('productos.index')
-            ->with('success', 'Producto activado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                request()->user(), 'product.activated', 'Product activated', "Product {$producto->nombre} was activated.", $producto
+            );
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto activado correctamente.');
+        });
     }
 
     /**
