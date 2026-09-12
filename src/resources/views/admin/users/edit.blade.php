@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :usuario="$user">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div>

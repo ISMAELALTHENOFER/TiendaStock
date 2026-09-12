@@ -142,30 +142,22 @@ class ProductoDuplicateCheckTest extends TestCase
     }
 
     /**
-     * The create form must wire a blur-triggered duplicate check on the
-     * nombre input. Pure Alpine/fetch behavior can't be exercised by
-     * PHPUnit, so this guards the DOM CONTRACT: the nombre input binds the
-     * duplicate-check Alpine component, wires @blur to verificarDuplicado,
-     * and the component implementation ships with the route endpoint
-     * reference and a lastCheckedName guard (no double-check on the same
-     * name). If anyone removes the wiring or the dedupe component, this
-     * test surfaces the regression before it reaches a browser.
+     * The React create form must wire a blur-triggered duplicate check on the
+     * nombre input. Pure client-side fetch behavior can't be exercised by
+     * PHPUnit, so this guards the SOURCE CONTRACT on productos.jsx (same
+     * pattern as VentaReactViewContractTest): the nombre field wires
+     * verificarDuplicado, the endpoint reference stays embedded, and the
+     * lastCheckedName guard remains (no double-check on the same name). If
+     * anyone removes the wiring or the dedupe guard, this test surfaces the
+     * regression before it reaches a browser.
      */
     public function test_create_form_wires_duplicate_check_on_nombre_blur(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('productos.create'));
-        $content = $response->getContent();
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        $response->assertOk();
-        // The nombre input must wire an @blur handler that triggers the
-        // duplicate check Alpine component.
-        $this->assertStringContainsString('verificarDuplicado', $content, 'Create form must wire verificarDuplicado on the nombre input.');
-        // The shared Alpine payload must register the duplicate-check
-        // component and reference the check-duplicate route endpoint.
-        $this->assertStringContainsString("Alpine.data('duplicateCheck'", $content, 'The duplicateCheck Alpine component must be registered on the create page.');
-        $this->assertStringContainsString('check-duplicate', $content, 'The duplicate-check endpoint URL must be embedded in the page.');
-        // lastCheckedName dedupes successive blur events on the same name
-        // (avoids re-prompting when the user blurs the field repeatedly).
-        $this->assertStringContainsString('lastCheckedName', $content, 'The duplicate-check component must track lastCheckedName to avoid re-prompting on the same name.');
+        $this->assertStringContainsString('verificarDuplicado', $source, 'Create form must wire verificarDuplicado on the nombre input.');
+        $this->assertStringContainsString('/productos/check-duplicate', $source, 'The duplicate-check endpoint URL must be embedded in the form.');
+        $this->assertStringContainsString('lastCheckedName', $source, 'The duplicate-check flow must track lastCheckedName to avoid re-prompting on the same name.');
+        $this->assertStringContainsString('Sí, editar', $source, 'The duplicate prompt must offer to edit the existing product.');
     }
 }

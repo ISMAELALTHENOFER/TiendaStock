@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Services\ActivityRecorder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -25,16 +27,22 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
-        User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+        return DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+            ]);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Usuario creado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'user.created', 'User created', "User {$user->name} was created.", $user
+            );
+
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Usuario creado correctamente.');
+        });
     }
 
     public function edit(User $user): View
@@ -52,9 +60,15 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        $user->update($data);
+        return DB::transaction(function () use ($data, $request, $user) {
+            $user->update($data);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Usuario actualizado correctamente.');
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'user.updated', 'User updated', "User {$user->name} was updated.", $user
+            );
+
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Usuario actualizado correctamente.');
+        });
     }
 }

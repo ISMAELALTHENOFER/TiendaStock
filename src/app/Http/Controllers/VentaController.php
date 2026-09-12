@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreVentaRequest;
 use App\Models\Producto;
 use App\Models\Venta;
+use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -103,6 +104,10 @@ class VentaController extends Controller
                 ->with('error', $e->getMessage());
         }
 
+        ActivityRecorder::recordAfterCommit(
+            $request->user(), 'sale.created', 'Sale created', "Sale #{$venta->id} was created.", $venta
+        );
+
         return redirect()->route('ventas.show', $venta)
             ->with('success', "Venta #{$venta->id} registrada correctamente.");
     }
@@ -138,6 +143,10 @@ class VentaController extends Controller
 
             $venta->update(['estado' => 'anulada']);
         });
+
+        ActivityRecorder::recordAfterCommit(
+            auth()->user(), 'sale.cancelled', 'Sale cancelled', "Sale #{$venta->id} was cancelled.", $venta
+        );
 
         return redirect()->route('ventas.index')
             ->with('success', "Venta #{$venta->id} anulada. Stock restaurado.");

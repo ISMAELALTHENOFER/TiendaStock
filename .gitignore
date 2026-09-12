@@ -6,3 +6,10 @@ node_modules/
 vendor/
 .DS_Store
 *.log
+
+# Herramientas y artefactos locales
+/.agents/
+/.atl/
+/skills-lock.json
+/.playwright-mcp/
+/dashboard-audit.png

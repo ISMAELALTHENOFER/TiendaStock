@@ -34,9 +34,10 @@ class UserManagementTest extends TestCase
 
         $response->assertOk();
         $response->assertViewHas('users');
-        $response->assertSee($admin->name);
-        $response->assertSee($admin->username);
-        $response->assertSee($admin->email);
+        // The users list is a React surface; assert the mount instead of
+        // Blade-rendered fields (see UserReactViewContractTest for the full
+        // coexistence contract).
+        $response->assertSeeHtml('id="react-root"');
     }
 
     public function test_admin_user_can_view_create_form(): void
@@ -97,8 +98,8 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($admin)->get("/admin/users/{$user->id}/edit");
 
         $response->assertOk();
-        $response->assertSee($user->name);
-        $response->assertSee($user->username);
+        // React surface (see UserReactViewContractTest for the coexistence contract).
+        $response->assertSeeHtml('id="react-root"');
     }
 
     public function test_admin_can_update_user(): void

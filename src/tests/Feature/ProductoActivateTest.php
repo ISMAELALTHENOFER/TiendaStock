@@ -107,18 +107,16 @@ class ProductoActivateTest extends TestCase
 
     /**
      * The index template MUST render an 'Activar' affordance for inactive
-     * products (client-side, gated by `producto.activo`). The button lives in
-     * the static Alpine <template x-for> markup, so 'Activar' is visible in
-     * the server-rendered HTML even before hydration.
+     * products. The React slice ships it in the productos.jsx source; the
+     * affirmative CTA must stay wired through the shared ConfirmDialog (the
+     * legacy confirmDialogShow is gone on the React surface).
      */
     public function test_index_view_renders_activar_label(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('productos.index'));
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        $response->assertOk();
-        $response->assertSee('Activar');
-        // The green confirmation CTA must be wired through confirmDialogShow.
-        $response->assertSee('Sí, activar');
-        $response->assertSee('bg-green-600 hover:bg-green-700');
+        $this->assertStringContainsString('Activar', $source, 'The index must render an Activar affordance for inactive products.');
+        $this->assertStringContainsString('Sí, activar', $source, 'The activation confirmation CTA must stay wired through the shared dialog.');
+        $this->assertStringContainsString('ConfirmDialog', $source, 'The activation toggle must use the shared confirm dialog.');
     }
 }

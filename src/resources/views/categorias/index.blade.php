@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :categorias="$categorias">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
