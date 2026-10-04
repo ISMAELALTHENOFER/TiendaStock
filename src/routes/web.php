@@ -11,9 +11,7 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('landing');
-});
+Route::redirect('/', '/login');
 
 Route::get('/dashboard', function () {
     return view('dashboard', [

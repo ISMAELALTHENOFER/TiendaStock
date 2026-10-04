@@ -5,7 +5,7 @@
             <div class="flex flex-col h-0 flex-1 bg-slate-950">
                 <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
                     <div class="flex items-center flex-shrink-0 px-4">
-                        <x-application-logo class="h-8 w-auto text-white" />
+                        <x-application-logo class="h-8 w-auto text-white" aria-hidden="true" />
                         <span class="ml-2 text-white text-xl font-bold">TiendaStock</span>
                     </div>
                     <nav class="mt-8 flex-1 px-2 space-y-1">
@@ -90,7 +90,7 @@
             </div>
             <div class="flex-1 min-h-0 pt-5 pb-4 overflow-y-auto" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
                 <div class="flex-shrink-0 flex items-center px-4">
-                    <x-application-logo class="h-8 w-auto text-white" />
+                    <x-application-logo class="h-8 w-auto text-white" aria-hidden="true" />
                     <span class="ml-2 text-white text-xl font-bold">TiendaStock</span>
                 </div>
                 <nav class="mt-8 flex-1 px-2 space-y-1 pb-6">
