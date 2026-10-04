@@ -1,89 +1,73 @@
-<x-guest-layout>
-    <div class="text-center mb-8">
-        <h1 class="page-title mb-3">
-            TiendaStock
-        </h1>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Bienvenido de vuelta</h2>
-        <p class="text-gray-600">Accede a tu plataforma de gestión de inventario</p>
+<x-guest-layout :show-logo="false">
+    <x-slot:brand>
+        <div class="login-brand" aria-label="TiendaStock">
+            <svg class="login-brand__icon" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">
+                <rect width="40" height="40" rx="12" fill="#006948" />
+                <path d="M11 13h18v5H11zM13 18v11h14V18M18 23h4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>TiendaStock</span>
+        </div>
+    </x-slot:brand>
+
+    <div class="login-heading">
+        <h1>Bienvenido</h1>
+        <p>Ingresa a TiendaStock para gestionar tu negocio.</p>
     </div>
 
-    <!-- Session Status -->
     @if (session('status'))
-    <div class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-center gap-3">
-        <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-        </svg>
-        {{ session('status') }}
-    </div>
+        <div class="login-status" role="status">{{ session('status') }}</div>
     @endif
 
-    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+    @php($authenticationError = $errors->first('username') === __('auth.failed'))
+    @if ($authenticationError)
+        <div id="login-auth-error" class="login-alert" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 8v4m0 4h.01" /></svg>
+            <span>{{ $errors->first('username') }}</span>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('login') }}" class="login-form" x-data="{ submitting: false, showPassword: false }" @submit="submitting = true">
         @csrf
 
-        <!-- Username -->
         <div>
             <x-input-label for="username" :value="__('Usuario')" />
-            <x-text-input
-                id="username"
-                type="text"
-                name="username"
-                :value="old('username')"
-                required
-                autofocus
-                autocomplete="username"
-                placeholder="tu_usuario"
-                class="block mt-2 w-full" />
-            @if ($errors->has('username'))
-                @foreach ($errors->get('username') as $error)
-                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
-                @endforeach
-            @endif
+            <div class="login-input-wrap">
+                <svg class="login-input-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.5-1.632z" /></svg>
+                <x-text-input id="username" type="text" name="username" :value="old('username')" required autofocus autocomplete="username" placeholder="Ingresa tu usuario" :aria-invalid="$errors->has('username') ? 'true' : 'false'" :aria-describedby="$authenticationError ? 'login-auth-error' : ($errors->has('username') ? 'username-error' : null)" class="mt-2 pl-11" />
+            </div>
+            @unless ($authenticationError)
+                <x-input-error id="username-error" :messages="$errors->get('username')" />
+            @endunless
         </div>
 
-        <!-- Password -->
         <div>
             <x-input-label for="password" :value="__('Contraseña')" />
-            <x-text-input
-                id="password"
-                type="password"
-                name="password"
-                required
-                autocomplete="current-password"
-                placeholder="••••••••"
-                class="block mt-2 w-full" />
-            @if ($errors->has('password'))
-                @foreach ($errors->get('password') as $error)
-                    <p class="text-sm text-red-600 mt-2">{{ $error }}</p>
-                @endforeach
-            @endif
+            <div class="login-input-wrap">
+                <svg class="login-input-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-1.5 0h12a1.5 1.5 0 011.5 1.5v7.5A1.5 1.5 0 0118 21H6a1.5 1.5 0 01-1.5-1.5V12A1.5 1.5 0 016 10.5z" /></svg>
+                <x-text-input id="password" x-bind:type="showPassword ? 'text' : 'password'" name="password" required autocomplete="current-password" placeholder="Ingresa tu contraseña" :aria-invalid="$authenticationError || $errors->has('password') ? 'true' : 'false'" :aria-describedby="$errors->has('password') ? 'password-error' : ($authenticationError ? 'login-auth-error' : null)" class="mt-2 pl-11 pr-12" />
+                <button type="button" class="login-password-toggle" x-on:click="showPassword = !showPassword" x-bind:aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" x-bind:aria-pressed="showPassword.toString()">
+                    <svg x-show="!showPassword" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-6.75 9.75-6.75S21.75 12 21.75 12 18.25 18.75 12 18.75 2.25 12 2.25 12z" /><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+                    <svg x-cloak x-show="showPassword" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2.25 2.25 0 0013.41 13.41M9.88 5.09A10.783 10.783 0 0112 4.875c6.25 0 9.75 7.125 9.75 7.125a17.108 17.108 0 01-3.168 4.223M6.228 6.228C3.74 7.91 2.25 12 2.25 12s3.5 6.75 9.75 6.75a10.83 10.83 0 004.347-.903" /></svg>
+                </button>
+            </div>
+            <x-input-error id="password-error" :messages="$errors->get('password')" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2">
+        <div class="login-options">
             <label for="remember_me" class="flex items-center cursor-pointer">
-                <input
-                    id="remember_me"
-                    type="checkbox"
-                    class="rounded border-sky-300 text-brand-300 shadow-sm focus:ring-brand-300 w-4 h-4 cursor-pointer transition-colors duration-200"
-                    name="remember">
+                <input id="remember_me" type="checkbox" class="login-checkbox" name="remember">
                 <span class="ml-2 text-sm text-gray-600 select-none">Recordarme</span>
             </label>
 
             @if (Route::has('password.request'))
-            <a class="text-sm text-brand-500 hover:text-brand-600 font-medium transition-colors duration-200" href="{{ route('password.request') }}">
-                ¿Olvidaste tu contraseña?
-            </a>
+                <a class="login-recovery-link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
             @endif
         </div>
 
-        <!-- Submit Button -->
-        <div class="pt-6">
-            <x-primary-button class="w-full justify-center py-3 text-base">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                </svg>
-                Iniciar sesión
-            </x-primary-button>
-        </div>
+        <button type="submit" class="login-submit" x-bind:disabled="submitting" x-bind:aria-busy="submitting.toString()">
+            <svg x-show="!submitting" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            <svg x-cloak x-show="submitting" class="login-spinner" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity=".35" /><path d="M12 3a9 9 0 019 9" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+            <span x-text="submitting ? 'Ingresando...' : 'Iniciar sesión'"></span>
+        </button>
     </form>
 </x-guest-layout>

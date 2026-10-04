@@ -83,14 +83,17 @@ class DashboardRoleVisibilityTest extends TestCase
         $response->assertDontSee('react-root')->assertSee('Actividad Reciente');
     }
 
-    public function test_tablet_sidebar_rail_binds_to_app_shell_open_state(): void
+    public function test_desktop_sidebar_is_an_independent_viewport_height_region(): void
     {
         $appShell = file_get_contents(resource_path('js/react/layout/AppShell.jsx'));
         $sidebar = file_get_contents(resource_path('js/react/layout/Sidebar.jsx'));
 
-        $this->assertStringContainsString('<Sidebar user={user} routes={routes} open={open}', $appShell);
-        $this->assertStringContainsString("open ? 'md:w-72' : 'md:w-20'", $sidebar);
-        $this->assertStringContainsString("open ? 'md:not-sr-only' : 'md:sr-only'", $sidebar);
+        $this->assertStringContainsString('<Sidebar user={user} routes={routes} activePage={activePage} open={open}', $appShell);
+        $this->assertStringContainsString('lg:pl-72', $appShell);
+        $this->assertStringContainsString('fixed inset-y-0', $sidebar);
+        $this->assertStringContainsString('h-dvh min-h-screen', $sidebar);
+        $this->assertStringContainsString('flex-1 space-y-6 overflow-y-auto', $sidebar);
+        $this->assertStringContainsString('mt-auto border-t', $sidebar);
     }
 
     public function test_modal_restores_body_overflow_after_closing(): void

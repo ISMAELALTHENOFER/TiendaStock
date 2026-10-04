@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Header } from './Header.jsx';
 import { Sidebar } from './Sidebar.jsx';
 
-export function AppShell({ user, routes, children }) {
+export function AppShell({ user, routes, activePage, children }) {
     const [open, setOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 47.999rem)').matches);
+    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 63.999rem)').matches);
     const previousFocus = useRef(null);
     const drawerRef = useRef(null);
     useEffect(() => {
-        const media = window.matchMedia('(max-width: 47.999rem)');
+        const media = window.matchMedia('(max-width: 63.999rem)');
         const update = () => setIsMobile(media.matches);
         update();
         media.addEventListener('change', update);
@@ -31,7 +31,7 @@ export function AppShell({ user, routes, children }) {
         return () => { document.body.classList.remove('overflow-hidden'); document.removeEventListener('keydown', onKeyDown); previousFocus.current?.focus?.(); };
     }, [open, isMobile]);
     const mobileClosed = isMobile && !open;
-    return <div className="min-h-dvh bg-canvas lg:flex"><div ref={drawerRef} inert={mobileClosed}><Sidebar user={user} routes={routes} open={open} onClose={() => setOpen(false)} mobileClosed={mobileClosed} /></div>{open && isMobile && <button className="fixed inset-0 z-30 bg-ink/50" onClick={() => setOpen(false)} aria-label="Close navigation backdrop" />}
-        <div className="min-w-0 flex-1"><Header user={user} sidebarOpen={open} onMenu={() => setOpen((current) => !current)} /><main className="mx-auto w-full max-w-[1440px] p-4 sm:p-6 lg:p-8">{children}</main></div>
+    return <div className="min-h-dvh bg-canvas lg:pl-72"><div ref={drawerRef} inert={mobileClosed}><Sidebar user={user} routes={routes} activePage={activePage} open={open} onClose={() => setOpen(false)} mobileClosed={mobileClosed} /></div>{open && isMobile && <button className="fixed inset-0 z-30 bg-ink/50" onClick={() => setOpen(false)} aria-label="Cerrar navegación" />}
+        <div className="min-w-0 min-h-dvh"><Header user={user} sidebarOpen={open} onMenu={() => setOpen((current) => !current)} /><main className="mx-auto w-full max-w-[1440px] p-4 sm:p-6 lg:p-8">{children}</main></div>
     </div>;
 }
