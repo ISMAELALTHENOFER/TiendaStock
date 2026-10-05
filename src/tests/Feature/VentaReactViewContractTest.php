@@ -63,7 +63,7 @@ class VentaReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
         foreach ([
-            'parseMoney(paid) < total',
+            'paidCents < totalCents',
             'URLSearchParams',
             "params.set('desde', query.desde)",
             "params.set('hasta', query.hasta)",
@@ -77,5 +77,53 @@ class VentaReactViewContractTest extends TestCase
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
+    }
+
+    public function test_pos_catalog_and_checkout_affordances_remain_connected_to_live_data(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
+
+        foreach ([
+            '/productos/search?q=',
+            'Resultados mostrados:',
+            'Limpiar búsqueda',
+            'const available = product.cantidad - inCart',
+            'sm:grid-cols-2',
+            'xl:sticky',
+            'Cantidad de ${item.nombre}',
+            'Descuento (monto fijo)',
+            'parseMoney(discount)',
+            'value="efectivo"',
+            'value="tarjeta"',
+            'value="transferencia"',
+            'tipo_entrega: delivery',
+            'pago_con: parseMoney(paid)',
+            'paidCents < totalCents',
+        ] as $contract) {
+            $this->assertStringContainsString($contract, $source);
+        }
+
+        foreach (['Lector: Conectado', 'Cuenta Corriente Cliente', '0% o $ monto'] as $unsupported) {
+            $this->assertStringNotContainsString($unsupported, $source);
+        }
+    }
+
+    public function test_pos_uses_cents_for_checkout_and_whole_stock_bounded_quantities(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
+
+        foreach ([
+            'Math.round(cart.reduce(',
+            'Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100)',
+            'const total = totalCents / 100',
+            'const paidCents = Math.round(parseMoney(paid) * 100)',
+            'paidCents < totalCents',
+            'step="1"',
+            'Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1)))',
+        ] as $contract) {
+            $this->assertStringContainsString($contract, $source);
+        }
+
+        $this->assertSame(2, substr_count($source, 'paidCents < totalCents'));
     }
 }
