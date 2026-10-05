@@ -18,7 +18,16 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->get('/profile');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertSee('images/tiendastock-mark.svg')
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('bg-primary-container', false)
+            ->assertSee('Mi perfil')
+            ->assertSee('Información del perfil')
+            ->assertSee('Nombre de usuario')
+            ->assertSee('Cambiar contraseña')
+            ->assertSee('Eliminar cuenta')
+            ->assertSee('Cerrar navegación');
     }
 
     public function test_profile_information_can_be_updated(): void

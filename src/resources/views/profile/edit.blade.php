@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="page-title">
-            {{ __('Profile') }}
+            Mi perfil
         </h2>
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="mx-auto max-w-7xl space-y-6">
             <div class="surface-panel p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.update-profile-information-form')

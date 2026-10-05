@@ -11,7 +11,7 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|plus-jakarta-sans:600,700&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -73,7 +73,7 @@
             'errors' => $errors->getBag('default')->toArray(),
         ]])
     @else
-    <div x-data="{ sidebarOpen: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-canvas md:h-dvh md:overflow-hidden">
+    <div x-data="{ sidebarOpen: false, sidebarCollapsed: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-canvas lg:h-dvh lg:overflow-hidden">
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
@@ -83,7 +83,7 @@
             @include('layouts.topbar')
 
             <!-- Page Content -->
-            <main class="min-w-0 flex-1 overflow-visible bg-canvas/60 p-4 sm:p-6 lg:p-8 md:overflow-y-auto" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+            <main class="min-w-0 flex-1 overflow-visible bg-canvas p-4 sm:p-6 lg:overflow-y-auto lg:p-8" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
                 @isset($header)
                 <div class="mb-8 min-w-0">
                     {{ $header }}

@@ -4,16 +4,18 @@
 
 @layer base {
     :root {
-        --canvas: #f8fafc;
+        --canvas: #f8f9ff;
         --surface: #ffffff;
-        --surface-muted: #f1f5f9;
-        --ink: #0f172a;
-        --muted: #64748b;
-        --border: #e2e8f0;
-        --primary: #16a34a;
-        --primary-hover: #15803d;
-        --focus: #166534;
-        --success: #16a34a;
+        --surface-muted: #eff4ff;
+        --ink: #0b1c30;
+        --muted: #565e74;
+        --border: #dce9ff;
+        --sidebar: #213145;
+        --primary: #006948;
+        --primary-hover: #00855d;
+        --primary-container: #00855d;
+        --focus: #005137;
+        --success: #006948;
         --warning: #ca8a04;
         --danger: #dc2626;
         --shadow-subtle: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.04);
@@ -32,6 +34,8 @@
         color: var(--ink);
         text-rendering: optimizeLegibility;
     }
+
+    h1, h2, h3 { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
 
     img, svg, video, canvas { max-width: 100%; }
     button, input, select, textarea { font: inherit; }
@@ -134,6 +138,7 @@
     }
 
     .page-title {
+        font-family: 'Plus Jakarta Sans', Inter, sans-serif;
         color: var(--ink);
         font-size: clamp(1.65rem, 1.2rem + 1.3vw, 2.35rem);
         font-weight: 750;
