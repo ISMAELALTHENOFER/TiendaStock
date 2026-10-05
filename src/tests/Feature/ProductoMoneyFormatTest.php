@@ -120,11 +120,12 @@ class ProductoMoneyFormatTest extends TestCase
     public function test_create_form_wires_live_money_input_mask(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
+        $money = file_get_contents(base_path('resources/js/react/lib/productMoneyInput.js'));
 
         $this->assertStringContainsString('inputMode="decimal"', $source, 'Money inputs must use the decimal input mode.');
         $this->assertStringContainsString('onInput', $source, 'Money inputs must wire the live onInput handler for while-typing grouping.');
         $this->assertStringContainsString('onBlur', $source, 'Money inputs must wire onBlur to canonicalize to "$1.234,56".');
-        $this->assertStringContainsString('digitsLeft', $source, 'Caret-preservation algorithm (digit-count) must ship with the component.');
+        $this->assertStringContainsString('digitsLeft', $money, 'Caret-preservation algorithm (digit-count) must ship with the component.');
         $this->assertStringContainsString('setSelectionRange', $source, 'Caret restoration (setSelectionRange) must ship with the component.');
     }
 

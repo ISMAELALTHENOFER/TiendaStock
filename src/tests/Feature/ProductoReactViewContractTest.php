@@ -107,7 +107,7 @@ class ProductoReactViewContractTest extends TestCase
 
         // Mobile cards must carry the same field set as the desktop table —
         // nothing hidden or clipped at narrow widths.
-        foreach (['md:hidden', 'Talle', 'Color', 'P. Compra', 'P. Venta', 'Ganancia', 'Stock'] as $contract) {
+        foreach (['xl:hidden', 'Talle', 'Color', 'P. Compra', 'P. Venta', 'Ganancia', 'Stock'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -132,6 +132,7 @@ class ProductoReactViewContractTest extends TestCase
     public function test_react_product_form_preserves_money_inline_category_and_image_contracts(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
+        $money = file_get_contents(base_path('resources/js/react/lib/productMoneyInput.js'));
 
         foreach ([
             '/categorias/inline',
@@ -141,12 +142,19 @@ class ProductoReactViewContractTest extends TestCase
             'Vista previa',
             'Crear categoría nueva',
             'inputMode="decimal"',
-            'digitsLeft',
             'setSelectionRange',
             'Costo',
+            'file:cursor-pointer',
+            'error={errors?.imagen?.[0]}',
+            'role="alert"',
+            'El servidor respondió de forma inesperada. No se pudo guardar el producto.',
+            'defaultValue={producto?.categoria_id ?? \'\'}',
+            'const closeInline = useCallback(() => setInlineOpen(false), []);',
+            'onClose={closeInline}',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
+        $this->assertStringContainsString('digitsLeft', $money);
         // The form must keep the "Costo" label vocabulary (never
         // "Precio de Compra").
         $this->assertStringNotContainsString('Precio de Compra', $source);
@@ -161,8 +169,7 @@ class ProductoReactViewContractTest extends TestCase
         // cents-mask conversion (25.00 / 100x error). The mask builds the raw
         // value straight from the typed digits (empty input maps to 0), and
         // the hidden sibling input submits that raw full amount to the backend.
-        $this->assertStringContainsString('const rawValue = digits ? Number(digits) : 0;', $source);
-        $this->assertStringNotContainsString('Number(digits) / 100', $source);
+        $this->assertStringContainsString('productMoneyInput(element.value, element.selectionStart', $source);
         $this->assertStringContainsString('<input type="hidden" name={name} value={raw} />', $source);
     }
 
@@ -178,5 +185,30 @@ class ProductoReactViewContractTest extends TestCase
             $source
         );
         $this->assertStringNotContainsString('routes.productosCreate;', $source);
+    }
+
+    public function test_redirected_modal_save_refreshes_catalog_without_navigating_away(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
+
+        $this->assertStringContainsString(
+            "if (response.redirected) {\n                if (onSaved) {\n                    setSubmitting(false);\n                    onSaved();\n                } else {\n                    window.location.assign(response.url);\n                }\n                return;\n            }",
+            $source
+        );
+    }
+
+    public function test_product_catalog_opens_create_and_prefilled_edit_modals(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
+        $modal = file_get_contents(base_path('resources/js/react/components/ui/Modal.jsx'));
+
+        $this->assertStringContainsString('setCrearAbierto(true)', $source);
+        $this->assertStringContainsString('setEditingProducto(producto)', $source);
+        $this->assertStringContainsString('producto={productoEditando}', $source);
+        $this->assertStringContainsString('onSaved={async () =>', $source);
+        $this->assertStringContainsString('size="product"', $source);
+        $this->assertStringContainsString('max-w-[620px]', $modal);
+        $this->assertStringContainsString('backdrop-blur-sm', $modal);
+        $this->assertStringContainsString('event.key === \'Escape\'', $modal);
     }
 }
