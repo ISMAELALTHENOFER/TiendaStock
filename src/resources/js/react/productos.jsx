@@ -10,6 +10,7 @@ import { Modal } from './components/ui/Modal.jsx';
 import { Select } from './components/ui/Select.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { api, csrf } from './lib/api.js';
+import { productMoneyInput } from './lib/productMoneyInput.js';
 
 const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
@@ -32,20 +33,17 @@ function MoneyInput({ label, name, initial = 0, error }) {
 
     const onInput = (event) => {
         const element = event.currentTarget;
-        const start = element.selectionStart;
-        const digits = event.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-        const rawValue = digits ? Number(digits) : 0;
-        const formatted = rawValue > 0 ? formatMoney(rawValue) : '';
-        const digitsLeft = digits.length - (formatted.length - start);
-        setRaw(rawValue);
-        setDisplay(formatted);
+        const next = productMoneyInput(element.value, element.selectionStart ?? element.value.length);
+        if (!next) { element.value = display; return; }
+        setRaw(next.raw);
+        setDisplay(next.display);
         requestAnimationFrame(() => {
-            element.setSelectionRange(Math.max(0, formatted.length - digitsLeft), Math.max(0, formatted.length - digitsLeft));
+            element.setSelectionRange(next.caret, next.caret);
         });
     };
 
     const onBlur = () => {
-        if (raw > 0) setDisplay(formatMoney(raw));
+        setDisplay(raw > 0 ? formatMoney(raw) : '');
     };
 
     return (
@@ -62,7 +60,7 @@ function MoneyInput({ label, name, initial = 0, error }) {
  * Image picker with client-side preview. On edit the current image is
  * preseeded; the legacy note about keeping the existing file is preserved.
  */
-function ProductImage({ value }) {
+function ProductImage({ value, error }) {
     const [preview, setPreview] = useState(value || '');
 
     const handleChange = (event) => {
@@ -79,8 +77,11 @@ function ProductImage({ value }) {
                 name="imagen"
                 accept="image/*"
                 onChange={handleChange}
-                className="mt-1 block w-full text-sm text-muted file:mr-3 file:rounded-control file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? 'imagen-error' : undefined}
+                className="mt-1 block w-full cursor-pointer text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
             />
+            {error && <p id="imagen-error" className="mt-1 text-sm text-red-600">{error}</p>}
             {preview && (
                 <div className="mt-3 flex items-center gap-3">
                     <img src={preview} alt="Vista previa" className="h-20 w-20 rounded-lg border border-border object-cover" />
@@ -97,7 +98,7 @@ function ProductImage({ value }) {
  * then posts to productos.update. Error responses (422 JSON) keep the
  * typed state and render inline field errors instead of redirecting back.
  */
-export function ProductForm({ routes, categorias = [], producto = null }) {
+export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved }) {
     const isEdit = Boolean(producto);
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
@@ -109,6 +110,7 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
     const [duplicado, setDuplicado] = useState(null);
     const lastCheckedName = useRef(null);
     const formRef = useRef(null);
+    const closeInline = useCallback(() => setInlineOpen(false), []);
 
     const verificarDuplicado = async () => {
         if (isEdit) return;
@@ -149,6 +151,7 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
 
     const submit = async () => {
         setSubmitting(true);
+        setErrors({});
         const data = new FormData(formRef.current);
         if (isEdit) data.append('_method', 'PUT');
         const headers = { Accept: 'application/json' };
@@ -157,17 +160,33 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
         try {
             const response = await fetch(formRef.current.action, { method: 'POST', headers, body: data });
             if (response.redirected) {
-                window.location.assign(response.url);
+                if (onSaved) {
+                    setSubmitting(false);
+                    onSaved();
+                } else {
+                    window.location.assign(response.url);
+                }
                 return;
             }
             const contentType = response.headers.get('content-type') || '';
-            const body = contentType.includes('application/json') ? await response.json() : null;
+            if (!contentType.includes('application/json')) {
+                setSubmitting(false);
+                setErrors({ _general: ['El servidor respondió de forma inesperada. No se pudo guardar el producto.'] });
+                return;
+            }
+            const body = await response.json();
             if (!response.ok) {
                 setSubmitting(false);
-                setErrors(body?.errors || {});
+                setErrors(body?.errors && Object.keys(body.errors).length
+                    ? body.errors
+                    : { _general: ['No se pudo guardar el producto. Revisá los datos e intentá nuevamente.'] });
                 return;
             }
             setSubmitting(false);
+            if (onSaved) {
+                onSaved();
+                return;
+            }
             window.location.assign(body?.redirect || routes.productos);
         } catch {
             setSubmitting(false);
@@ -186,17 +205,32 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
 
     const action = isEdit ? `${routes.productos}/${producto.id}` : routes.productos;
 
-    return (
-        <div className="py-4 sm:py-8">
-            <div className="mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
-                <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                    <h3 className="text-lg font-bold text-white">Información del Producto</h3>
-                    <p className="mt-1 text-sm text-white/80">Ingresa todos los detalles del producto</p>
-                </div>
+    const formContent = (
+        <div className={modal ? '' : 'py-4 sm:py-8'}>
+            <div className={modal ? 'overflow-hidden bg-surface' : 'mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface shadow-subtle'}>
+                {modal ? (
+                    <div className="flex items-start justify-between gap-4 bg-primary px-5 py-4 text-white sm:px-6">
+                        <div>
+                            <div className="flex items-center gap-2.5">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6"><path d="M4 5h16v15H4zM8 9h8M8 13h5" /><path d="M9 2h6" /></svg>
+                                <h2 className="text-lg font-bold tracking-tight">Información del Producto</h2>
+                            </div>
+                            <p className="mt-1 text-sm text-white/85">Ingresa todos los detalles del producto</p>
+                        </div>
+                        <button type="button" onClick={onClose} aria-label="Cerrar" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-control text-white/90 hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="m6 6 12 12M18 6 6 18" /></svg>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
+                        <h3 className="text-lg font-bold text-white">Información del Producto</h3>
+                        <p className="mt-1 text-sm text-white/80">Ingresa todos los detalles del producto</p>
+                    </div>
+                )}
 
-                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className="space-y-6 p-6 sm:p-8">
+                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'max-h-[calc(100dvh-10rem)] space-y-4 overflow-y-auto p-5 sm:p-6' : 'space-y-6 p-6 sm:p-8'}>
                     {errors._general && (
-                        <div className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
+                        <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
                     )}
 
                     <div>
@@ -208,7 +242,7 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600">*</span></label>
                         <div className="mt-1 flex gap-2">
-                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? (categorias[0]?.id ?? '')} className="flex-1">
+                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? ''} className="flex-1">
                                 <option value="">Seleccioná una categoría</option>
                                 {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                             </Select>
@@ -217,7 +251,7 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
                         {errors?.categoria_id && <p className="mt-1 text-sm text-red-600">{errors.categoria_id[0]}</p>}
                     </div>
 
-                    <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
@@ -239,16 +273,20 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
                         <textarea id="descripcion-field" name="descripcion" rows="3" defaultValue={producto?.descripcion ?? ''} placeholder="Detalles opcionales (material, cuidados, etc.)" className="mt-1 block w-full rounded-control border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted focus:border-primary focus:outline-none" />
                     </div>
 
-                    <ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} />
+                    <ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} error={errors?.imagen?.[0]} />
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
-                        <a href={routes.productos} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border px-4 text-sm font-semibold text-ink">Cancelar</a>
+                        {modal ? (
+                            <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+                        ) : (
+                            <a href={routes.productos} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border px-4 text-sm font-semibold text-ink">Cancelar</a>
+                        )}
                         <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : (isEdit ? 'Guardar Cambios' : 'Guardar Producto')}</Button>
                     </div>
                 </form>
             </div>
 
-            <Modal open={inlineOpen} title="Nueva Categoría" onClose={() => setInlineOpen(false)}>
+            <Modal open={inlineOpen} title="Nueva Categoría" onClose={closeInline}>
                 <form onSubmit={crearCategoria} className="mt-4 space-y-4">
                     <div>
                         <label htmlFor="inline-nombre-field" className="block text-sm font-medium text-ink">Nombre</label>
@@ -282,14 +320,19 @@ export function ProductForm({ routes, categorias = [], producto = null }) {
             />
         </div>
     );
+    return modal ? (
+        <Modal open title="Información del Producto" onClose={onClose} size="product" hideHeader>
+            {formContent}
+        </Modal>
+    ) : formContent;
 }
 
-function acciones(producto, routes, setToggle) {
+function acciones(producto, routes, setToggle, setEditingProducto) {
     const nombre = producto.nombre;
     return (
         <div className="data-table-actions">
             <a href={`${routes.productos}/${producto.id}`} className="data-table-action text-ink hover:bg-surface-muted" aria-label={`Ver ${nombre}`}>Ver</a>
-            <a href={`${routes.productos}/${producto.id}/edit`} className="data-table-action text-primary hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
+            <a href={`${routes.productos}/${producto.id}/edit`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setEditingProducto(producto); }} className="data-table-action text-primary hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
             {producto.activo ? (
                 <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
@@ -317,6 +360,8 @@ export function ProductList({ categorias, routes }) {
     const [error, setError] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
     const [toggle, setToggle] = useState(null);
+    const [crearAbierto, setCrearAbierto] = useState(false);
+    const [productoEditando, setProductoEditando] = useState(null);
     const searchRef = useRef(null);
     const POR_PAGINA = 15;
 
@@ -390,16 +435,18 @@ export function ProductList({ categorias, routes }) {
                     <p className="mt-1 text-sm text-muted">Gestiona todos tus productos en un solo lugar</p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label htmlFor="show-inactive-products" className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink">
+                    <label htmlFor="show-inactive-products" className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">
                         <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => setVerInactivos(event.target.checked)} className="h-4 w-4 rounded border-border accent-primary" />
                         Ver inactivos
                     </label>
-                    <a href={routes.productosCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Nuevo Producto</a>
+                    <a href={routes.productosCreate} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCrearAbierto(true); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline-offset-4">
+                        Nuevo Producto
+                    </a>
                 </div>
             </div>
 
-            <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center">
-                <div className="flex-1">
+            <div className="mb-6 flex flex-col gap-3 rounded-xl border border-[#e5eeff] bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+                <div className="min-w-0 flex-1">
                     <Input
                         ref={searchRef}
                         value={busqueda}
@@ -408,7 +455,7 @@ export function ProductList({ categorias, routes }) {
                         aria-label="Buscar por nombre, categoría, talle o color"
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:w-80">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[42rem]">
                     <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => setFiltroCategoria(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todas las categorías</option>
                         {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
@@ -436,7 +483,7 @@ export function ProductList({ categorias, routes }) {
                 />
             ) : (
                 <div className="space-y-6">
-                    <Card className="hidden overflow-x-auto p-0 sm:p-0 md:block">
+                    <Card className="hidden overflow-x-auto rounded-xl border border-[#e5eeff] bg-white p-0 shadow-sm sm:p-0 xl:block">
                          <table className="data-table w-full min-w-[960px] text-left text-sm">
                             <thead>
                                  <tr className="border-b border-border text-xs uppercase tracking-wide text-white">
@@ -473,16 +520,16 @@ export function ProductList({ categorias, routes }) {
                                          <td className="px-4 py-3 text-right tabular-nums">
                                              <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
-                                         <td className="px-4 py-3">{acciones(producto, routes, setToggle)}</td>
+                                          <td className="px-4 py-3">{acciones(producto, routes, setToggle, setProductoEditando)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </Card>
 
-                    <div className="space-y-4 md:hidden">
+                    <div className="space-y-4 xl:hidden">
                         {visibles.map((producto) => (
-                            <Card key={producto.id}>
+                            <Card key={producto.id} className="border border-[#e5eeff] bg-white shadow-sm">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
                                         ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
@@ -524,7 +571,7 @@ export function ProductList({ categorias, routes }) {
                                         </dd>
                                     </div>
                                 </dl>
-                                <div className="mt-4 border-t border-border pt-3">{acciones(producto, routes, setToggle)}</div>
+                                <div className="mt-4 border-t border-border pt-3">{acciones(producto, routes, setToggle, setProductoEditando)}</div>
                             </Card>
                         ))}
                     </div>
@@ -572,6 +619,22 @@ export function ProductList({ categorias, routes }) {
                 onConfirm={confirmarToggle}
                 onClose={() => setToggle(null)}
             />
+
+            {(crearAbierto || productoEditando) && (
+                <ProductForm
+                    key={productoEditando?.id ?? 'new-product'}
+                    routes={routes}
+                    categorias={categorias}
+                    producto={productoEditando}
+                    modal
+                    onClose={() => { setCrearAbierto(false); setProductoEditando(null); }}
+                    onSaved={async () => {
+                        setCrearAbierto(false);
+                        setProductoEditando(null);
+                        await cargar();
+                    }}
+                />
+            )}
         </div>
     );
 }
