@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { ArrowLeft, CheckCircle2, CircleX, Minus, Package, Plus, Search, ShoppingBasket, ShoppingCart, Trash2, Truck, Store } from 'lucide-react';
 import { api } from './lib/api.js';
 import { Badge } from './components/ui/Badge.jsx';
 import { Button } from './components/ui/Button.jsx';
@@ -94,6 +95,9 @@ async function postSale(payload, onError) {
 export function SalesPos({ routes, initialErrors = {} }) {
     const [search, setSearch] = useState('');
     const [results, setResults] = useState([]);
+    const searchRequest = useRef(0);
+    const searchInput = useRef(null);
+    const [searchError, setSearchError] = useState(false);
     const [cart, setCart] = useState([]);
     const [delivery, setDelivery] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
@@ -102,30 +106,94 @@ export function SalesPos({ routes, initialErrors = {} }) {
     const [errors, setErrors] = useState(initialErrors);
     const [searching, setSearching] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0), [cart]);
-    const total = Math.max(0, subtotal - parseMoney(discount));
+    const subtotal = useMemo(() => Math.round(cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0) * 100) / 100, [cart]);
+    const totalCents = Math.max(0, Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100));
+    const total = totalCents / 100;
+    const paidCents = Math.round(parseMoney(paid) * 100);
     const change = Math.max(0, parseMoney(paid) - total);
     const searchProducts = async (value) => {
+        const request = ++searchRequest.current;
         setSearch(value);
-        if (value.length < 2) return setResults([]);
+        setSearchError(false);
+        if (value.trim().length < 2) { setResults([]); setSearching(false); return; }
         setSearching(true);
-        try { setResults(await api.get(`/productos/search?q=${encodeURIComponent(value)}`)); } catch { setResults([]); } finally { setSearching(false); }
+        try {
+            const products = await api.get(`/productos/search?q=${encodeURIComponent(value)}`);
+            if (request === searchRequest.current) setResults(products);
+        } catch {
+            if (request === searchRequest.current) { setResults([]); setSearchError(true); }
+        } finally {
+            if (request === searchRequest.current) setSearching(false);
+        }
     };
     const add = (product) => setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: product.precio_venta, cantidad: 1, stock: product.cantidad }]);
     const submit = async () => {
-        if (!cart.length || !delivery || total <= 0 || parseMoney(paid) < total || submitting) return;
+        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting) return;
         setSubmitting(true); setErrors({});
-        await postSale({ items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), subtotal, descuento: parseMoney(discount), impuesto: 0, total, pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
-        setSubmitting(false);
+        try {
+            await postSale({ items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), subtotal, descuento: parseMoney(discount), impuesto: 0, total, pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
+        } catch {
+            setErrors({ form: ['No se pudo registrar la venta. Reintente.'] });
+        } finally {
+            setSubmitting(false);
+        }
     };
-    return <div className="space-y-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Punto de Venta</h1><p className="mt-2 text-sm text-muted">Registra nuevas ventas en el sistema</p></div><a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-5 text-sm font-semibold">Volver</a></header>
-        {Object.values(errors).flat().map((error) => <p key={error} role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>)}
-        <div className="grid gap-6 lg:grid-cols-5"><section className="space-y-4 lg:col-span-3"><Card><label className="text-sm font-medium">Buscar productos<Input value={search} onChange={(event) => searchProducts(event.target.value)} placeholder="Buscar por nombre..." className="mt-1" /></label></Card>{searching && <p className="p-6 text-center text-sm text-muted">Buscando...</p>} {!searching && results.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{results.map((product) => <Card key={product.id} className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{product.nombre}</p><p className="text-sm text-muted">{formatMoney(product.precio_venta)} · Stock: {product.cantidad}</p></div><Button type="button" onClick={() => add(product)}>Agregar</Button></Card>)}</div>}{!searching && search.length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}</section>
-            <Card className="space-y-4 lg:col-span-2"><h2 className="text-lg font-semibold">Carrito</h2>{!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busque productos para agregar.</p> : <div className="space-y-3">{cart.map((item, index) => <div key={item.producto_id} className="grid grid-cols-[1fr_auto] gap-2 border-b border-border pb-3"><div><p className="font-medium">{item.nombre}</p><p className="text-sm text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="min-h-11 px-2 text-red-700" aria-label={`Quitar ${item.nombre}`}>×</button><div className="col-span-2 flex items-center gap-2"><Button type="button" variant="secondary" onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.max(1, current.cantidad - 1) } : current))}>−</Button><Input type="number" min="1" max={item.stock} value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Number(event.target.value))) } : current))} className="w-20 text-center" /><Button type="button" variant="secondary" onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, current.cantidad + 1) } : current))}>+</Button><strong className="ml-auto">{formatMoney(item.cantidad * item.precio_venta)}</strong></div></div>)}</div>}
-                <div className="space-y-2 border-t border-border pt-4 text-sm"><div className="flex justify-between"><span>Subtotal</span><strong>{formatMoney(subtotal)}</strong></div><label className="flex items-center justify-between gap-3">Descuento<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} className="w-32 text-right" /></label><div className="flex justify-between border-t border-border pt-2 text-lg font-bold"><span>Total</span><span>{formatMoney(total)}</span></div></div>
-                <fieldset className="space-y-2 border-t border-border pt-4"><legend className="text-sm font-medium">Tipo de entrega</legend><div className="grid gap-2 sm:grid-cols-2">{[['local', 'En el local'], ['uber', 'Envío por Uber']].map(([value, label]) => <label key={value} className={`flex min-h-11 items-center gap-2 rounded-control border px-3 ${delivery === value ? 'border-primary bg-green-50' : 'border-border'}`}><input type="radio" name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} />{label}</label>)}</div></fieldset>
-                <label className="block text-sm font-medium">Método de pago<Select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-1"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></Select></label><label className="block text-sm font-medium">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} className="mt-1 text-right" /></label>{parseMoney(paid) > 0 && <div className="flex justify-between text-sm"><span>Cambio</span><strong className="text-primary">{formatMoney(change)}</strong></div>}<Button type="button" disabled={!cart.length || !delivery || total <= 0 || parseMoney(paid) < total || submitting} onClick={submit} className="w-full">{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" onClick={() => { setCart([]); setPaid(''); setDiscount(''); }} className="w-full">Vaciar carrito</Button>}
-            </Card></div></div>;
+    return <div className="space-y-6">
+        <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Punto de Venta</h1><p className="mt-2 text-sm text-muted">Registra nuevas ventas en el sistema</p></div>
+            <a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:self-auto"><ArrowLeft size={18} aria-hidden="true" />Volver</a>
+        </header>
+        {Object.values(errors).flat().map((error, index) => <p key={index} role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>)}
+        <div className="grid items-start gap-6 xl:grid-cols-12">
+            <section aria-label="Catálogo de productos" className="min-w-0 space-y-4 xl:col-span-7">
+                <Card className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <label htmlFor="pos-search" className="flex items-center gap-2 font-semibold text-ink"><Search size={18} className="text-primary" aria-hidden="true" />Buscar productos</label>
+                        {search.trim().length >= 2 && !searching && !searchError && <span className="text-xs text-muted" aria-live="polite">Resultados mostrados: <strong className="text-ink">{results.length}</strong>{results.length === 10 ? ' (máximo 10)' : ''}</span>}
+                    </div>
+                    <div className="relative">
+                        <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
+                        <Input id="pos-search" ref={searchInput} value={search} onChange={(event) => searchProducts(event.target.value)} placeholder="Busca por nombre, color, talle o categoría" className="pl-10 pr-12 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
+                        {search && <button type="button" onClick={() => { searchProducts(''); searchInput.current?.focus(); }} aria-label="Limpiar búsqueda" className="absolute right-1 top-1/2 flex min-h-10 min-w-10 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><CircleX size={18} aria-hidden="true" /></button>}
+                    </div>
+                    <p className="text-xs text-muted">Escribe al menos 2 caracteres para buscar productos disponibles.</p>
+                </Card>
+                {searching && <p role="status" className="p-6 text-center text-sm text-muted">Buscando...</p>}
+                {!searching && searchError && <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-800">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+                {!searching && !searchError && results.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{results.map((product) => {
+                    const inCart = cart.find((item) => item.producto_id === product.id)?.cantidad || 0;
+                    const available = product.cantidad - inCart;
+                    return <Card key={product.id} className="flex min-w-0 flex-col justify-between gap-4 p-4 sm:p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-ink">{product.nombre}</h3><p className="mt-1 text-xs text-muted">{product.categoria?.nombre}{product.color ? ` · ${product.color}` : ''}{product.talle ? ` · ${product.talle}` : ''}</p></div>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${available === 0 ? 'bg-red-50 text-red-800' : available <= 6 ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-primary-700'}`}><Package size={14} aria-hidden="true" />{available} un.</span>
+                        </div>
+                        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
+                            <div><p className="text-xs font-semibold uppercase text-muted">Precio unitario</p><p className="text-lg font-bold tabular-nums text-ink">{formatMoney(product.precio_venta)}</p></div>
+                            <Button type="button" disabled={available <= 0} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
+                        </div>
+                    </Card>;
+                })}</div>}
+                {!searching && !searchError && search.trim().length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}
+            </section>
+            <Card className="min-w-0 space-y-5 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto">
+                <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
+                {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3">{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
+                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                    <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
+                        <button type="button" disabled={item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
+                        <Input type="number" min="1" max={item.stock} step="1" value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                        <button type="button" disabled={item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
+                    </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
+                </div>)}</div>}
+                <div className="space-y-3 border-t border-border pt-4 text-sm"><div className="flex items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
+                <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend><div className="grid grid-cols-2 gap-2">{[['local', 'En el local', Store], ['uber', 'Envío por Uber', Truck]].map(([value, label, Icon]) => <label key={value} className={`flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-control border p-2 text-center text-xs font-semibold focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${delivery === value ? 'border-primary bg-green-50 text-primary-700' : 'border-border bg-surface-muted text-ink hover:bg-border'}`}><input type="radio" name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} className="sr-only" /><Icon size={16} className="shrink-0" aria-hidden="true" />{label}</label>)}</div></fieldset>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">Método de pago<Select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-2 bg-surface-muted text-sm font-medium normal-case tracking-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></Select></label>
+                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="w-36 text-right tabular-nums" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
+                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" onClick={() => { setCart([]); setPaid(''); setDiscount(''); }} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
+            </Card>
+        </div>
+    </div>;
 }
 
 export function SaleShow({ sale, routes }) {
