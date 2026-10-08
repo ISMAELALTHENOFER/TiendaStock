@@ -105,6 +105,23 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect('/');
     }
 
+    public function test_blade_logout_controls_submit_post_without_logout_links(): void
+    {
+        config(['frontend.driver' => 'blade']);
+        $this->actingAs(User::factory()->admin()->create());
+
+        foreach ([
+            [$this->get('/dashboard')->assertOk()->getContent(), 1],
+            [view('layouts.navigation')->render(), 2],
+        ] as [$html, $expectedForms]) {
+            $xpath = $this->loginXpath($html);
+            $logout = route('logout');
+
+            $this->assertSame($expectedForms, $xpath->query("//form[@method='POST' and @action='$logout'][input[@name='_token'] and button[@type='submit']]")->length);
+            $this->assertSame(0, $xpath->query("//*[@href='$logout']")->length);
+        }
+    }
+
     private function loginXpath(string $html): DOMXPath
     {
         $document = new DOMDocument();
