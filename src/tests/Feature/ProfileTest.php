@@ -46,6 +46,12 @@ class ProfileTest extends TestCase
         $this->assertSame(6, substr_count($response->getContent(), 'class="login-input-icon"'));
         $this->assertSame(3, substr_count($response->getContent(), 'class="login-password-toggle"'));
         $this->assertGreaterThanOrEqual(6, substr_count($response->getContent(), 'required="required"'));
+        foreach (['current_password', 'password', 'password_confirmation'] as $field) {
+            $this->assertMatchesRegularExpression(
+                '/<input\b(?=[^>]*\bid="update_password_' . $field . '")(?=[^>]*\s+type="password")[^>]*>/',
+                $response->getContent()
+            );
+        }
     }
 
     public function test_profile_information_can_be_updated(): void
