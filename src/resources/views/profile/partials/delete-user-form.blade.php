@@ -1,12 +1,17 @@
 <section class="space-y-6">
-    <header>
-        <h2 class="text-lg font-medium text-ink">
+    <header class="flex items-start gap-3">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-red-100 text-red-700" aria-hidden="true">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 2.8 19a1.4 1.4 0 001.2 2.1h16a1.4 1.4 0 001.2-2.1L12 3z" /><path stroke-linecap="round" d="M12 9v4m0 3h.01" /></svg>
+        </span>
+        <div>
+        <h2 class="text-xl font-bold text-ink">
             Eliminar cuenta
         </h2>
-
-        <p class="mt-1 text-sm text-muted">
-            Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente. Descargue antes la información que desee conservar.
+        <p class="mt-1 text-xs font-medium text-red-700">Zona de peligro</p>
+        <p class="mt-3 text-sm leading-relaxed text-muted">
+            Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente.
         </p>
+        </div>
     </header>
 
     <x-danger-button

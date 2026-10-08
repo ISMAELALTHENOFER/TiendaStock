@@ -23,11 +23,29 @@ class ProfileTest extends TestCase
             ->assertSee('aria-current="page"', false)
             ->assertSee('bg-primary-container', false)
             ->assertSee('Mi perfil')
+            ->assertSee('Administre sus credenciales corporativas, preferencias de seguridad y parámetros de identidad dentro del sistema de inventario TiendaStock.')
+            ->assertSee('aria-label="Breadcrumb"', false)
+            ->assertSee('Configuración personal')
+            ->assertSee('w-full lg:w-2/3', false)
+            ->assertSee('p-4 sm:p-6 lg:p-8', false)
+            ->assertSee('text-xl font-bold text-ink', false)
+            ->assertSee('bg-surface-muted', false)
+            ->assertSee('login-input-icon', false)
+            ->assertSee('login-password-toggle', false)
+            ->assertSee('Mostrar contraseña', false)
+            ->assertSee('Ocultar contraseña', false)
+            ->assertSee('aria-pressed', false)
+            ->assertSee('Zona de peligro')
+            ->assertSee('text-red-700', false)
             ->assertSee('Información del perfil')
             ->assertSee('Nombre de usuario')
             ->assertSee('Cambiar contraseña')
             ->assertSee('Eliminar cuenta')
             ->assertSee('Cerrar navegación');
+
+        $this->assertSame(6, substr_count($response->getContent(), 'class="login-input-icon"'));
+        $this->assertSame(3, substr_count($response->getContent(), 'class="login-password-toggle"'));
+        $this->assertGreaterThanOrEqual(6, substr_count($response->getContent(), 'required="required"'));
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -52,6 +70,21 @@ class ProfileTest extends TestCase
         $this->assertSame('testuser', $user->username);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_profile_danger_treatment_uses_the_existing_panel(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/profile');
+
+        $response->assertOk()
+            ->assertSee('class="surface-panel border border-red-200 p-4 sm:p-6 lg:p-8"', false)
+            ->assertDontSee('rounded-xl border border-red-200 p-4 sm:p-6', false)
+            ->assertSee('Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente.')
+            ->assertDontSee('Descargue antes la información que desee conservar.');
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
