@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TiendaStock - Nueva Categoría</title>
+<!-- Tailwind CSS CDN with Forms and Container Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter / Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Custom Config -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#059669',
+              dark: '#047857',
+              light: '#10b981',
+              subtle: '#ecfdf5',
+            },
+            sidebar: '#0f172a',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scrollbars">
+    /* Custom scrollbars and transitions */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans antialiased text-slate-800 h-screen overflow-hidden flex relative">
+<!-- BEGIN: Sidebar -->
+<aside class="w-64 bg-sidebar text-slate-300 flex flex-col justify-between shrink-0 select-none border-r border-slate-800">
+<!-- Top Branding & Navigation -->
+<div>
+<!-- Brand Logo Header -->
+<div class="h-16 flex items-center justify-between px-5 border-b border-slate-800/80">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-sm">
+<!-- Store icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<span class="font-bold text-lg tracking-tight text-white">TiendaStock</span>
+</div>
+<button aria-label="Colapsar menú lateral" class="text-slate-400 hover:text-white p-1 rounded-md transition-colors" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Navigation Links -->
+<nav class="p-4 space-y-6">
+<!-- Section: Workspace -->
+<div>
+<span class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase px-3">WORKSPACE</span>
+<div class="mt-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Dashboard</span>
+</a>
+</div>
+</div>
+<!-- Section: Operación -->
+<div>
+<span class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase px-3">OPERACIÓN</span>
+<div class="mt-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Ventas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Productos</span>
+</a>
+<!-- Active Navigation Item: Categorías -->
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-emerald-600 text-white shadow-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Categorías</span>
+</a>
+</div>
+</div>
+<!-- Section: Administración -->
+<div>
+<span class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase px-3">ADMINISTRACIÓN</span>
+<div class="mt-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Usuarios</span>
+</a>
+</div>
+</div>
+</nav>
+</div>
+<!-- User Profile Bottom Widget -->
+<div class="p-3 border-t border-slate-800 bg-slate-900/60">
+<div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/50 cursor-pointer transition">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-medium border border-emerald-500/30">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white leading-tight">Test User</span>
+<span class="text-xs text-slate-400 leading-tight">@testuser</span>
+</div>
+</div>
+<button aria-label="Opciones de cuenta" class="text-slate-400 hover:text-white">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20">
+<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+</svg>
+</button>
+</div>
+</div>
+</aside>
+<!-- END: Sidebar -->
+<!-- BEGIN: Main Background Workspace (Screen 3 Reference) -->
+<div aria-hidden="true" class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+<!-- Top Header Bar -->
+<header class="h-16 bg-white border-b border-slate-200/80 px-8 flex items-center justify-end shrink-0">
+<div class="flex items-center gap-3">
+<div class="text-right">
+<div class="text-sm font-semibold text-slate-800">Test User</div>
+<div class="text-xs text-slate-400">Administrador</div>
+</div>
+<div class="w-9 h-9 rounded-full bg-emerald-700 text-white flex items-center justify-center font-medium shadow-sm">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto p-8 space-y-6">
+<!-- Title & Action Section -->
+<div class="flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 tracking-tight">Categorías de Productos</h1>
+<p class="text-sm text-slate-500 mt-0.5">Gestiona todas tus categorías de productos</p>
+</div>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition shadow-sm">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span>Nueva Categoría</span>
+</button>
+</div>
+<!-- Overview KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- KPI 1 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+<div>
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">TOTAL CATEGORÍAS</span>
+<p class="text-2xl font-bold text-slate-900 mt-1">6</p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+<div>
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">PRODUCTOS ASIGNADOS</span>
+<p class="text-2xl font-bold text-slate-900 mt-1">105</p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+<div>
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-400">CATEGORÍAS VACÍAS</span>
+<p class="text-2xl font-bold text-slate-900 mt-1">2</p>
+</div>
+<div class="w-11 h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Categories Grid Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between h-44">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-semibold text-slate-900">categoria nueva</h3>
+<span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">2 productos</span>
+</div>
+<p class="text-sm text-slate-400 mt-2">Sin descripción</p>
+</div>
+<div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
+<div class="flex gap-4">
+<span class="text-slate-600 hover:text-slate-900 cursor-pointer">Ver</span>
+<span class="text-emerald-600 hover:text-emerald-700 cursor-pointer font-semibold">Editar</span>
+</div>
+<span class="text-rose-600 hover:text-rose-700 cursor-pointer">Eliminar</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between h-44">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-semibold text-slate-900">manta</h3>
+<span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">0 productos</span>
+</div>
+<p class="text-sm text-slate-400 mt-2">Sin descripción</p>
+</div>
+<div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
+<div class="flex gap-4">
+<span class="text-slate-600 hover:text-slate-900 cursor-pointer">Ver</span>
+<span class="text-emerald-600 hover:text-emerald-700 cursor-pointer font-semibold">Editar</span>
+</div>
+<span class="text-rose-600 hover:text-rose-700 cursor-pointer">Eliminar</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between h-44">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-semibold text-slate-900">Pantalones</h3>
+<span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">100 productos</span>
+</div>
+<p class="text-sm text-slate-400 mt-2">Sin descripción</p>
+</div>
+<div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-medium">
+<div class="flex gap-4">
+<span class="text-slate-600 hover:text-slate-900 cursor-pointer">Ver</span>
+<span class="text-emerald-600 hover:text-emerald-700 cursor-pointer font-semibold">Editar</span>
+</div>
+<span class="text-rose-600 hover:text-rose-700 cursor-pointer">Eliminar</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- END: Main Background Workspace -->
+<!-- BEGIN: Modal Pop-up Overlay (Nueva Categoría) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" data-purpose="modal-container">
+<!-- Backdrop Blur with dark tint as seen in reference screenshots 14 and 16 -->
+<div aria-hidden="true" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+<!-- Modal Box Centered -->
+<div aria-labelledby="modal-title" aria-modal="true" class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all border border-slate-100 animate-in fade-in zoom-in-95 duration-200" role="dialog">
+<!-- Modal Header (Slate gradient matching Image 2 with green/slate design system) -->
+<div class="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-5 text-white flex items-start justify-between">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-white/10 rounded-lg backdrop-blur-xs mt-0.5">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h2 class="text-lg font-bold tracking-tight text-white" id="modal-title">Información de la Categoría</h2>
+<p class="text-xs text-emerald-100/90 mt-0.5">Completa los detalles para crear una nueva categoría</p>
+</div>
+</div>
+<!-- Close Button (X) -->
+<button aria-label="Cerrar modal" class="text-white/80 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-colors focus:outline-none" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+<!-- Modal Body / Form -->
+<form class="p-6 space-y-5">
+<!-- Field 1: Nombre de la Categoría -->
+<div>
+<label class="block text-sm font-semibold text-slate-800 mb-1.5" for="category_name">
+            Nombre de la Categoría <span class="text-rose-500">*</span>
+</label>
+<input class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-xs" id="category_name" name="name" placeholder="Ej: Ropa, Electrónica, Alimentos..." required="" type="text"/>
+</div>
+<!-- Field 2: Descripción (Opcional) -->
+<div>
+<label class="block text-sm font-semibold text-slate-800 mb-1.5" for="category_description">
+            Descripción (Opcional)
+          </label>
+<textarea class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-xs resize-none" id="category_description" name="description" placeholder="Describe los tipos de productos que incluirá esta categoría..." rows="4"></textarea>
+</div>
+<!-- Actions / Footer Buttons -->
+<div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+<button class="px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs focus:outline-none focus:ring-2 focus:ring-slate-300" type="button">
+            Cancelar
+          </button>
+<button class="px-5 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex items-center gap-2" type="submit">
+            Crear Categoría
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- END: Modal Pop-up Overlay -->
+</body></html>

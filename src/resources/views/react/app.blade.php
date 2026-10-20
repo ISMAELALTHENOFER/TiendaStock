@@ -24,7 +24,7 @@
             Nuevo Producto Información del Producto Costo Cantidad Categoría
         @elseif (($props['page'] ?? null) === 'productos.edit')
             Editar Producto Información del Producto Costo Cantidad Categoría
-        @elseif (($props['page'] ?? null) === 'categorias.index')
+        @elseif (in_array(($props['page'] ?? null), ['categorias.index', 'categorias.create', 'categorias.edit'], true))
             Categorías de Productos Nueva Categoría
         @elseif (($props['page'] ?? null) === 'admin.users.index')
             Usuarios del Sistema Gestiona todos los usuarios de la plataforma Nuevo Usuario

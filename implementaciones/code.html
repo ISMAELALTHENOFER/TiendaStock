@@ -1,0 +1,301 @@
+<!DOCTYPE html><html lang="es" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-surface":"#0b1c30","on-error-container":"#93000a","primary":"#006948","background":"#f8f9ff","surface-dim":"#cbdbf5","surface-container-highest":"#d3e4fe","inverse-surface":"#213145","tertiary-fixed-dim":"#4edea3","surface-container-high":"#dce9ff","secondary-fixed":"#dae2fd","on-primary-fixed-variant":"#005137","on-primary-container":"#f5fff7","on-primary-fixed":"#002114","primary-fixed-dim":"#68dba9","surface-tint":"#006c4a","outline-variant":"#bccac0","on-secondary-container":"#5c647a","on-secondary-fixed":"#131b2e","on-tertiary-fixed-variant":"#005236","primary-container":"#00855d","tertiary-container":"#00855b","error":"#ba1a1a","surface-container-lowest":"#ffffff","inverse-on-surface":"#eaf1ff","on-secondary-fixed-variant":"#3f465c","secondary-fixed-dim":"#bec6e0","primary-fixed":"#85f8c4","on-secondary":"#ffffff","on-tertiary-fixed":"#002113","on-primary":"#ffffff","surface-bright":"#f8f9ff","secondary":"#565e74","on-error":"#ffffff","surface":"#f8f9ff","surface-variant":"#d3e4fe","tertiary":"#006947","inverse-primary":"#68dba9","error-container":"#ffdad6","tertiary-fixed":"#6ffbbe","on-surface-variant":"#3d4a42","surface-container":"#e5eeff","on-tertiary":"#ffffff","surface-container-low":"#eff4ff","outline":"#6d7a72","on-tertiary-container":"#f5fff6","on-background":"#0b1c30","secondary-container":"#dae2fd"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{},"fontFamily":{"headline":["Plus Jakarta Sans"],"display":["Plus Jakarta Sans"],"body":["Inter"],"label":["Inter"]},"fontSize":{}}}}</script></head><body class="bg-background font-body text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-inverse-surface text-inverse-on-surface z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.06)]"><div class="flex flex-col flex-1 overflow-hidden"><div class="h-16 px-5 flex items-center justify-between border-b border-white/5"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[22px]">inventory_2</span></div><span class="text-lg font-headline font-bold tracking-tight text-white leading-tight">TiendaStock</span></div><button class="w-8 h-8 rounded-lg flex items-center justify-center text-inverse-on-surface/60 hover:text-white hover:bg-white/10 transition-colors" title="Colapsar menú"><span class="material-symbols-outlined text-[20px]">chevron_left</span></button></div><div class="flex-1 overflow-y-auto px-3 py-4 space-y-6"><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-label font-semibold tracking-wider uppercase text-inverse-on-surface/50">WORKSPACE</div><nav class="space-y-1 flex flex-col"><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-inverse-on-surface/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="">Dashboard</span></a></nav></div><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-label font-semibold tracking-wider uppercase text-inverse-on-surface/50">OPERACIÓN</div><nav class="space-y-1 flex flex-col"><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-inverse-on-surface/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium" data-path="ventas" href="#"><span class="material-symbols-outlined text-[20px]">point_of_sale</span><span class="">Ventas</span></a><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-inverse-on-surface/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium" data-path="productos" href="#"><span class="material-symbols-outlined text-[20px]">inventory</span><span class="">Productos</span></a><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-inverse-on-surface/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium" data-path="categorias" href="#"><span class="material-symbols-outlined text-[20px]">category</span><span class="">Categorías</span></a></nav></div><div class="space-y-1"><div class="px-3 pb-1 text-[11px] font-label font-semibold tracking-wider uppercase text-inverse-on-surface/50">ADMINISTRACIÓN</div><nav class="space-y-1 flex flex-col"><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-inverse-on-surface/80 hover:bg-white/10 hover:text-white transition-all text-sm font-medium" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="">Usuarios</span></a></nav></div></div></div><div class="p-3 border-t border-white/5"><div class="rounded-xl bg-white/5 p-2.5 flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer"><div class="flex items-center gap-3 min-w-0"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white shrink-0"><span class="material-symbols-outlined text-[18px]">person</span></div><div class="flex flex-col min-w-0"><span class="text-xs font-headline font-semibold text-white truncate leading-tight">Test User</span><span class="text-[11px] font-label text-inverse-on-surface/60 truncate">@testuser</span></div></div><button class="text-inverse-on-surface/60 hover:text-white transition-colors p-1" title="Opciones de cuenta"><span class="material-symbols-outlined text-[18px]">more_vert</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/80 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-full w-full px-8 flex items-center justify-end border-b border-surface-container-high/60"><div class="flex items-center gap-3"><div class="flex flex-col text-right"><span class="text-xs font-headline font-semibold text-on-surface leading-tight">Test User</span><span class="text-[11px] font-label text-secondary">Administrador</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white"><span class="material-symbols-outlined text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="px-8 py-8 max-w-7xl mx-auto w-full space-y-8"><!-- Encabezado de página -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-surface-container-high/60">
+  <div>
+    <nav class="flex items-center gap-2 text-xs font-label text-secondary mb-2">
+      <span class="">Cuenta</span>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <span class="text-primary font-semibold">Configuración personal</span>
+    </nav>
+    <h1 class="text-3xl font-headline font-bold text-on-surface tracking-tight whitespace-nowrap">Mi perfil</h1>
+    <p class="text-sm font-body text-secondary mt-1 max-w-2xl">
+      Administre sus credenciales corporativas, preferencias de seguridad y parámetros de identidad dentro del sistema de inventario TiendaStock.
+    </p>
+  </div>
+  <div class="flex items-center gap-3">
+    
+  </div>
+</div>
+
+<!-- Layout con 3 tarjetas principales ordenadas verticalmente y panel complementario lateral -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+  <!-- Columna Principal: Las 3 secciones requeridas -->
+  <div class="lg:col-span-8 space-y-6">
+
+    <!-- SECCIÓN 1: Información del perfil -->
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-headline font-bold text-on-surface">Información del perfil</h2>
+        <p class="text-sm font-body text-secondary mt-1">
+          Actualice sus datos personales y su dirección de correo electrónico.
+        </p>
+      </div>
+
+      <form class="space-y-5" id="profileForm" onsubmit="event.preventDefault(); const a=document.getElementById('profileAlert'); a.classList.remove('hidden'); setTimeout(()=&gt;a.classList.add('hidden'), 3500);">
+        <div class="space-y-4 max-w-xl">
+          <!-- Nombre -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="fullName">
+              Nombre
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">person</span>
+              <input class="w-full h-11 pl-10 pr-4 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="fullName" name="fullName" required="" type="text" value="Test User">
+            </div>
+          </div>
+
+          <!-- Nombre de usuario -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="username">
+              Nombre de usuario
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">alternate_email</span>
+              <input class="w-full h-11 pl-10 pr-4 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="username" name="username" required="" type="text" value="testuser">
+            </div>
+          </div>
+
+          <!-- Correo electrónico -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="email">
+              Correo electrónico
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">mail</span>
+              <input class="w-full h-11 pl-10 pr-4 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="email" name="email" required="" type="email" value="test@example.com">
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerta de éxito -->
+        <div class="hidden p-3 rounded-lg bg-primary/10 text-primary text-xs font-label font-medium items-center gap-2 max-w-xl" id="profileAlert">
+          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          <span class="">Los datos del perfil se han actualizado correctamente.</span>
+        </div>
+
+        <!-- Botón Guardar -->
+        <div class="pt-2">
+          <button class="px-6 py-2.5 rounded-lg text-white font-label text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2" style="background-color: rgb(5, 150, 105);" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" type="submit">
+            <span class="material-symbols-outlined text-[18px]">save</span>
+            <span class="">Guardar</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SECCIÓN 2: Cambiar contraseña -->
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-headline font-bold text-on-surface">Cambiar contraseña</h2>
+        <p class="text-sm font-body text-secondary mt-1">
+          Use una contraseña larga y difícil de adivinar para proteger su cuenta.
+        </p>
+      </div>
+
+      <form class="space-y-5" id="passwordChangeForm" onsubmit="event.preventDefault(); const p=document.getElementById('pwdAlert'); p.classList.remove('hidden'); this.reset(); setTimeout(()=&gt;p.classList.add('hidden'), 3500);">
+        <div class="space-y-4 max-w-xl">
+          <!-- Contraseña actual -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="currPwd">
+              Contraseña actual
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">key</span>
+              <input class="w-full h-11 pl-10 pr-11 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="currPwd" placeholder="Escriba su contraseña actual" required="" type="password">
+              <button class="absolute right-3 text-outline hover:text-on-surface transition-colors p-1" onclick="const el=document.getElementById('currPwd'); el.type = el.type === 'password' ? 'text' : 'password';" type="button">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Nueva contraseña -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="newPwd">
+              Nueva contraseña
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">password</span>
+              <input class="w-full h-11 pl-10 pr-11 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="newPwd" placeholder="Nueva contraseña" required="" type="password">
+              <button class="absolute right-3 text-outline hover:text-on-surface transition-colors p-1" onclick="const el=document.getElementById('newPwd'); el.type = el.type === 'password' ? 'text' : 'password';" type="button">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-label font-semibold text-on-surface" for="confirmPwd">
+              Confirmar contraseña
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3.5 text-outline text-[18px]">lock_clock</span>
+              <input class="w-full h-11 pl-10 pr-11 rounded-lg bg-surface-container-low text-sm font-body text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all" id="confirmPwd" placeholder="Repita la nueva contraseña" required="" type="password">
+              <button class="absolute right-3 text-outline hover:text-on-surface transition-colors p-1" onclick="const el=document.getElementById('confirmPwd'); el.type = el.type === 'password' ? 'text' : 'password';" type="button">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerta de éxito -->
+        <div class="hidden p-3 rounded-lg bg-primary/10 text-primary text-xs font-label font-medium items-center gap-2 max-w-xl" id="pwdAlert">
+          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          <span class="">La contraseña se ha actualizado correctamente.</span>
+        </div>
+
+        <!-- Botón Guardar -->
+        <div class="pt-2">
+          <button class="px-6 py-2.5 rounded-lg text-white font-label text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2" style="background-color: #059669;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" type="submit">
+            <span class="material-symbols-outlined text-[18px]">save</span>
+            <span class="">Guardar</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SECCIÓN 3: Eliminar cuenta -->
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-6 md:p-8 border border-error-container/80 space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-error-container/50 text-error flex items-center justify-center">
+          <span class="material-symbols-outlined text-[22px]">warning</span>
+        </div>
+        <div>
+          <h2 class="text-xl font-headline font-bold text-on-surface">Eliminar cuenta</h2>
+          <p class="text-xs font-label text-error font-medium">Zona de peligro</p>
+        </div>
+      </div>
+
+      <p class="text-sm font-body text-secondary leading-relaxed max-w-2xl">
+        Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente.</p>
+
+      <div class="pt-2">
+        <button class="px-5 py-2.5 rounded-lg text-white font-medium text-sm transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer" style="background-color: rgb(220, 38, 38);" onmouseover="this.style.backgroundColor='#b91c1c'" onmouseout="this.style.backgroundColor='#dc2626'" onclick="if(confirm('¿Está completamente seguro de que desea eliminar su cuenta? Esta acción no se puede deshacer.')){ alert('Solicitud de eliminación enviada al administrador.'); }" type="button">
+          <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+          <span class="">Eliminar cuenta</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Columna Lateral: Información complementaria y seguridad -->
+  <div class="lg:col-span-4 space-y-6">
+    <!-- Resumen de usuario y permisos -->
+    
+
+    <!-- Sesiones activas resumen -->
+    
+  </div>
+</div></div>
+</div>
+<script>
+  function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      input.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  }
+
+  function checkPasswordStrength(password) {
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    const reqLength = document.getElementById('reqLength');
+    const reqNumber = document.getElementById('reqNumber');
+    const reqSymbol = document.getElementById('reqSymbol');
+    const reqCase = document.getElementById('reqCase');
+
+    let score = 0;
+
+    // Condición: Longitud
+    const hasLength = password.length >= 8;
+    updateReqIcon(reqLength, hasLength);
+    if (hasLength) score++;
+
+    // Condición: Números
+    const hasNumber = /[0-9]/.test(password);
+    updateReqIcon(reqNumber, hasNumber);
+    if (hasNumber) score++;
+
+    // Condición: Símbolos
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+    updateReqIcon(reqSymbol, hasSymbol);
+    if (hasSymbol) score++;
+
+    // Condición: Mayúsculas y minúsculas
+    const hasCase = /[A-Z]/.test(password) && /[a-z]/.test(password);
+    updateReqIcon(reqCase, hasCase);
+    if (hasCase) score++;
+
+    if (password.length === 0) {
+      bar.style.width = '0%';
+      bar.className = 'h-full w-0 bg-outline transition-all duration-300 rounded-full';
+      text.textContent = 'Pendiente';
+      text.className = 'font-bold text-outline';
+      return;
+    }
+
+    if (score <= 1) {
+      bar.style.width = '25%';
+      bar.className = 'h-full bg-error transition-all duration-300 rounded-full';
+      text.textContent = 'Débil';
+      text.className = 'font-bold text-error';
+    } else if (score === 2 || score === 3) {
+      bar.style.width = '65%';
+      bar.className = 'h-full bg-secondary transition-all duration-300 rounded-full';
+      text.textContent = 'Moderada';
+      text.className = 'font-bold text-secondary';
+    } else if (score === 4) {
+      bar.style.width = '100%';
+      bar.className = 'h-full bg-primary transition-all duration-300 rounded-full';
+      text.textContent = 'Robusta y Segura';
+      text.className = 'font-bold text-primary';
+    }
+  }
+
+  function updateReqIcon(element, isValid) {
+    if (!element) return;
+    const icon = element.querySelector('.material-symbols-outlined');
+    const spanText = element.querySelector('span:not(.material-symbols-outlined)');
+    if (isValid) {
+      icon.className = 'material-symbols-outlined text-[16px] text-primary';
+      icon.textContent = 'check_circle';
+      if (spanText) spanText.className = 'text-on-surface font-medium';
+    } else {
+      icon.className = 'material-symbols-outlined text-[16px] text-outline';
+      icon.textContent = 'radio_button_unchecked';
+      if (spanText) spanText.className = 'text-secondary';
+    }
+  }
+
+  function showProfileSuccess() {
+    const alert = document.getElementById('profileSuccessAlert');
+    if (alert) {
+      alert.classList.remove('hidden');
+      setTimeout(() => {
+        alert.classList.add('hidden');
+      }, 4000);
+    }
+  }
+
+  function showPasswordSuccess() {
+    const alert = document.getElementById('passwordSuccessAlert');
+    if (alert) {
+      alert.classList.remove('hidden');
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      checkPasswordStrength('');
+      setTimeout(() => {
+        alert.classList.add('hidden');
+      }, 5000);
+    }
+  }
+</script></main></div>
+
+</body></html>

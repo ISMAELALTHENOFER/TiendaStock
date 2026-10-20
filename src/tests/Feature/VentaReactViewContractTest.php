@@ -56,6 +56,11 @@ class VentaReactViewContractTest extends TestCase
         foreach (['Items', 'Total', 'Entrega', 'Procesado por', 'Completada', 'Anulada', 'Cancelar', 'overflow-x-auto'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
+
+        $this->assertStringContainsString('ConfirmDialog', $source, 'Sale cancellation must use the shared styled dialog.');
+        $this->assertStringNotContainsString('window.confirm', $source, 'The native sale cancellation prompt must be gone.');
+        $this->assertStringContainsString('action={`/ventas/${sale.id}/cancel`}', $source);
+        $this->assertStringContainsString('Cancelar venta #${sale.id}', $source);
     }
 
     public function test_react_sales_contract_preserves_payment_filters_and_receipt_metadata(): void
@@ -90,12 +95,14 @@ class VentaReactViewContractTest extends TestCase
             'const available = product.cantidad - inCart',
             'sm:grid-cols-2',
             'xl:sticky',
+            'space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2',
+            'aria-label="Artículos del carrito" tabIndex={0}',
             'Cantidad de ${item.nombre}',
             'Descuento (monto fijo)',
             'parseMoney(discount)',
-            'value="efectivo"',
-            'value="tarjeta"',
-            'value="transferencia"',
+            "['efectivo', 'Efectivo']",
+            "['tarjeta', 'Tarjeta']",
+            "['transferencia', 'Transferencia']",
             'tipo_entrega: delivery',
             'pago_con: parseMoney(paid)',
             'paidCents < totalCents',
@@ -106,6 +113,11 @@ class VentaReactViewContractTest extends TestCase
         foreach (['Lector: Conectado', 'Cuenta Corriente Cliente', '0% o $ monto'] as $unsupported) {
             $this->assertStringNotContainsString($unsupported, $source);
         }
+
+        $this->assertStringNotContainsString('xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto', $source, 'Payment controls must not scroll with cart items.');
+        $this->assertLessThan(strpos($source, 'aria-label="Resumen y cobro"'), strpos($source, 'aria-label="Artículos del carrito"'), 'Cart items must live outside the checkout card.');
+        $this->assertStringContainsString('[@media(max-height:47.999rem)]:xl:static', $source, 'Short viewports must be able to scroll to every checkout control.');
+        $this->assertSame(1, substr_count($source, "'Cobrar'"), 'There must be only one checkout action.');
     }
 
     public function test_pos_uses_cents_for_checkout_and_whole_stock_bounded_quantities(): void
@@ -125,5 +137,28 @@ class VentaReactViewContractTest extends TestCase
         }
 
         $this->assertSame(2, substr_count($source, 'paidCents < totalCents'));
+    }
+
+    public function test_pos_delivery_and_payment_use_accessible_choice_tiles(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
+
+        $this->assertSame(2, substr_count($source, '<fieldset>'));
+        $this->assertStringContainsString('<legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend>', $source);
+        $this->assertStringContainsString('<legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Método de pago</legend>', $source);
+        $this->assertStringContainsString("[['local', 'En el local', Store], ['uber', 'Envío por Uber', Truck]]", $source);
+        $this->assertStringContainsString("[['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']]", $source);
+        $this->assertStringContainsString('name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} required', $source);
+        $this->assertStringContainsString('name="metodo_pago" value={value} checked={paymentMethod === value} onChange={() => setPaymentMethod(value)}', $source);
+        $this->assertStringContainsString("[delivery, setDelivery] = useState('')", $source);
+        $this->assertStringContainsString("[paymentMethod, setPaymentMethod] = useState('efectivo')", $source);
+        $this->assertStringContainsString('const choiceTileClass = (selected)', $source);
+        $this->assertStringContainsString('min-h-11 min-w-0', $source);
+        $this->assertStringContainsString('focus-within:outline', $source);
+        $this->assertStringContainsString('last:col-span-2 sm:last:col-span-1', $source);
+        $this->assertStringNotContainsString('<Select value={delivery}', $source);
+        $this->assertStringNotContainsString('<Select value={paymentMethod}', $source);
+        $this->assertStringContainsString('Pago con<Input type="text" inputMode="decimal"', $source);
+        $this->assertStringContainsString('className="mt-2 w-full text-right text-lg font-semibold tabular-nums', $source);
     }
 }
