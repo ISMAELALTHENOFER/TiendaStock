@@ -1,59 +1,32 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="page-title">
-            Nueva Categoría
-        </h2>
+        <div>
+            <h1 class="page-title">Nueva Categoría</h1>
+            <p class="mt-1 text-sm text-muted">Añadí una clasificación para organizar tu inventario.</p>
+        </div>
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-8">
-                    <h3 class="text-white font-bold text-lg">Información de la Categoría</h3>
-                    <p class="text-white/80 text-sm mt-1">Completa los detalles para crear una nueva categoría</p>
+        <div class="mx-auto max-w-2xl sm:px-6 lg:px-8">
+            <div class="overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
+                <div class="border-b border-border px-5 py-4 sm:px-7">
+                    <h2 class="text-lg font-bold text-ink">Información de la Categoría</h2>
                 </div>
-
-                <form action="{{ route('categorias.store') }}" method="POST" class="p-8">
+                <form action="{{ route('categorias.store') }}" method="POST" class="space-y-5 p-5 sm:p-7">
                     @csrf
-
-                    <div class="space-y-6">
-                        <!-- Nombre -->
-                        <div>
-                            <label for="nombre" class="block text-sm font-bold text-gray-900 mb-3">
-                                Nombre de la Categoría
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" id="nombre" name="nombre" value="{{ old('nombre') }}"
-                                placeholder="Ej: Ropa, Electrónica, Alimentos..."
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('nombre') border-red-500 @enderror">
-                            @error('nombre')
-                            <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Descripción -->
-                        <div>
-                            <label for="descripcion" class="block text-sm font-bold text-gray-900 mb-3">
-                                Descripción (Opcional)
-                            </label>
-                            <textarea id="descripcion" name="descripcion" rows="4"
-                                placeholder="Describe los tipos de productos que incluirá esta categoría..."
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('descripcion') border-red-500 @enderror">{{ old('descripcion') }}</textarea>
-                            @error('descripcion')
-                            <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <div>
+                        <label for="nombre" class="mb-1.5 block text-sm font-semibold text-ink">Nombre de Categoría <span class="text-red-600">*</span></label>
+                        <input id="nombre" name="nombre" type="text" required maxlength="255" value="{{ old('nombre') }}" placeholder="Ej: Ropa, Electrónica, Alimentos..." class="min-h-11 w-full rounded-control border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 @error('nombre') border-red-600 @enderror">
+                        @error('nombre') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
-
-                    <div class="flex flex-col sm:flex-row gap-4 mt-8">
-                        <a href="{{ route('categorias.index') }}"
-                            class="w-full sm:w-auto text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors duration-200">
-                            Cancelar
-                        </a>
-                        <button type="submit"
-                            class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-md">
-                            Crear Categoría
-                        </button>
+                    <div>
+                        <label for="descripcion" class="mb-1.5 block text-sm font-semibold text-ink">Descripción <span class="font-normal text-muted">(Opcional)</span></label>
+                        <textarea id="descripcion" name="descripcion" rows="3" maxlength="500" placeholder="Describe los productos que pertenecen a este grupo..." class="w-full resize-y rounded-control border border-border bg-surface px-3.5 py-3 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 @error('descripcion') border-red-600 @enderror">{{ old('descripcion') }}</textarea>
+                        @error('descripcion') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+                        <a href="{{ route('categorias.index') }}" class="inline-flex min-h-11 items-center justify-center rounded-control border border-border px-5 text-sm font-semibold text-ink hover:bg-surface-muted">Cancelar</a>
+                        <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Guardar Categoría</button>
                     </div>
                 </form>
             </div>

@@ -34,7 +34,7 @@
             && ($routeDriver ?? 'react') === 'react';
     @endphp
 
-    @if ($useReact && in_array($routeName, ['dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
+    @if ($useReact && in_array($routeName, ['dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'categorias.create', 'categorias.edit', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
         @include('react.app', ['props' => [
             'page' => $routeName,
             'user' => [
@@ -65,7 +65,10 @@
             ],
             'sales' => $ventas?->toArray(),
             'sale' => $venta?->toArray(),
-            'categorias' => $categorias?->toArray(),
+            'categorias' => request()->routeIs('categorias.index', 'categorias.create', 'categorias.edit')
+                ? $categorias->toArray() + ['summary' => request()->attributes->get('categoriaSummary', [])]
+                : $categorias?->toArray(),
+            'categoria' => isset($categoria) ? $categoria->toArray() : null,
             'producto' => $producto?->toArray(),
             'users' => $users?->toArray(),
             'usuario' => $usuario?->toArray(),

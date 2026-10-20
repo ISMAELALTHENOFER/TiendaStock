@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCircle2, CircleX, Minus, Package, Plus, Search, ShoppingBasket, ShoppingCart, Trash2, Truck, Store } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CircleX, Minus, Package, Plus, Search, ShoppingBasket, ShoppingCart, Store, Trash2, Truck } from 'lucide-react';
 import { api } from './lib/api.js';
 import { Badge } from './components/ui/Badge.jsx';
 import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
+import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
 
@@ -23,13 +24,24 @@ const detailDeliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el loc
 const paymentLabel = (method) => method ? method.charAt(0).toUpperCase() + method.slice(1) : '—';
 
 function CancelForm({ sale, compact = false }) {
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const formRef = useRef(null);
     if (sale.estado !== 'completada') return null;
-    return <form action={`/ventas/${sale.id}/cancel`} method="post" onSubmit={(event) => {
-        if (!window.confirm(`¿Anular venta #${sale.id} por ${formatMoney(sale.total)}? Se restaurará el stock.`)) event.preventDefault();
-    }}>
-        <input type="hidden" name="_token" value={csrf()} />
-        <button type="submit" aria-label={`Cancelar venta #${sale.id}`} className={compact ? 'block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50' : 'min-h-11 rounded-control px-4 text-sm font-semibold text-red-700 hover:bg-red-50'}>Cancelar venta #{sale.id}</button>
-    </form>;
+    return <>
+        <form ref={formRef} action={`/ventas/${sale.id}/cancel`} method="post">
+            <input type="hidden" name="_token" value={csrf()} />
+            <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className={compact ? 'block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50' : 'min-h-11 rounded-control px-4 text-sm font-semibold text-red-700 hover:bg-red-50'}>Cancelar venta #{sale.id}</button>
+        </form>
+        <ConfirmDialog
+            open={confirmOpen}
+            title={`Anular venta #${sale.id}`}
+            message={`¿Anular venta #${sale.id} por ${formatMoney(sale.total)}? Se restaurará el stock.`}
+            confirmLabel="Sí, anular"
+            tone="danger"
+            onConfirm={() => formRef.current?.submit()}
+            onClose={() => setConfirmOpen(false)}
+        />
+    </>;
 }
 
 function SaleActions({ sale }) {
@@ -106,6 +118,7 @@ export function SalesPos({ routes, initialErrors = {} }) {
     const [errors, setErrors] = useState(initialErrors);
     const [searching, setSearching] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const choiceTileClass = (selected) => `flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-control border px-2 py-2 text-center text-xs font-semibold leading-tight focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${selected ? 'border-primary bg-green-50 text-primary-700' : 'border-border bg-surface-muted text-ink hover:bg-border'}`;
     const subtotal = useMemo(() => Math.round(cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0) * 100) / 100, [cart]);
     const totalCents = Math.max(0, Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100));
     const total = totalCents / 100;
@@ -158,6 +171,17 @@ export function SalesPos({ routes, initialErrors = {} }) {
                     </div>
                     <p className="text-xs text-muted">Escribe al menos 2 caracteres para buscar productos disponibles.</p>
                 </Card>
+                <Card className="min-w-0 space-y-4 p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
+                    {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2" role="region" aria-label="Artículos del carrito" tabIndex={0}>{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
+                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                        <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
+                            <button type="button" disabled={item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
+                            <Input type="number" min="1" max={item.stock} step="1" value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                            <button type="button" disabled={item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
+                        </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
+                    </div>)}</div>}
+                </Card>
                 {searching && <p role="status" className="p-6 text-center text-sm text-muted">Buscando...</p>}
                 {!searching && searchError && <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-800">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
                 {!searching && !searchError && results.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{results.map((product) => {
@@ -176,20 +200,19 @@ export function SalesPos({ routes, initialErrors = {} }) {
                 })}</div>}
                 {!searching && !searchError && search.trim().length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}
             </section>
-            <Card className="min-w-0 space-y-5 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto">
-                <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
-                {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3">{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
-                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
-                    <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
-                        <button type="button" disabled={item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
-                        <Input type="number" min="1" max={item.stock} step="1" value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
-                        <button type="button" disabled={item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
-                    </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
-                </div>)}</div>}
-                <div className="space-y-3 border-t border-border pt-4 text-sm"><div className="flex items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
-                <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend><div className="grid grid-cols-2 gap-2">{[['local', 'En el local', Store], ['uber', 'Envío por Uber', Truck]].map(([value, label, Icon]) => <label key={value} className={`flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-control border p-2 text-center text-xs font-semibold focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${delivery === value ? 'border-primary bg-green-50 text-primary-700' : 'border-border bg-surface-muted text-ink hover:bg-border'}`}><input type="radio" name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} className="sr-only" /><Icon size={16} className="shrink-0" aria-hidden="true" />{label}</label>)}</div></fieldset>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">Método de pago<Select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-2 bg-surface-muted text-sm font-medium normal-case tracking-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></Select></label>
-                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="w-36 text-right tabular-nums" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
+            <Card aria-label="Resumen y cobro" className="min-w-0 space-y-4 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-3 xl:p-4 [@media(max-height:47.999rem)]:xl:static">
+                <div className="space-y-3 text-sm"><div className="flex items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
+                <div className="space-y-3">
+                    <fieldset>
+                        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend>
+                        <div className="grid grid-cols-2 gap-2">{[['local', 'En el local', Store], ['uber', 'Envío por Uber', Truck]].map(([value, label, Icon]) => <label key={value} className={choiceTileClass(delivery === value)}><input type="radio" name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} required className="sr-only" /><Icon size={16} className="shrink-0" aria-hidden="true" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
+                    </fieldset>
+                    <fieldset>
+                        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Método de pago</legend>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([value, label]) => <label key={value} className={`${choiceTileClass(paymentMethod === value)} last:col-span-2 sm:last:col-span-1`}><input type="radio" name="metodo_pago" value={value} checked={paymentMethod === value} onChange={() => setPaymentMethod(value)} className="sr-only" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
+                    </fieldset>
+                </div>
+                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
                 <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" onClick={() => { setCart([]); setPaid(''); setDiscount(''); }} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
             </Card>
         </div>

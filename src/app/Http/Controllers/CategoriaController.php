@@ -3,22 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
+use App\Models\Producto;
 use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categorias = Categoria::withCount('productos')->orderBy('nombre')->paginate(12);
-
-        return view('categorias.index', compact('categorias'));
+        return view('categorias.index', $this->categoryGridData($request));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('categorias.create');
+        if (! $this->usesReact($request)) {
+            return view('categorias.create');
+        }
+
+        return view('categorias.index', $this->categoryGridData($request));
+    }
+
+    public function edit(Request $request, Categoria $categoria)
+    {
+        if (! $this->usesReact($request)) {
+            return view('categorias.edit', compact('categoria'));
+        }
+
+        return view('categorias.index', $this->categoryGridData($request, $categoria));
+    }
+
+    private function categoryGridData(Request $request, ?Categoria $categoria = null): array
+    {
+        $categorias = Categoria::withCount('productos')->orderBy('nombre')->paginate(12);
+        $categoriaSummary = [
+            'total' => Categoria::count(),
+            'productos' => Producto::count(),
+            'vacias' => Categoria::doesntHave('productos')->count(),
+        ];
+        $request->attributes->set('categoriaSummary', $categoriaSummary);
+
+        return compact('categorias', 'categoriaSummary', 'categoria');
     }
 
     public function store(Request $request)
@@ -47,9 +72,12 @@ class CategoriaController extends Controller
         return view('categorias.show', compact('categoria'));
     }
 
-    public function edit(Categoria $categoria)
+    private function usesReact(Request $request): bool
     {
-        return view('categorias.edit', compact('categoria'));
+        $routeName = $request->route()?->getName();
+
+        return config('frontend.driver', 'blade') === 'react'
+            && (config("frontend.routes.{$routeName}") ?? 'react') === 'react';
     }
 
     public function update(Request $request, Categoria $categoria)
