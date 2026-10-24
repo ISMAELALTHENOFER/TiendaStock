@@ -6,18 +6,18 @@
                 <h2 class="page-title">
                     {{ $producto->nombre }}
                 </h2>
-                <p class="text-gray-600 text-sm mt-1">Detalles del producto</p>
+                <p class="mt-1 text-sm text-muted">Detalles del producto</p>
             </div>
             <div class="flex flex-col sm:flex-row gap-2 sm:ml-auto">
                 <a href="{{ route('productos.edit', $producto) }}"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 sm:py-2 px-4 rounded-lg transition-all duration-200 shadow-md">
+                    class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus-visible:outline-offset-4 sm:w-auto">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
                     Editar
                 </a>
                 <a href="{{ route('productos.index') }}"
-                    class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 sm:py-2 px-4 rounded-lg transition-colors duration-200 text-center">
+                    class="inline-flex min-h-11 w-full items-center justify-center rounded-control bg-surface-muted px-4 text-sm font-semibold text-ink transition-colors hover:bg-border focus-visible:outline-offset-4 sm:w-auto">
                     Volver
                 </a>
             </div>
@@ -25,15 +25,15 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full min-w-0">
 
             <!-- Información Principal -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-6">
-                <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
+            <div class="surface-panel mb-6 overflow-hidden">
+                <div class="bg-primary px-4 py-6 sm:px-6">
                     <h3 class="text-white font-bold text-lg">Información del Producto</h3>
                 </div>
 
-                <dl class="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
+                <dl class="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 sm:p-6">
                     <div class="border-b md:border-b-0 pb-4 md:pb-0">
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Categoría</dt>
                         <dd class="text-lg font-bold text-gray-900">{{ $producto->categoria->nombre }}</dd>
@@ -64,7 +64,7 @@
                     @endif
 
                     @if($producto->imagen)
-                    <div class="col-span-2">
+                    <div class="md:col-span-2">
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Imagen</dt>
                         <dd>
                             <img src="{{ Storage::url($producto->imagen) }}" alt="{{ $producto->nombre }}"
@@ -76,9 +76,9 @@
             </div>
 
             <!-- Información de Precios -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 <!-- Costo (precio_compra) -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div class="surface-panel overflow-hidden">
                     <div class="bg-blue-50 px-6 py-6">
                         <p class="text-sm font-bold text-blue-600 uppercase tracking-wider">Costo</p>
                         <p class="text-3xl font-bold text-blue-700 mt-2">{{ formato_pesos($producto->precio_compra) }}</p>
@@ -86,15 +86,15 @@
                 </div>
 
                 <!-- Precio de Venta -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div class="bg-brand-50 px-6 py-6">
-                        <p class="text-sm font-bold text-brand-300 uppercase tracking-wider">Precio de Venta</p>
-                        <p class="text-3xl font-bold text-brand-300 mt-2">{{ formato_pesos($producto->precio_venta) }}</p>
+                <div class="surface-panel overflow-hidden">
+                    <div class="bg-primary/10 px-6 py-6">
+                        <p class="text-sm font-bold text-primary uppercase tracking-wider">Precio de Venta</p>
+                        <p class="mt-2 text-3xl font-bold text-primary">{{ formato_pesos($producto->precio_venta) }}</p>
                     </div>
                 </div>
 
                 <!-- Ganancia por Unidad -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div class="surface-panel overflow-hidden">
                     <div class="bg-green-50 px-6 py-6">
                         <p class="text-sm font-bold text-green-600 uppercase tracking-wider">Ganancia por Unidad</p>
                         <p class="text-3xl font-bold text-green-700 mt-2">{{ formato_pesos($producto->ganancia) }}</p>
@@ -104,11 +104,11 @@
 
             <!-- Descripción -->
             @if($producto->descripcion)
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-6">
+            <div class="surface-panel overflow-hidden">
+                <div class="bg-primary px-4 py-6 sm:px-6">
                     <h3 class="text-white font-bold text-lg">Descripción</h3>
                 </div>
-                <div class="p-8">
+                <div class="p-4 sm:p-6">
                     <p class="text-gray-700 leading-relaxed text-lg">{{ $producto->descripcion }}</p>
                 </div>
             </div>

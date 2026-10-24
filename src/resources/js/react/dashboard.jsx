@@ -20,7 +20,7 @@ function Skeleton({ className = '' }) {
 
 function KpiCard({ icon: Icon, label, value, detail, loading, tone = 'neutral' }) {
     const toneClass = tone === 'warning' ? 'bg-amber-50 text-amber-700' : 'bg-primary-50 text-primary-700';
-    return <Card className="min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p>{loading ? <Skeleton className="mt-3 h-9 w-28" /> : <p className="mt-2 truncate text-3xl font-bold tracking-tight">{value}</p>}<p className="mt-2 text-sm text-muted">{loading ? <Skeleton className="h-4 w-20" /> : detail}</p></div><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${toneClass}`}><Icon size={20} aria-hidden="true" /></span></div></Card>;
+    return <Card className="min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p>{loading ? <Skeleton className="mt-3 h-9 w-28" /> : <p className="mt-2 break-words text-3xl font-bold tracking-tight">{value}</p>}<p className="mt-2 text-sm text-muted">{loading ? <Skeleton className="h-4 w-20" /> : detail}</p></div><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${toneClass}`}><Icon size={20} aria-hidden="true" /></span></div></Card>;
 }
 
 function SalesChart({ data }) {

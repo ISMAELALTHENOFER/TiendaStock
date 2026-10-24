@@ -47,7 +47,7 @@ function CategoryForm({ categoria, routes, onClose }) {
 
     return (
         <Modal open title={isEdit ? 'Editar Categoría' : 'Nueva Categoría'} onClose={onClose} size="product">
-            <form onSubmit={submit} className="max-h-[calc(100dvh-5rem)] overflow-y-auto p-5 sm:p-7">
+            <form onSubmit={submit} className="p-4 sm:p-7">
                 <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualizá los datos de esta categoría.' : 'Añadí una clasificación para organizar tu inventario.'}</p>
                 {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 p-3 text-sm text-red-700">{error('_general')}</p>}
                 <div className="space-y-5">

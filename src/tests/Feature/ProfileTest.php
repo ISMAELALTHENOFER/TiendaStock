@@ -26,7 +26,7 @@ class ProfileTest extends TestCase
             ->assertSee('Administre sus credenciales corporativas, preferencias de seguridad y parámetros de identidad dentro del sistema de inventario TiendaStock.')
             ->assertSee('aria-label="Breadcrumb"', false)
             ->assertSee('Configuración personal')
-            ->assertSee('w-full lg:w-2/3', false)
+            ->assertSee('w-full space-y-6', false)
             ->assertSee('p-4 sm:p-6 lg:p-8', false)
             ->assertSee('text-xl font-bold text-ink', false)
             ->assertSee('bg-surface-muted', false)
@@ -91,6 +91,21 @@ class ProfileTest extends TestCase
             ->assertDontSee('rounded-xl border border-red-200 p-4 sm:p-6', false)
             ->assertSee('Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente.')
             ->assertDontSee('Descargue antes la información que desee conservar.');
+    }
+
+    public function test_profile_forms_fill_the_available_content_width_without_changing_actions(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/profile');
+
+        $response->assertOk()
+            ->assertSee('class="w-full space-y-6"', false)
+            ->assertDontSee('class="w-full lg:w-2/3 space-y-6"', false)
+            ->assertDontSee('class="max-w-xl"', false)
+            ->assertSee('action="'.route('profile.update').'"', false)
+            ->assertSee('action="'.route('password.update').'"', false)
+            ->assertSee('action="'.route('profile.destroy').'"', false);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

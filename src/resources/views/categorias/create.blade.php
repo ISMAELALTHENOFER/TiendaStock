@@ -7,7 +7,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="mx-auto max-w-2xl sm:px-6 lg:px-8">
+        <div class="w-full min-w-0">
             <div class="overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
                 <div class="border-b border-border px-5 py-4 sm:px-7">
                     <h2 class="text-lg font-bold text-ink">Información de la Categoría</h2>

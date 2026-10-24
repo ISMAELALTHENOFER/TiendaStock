@@ -145,16 +145,16 @@ export function UserForm({ routes, usuario = null }) {
 
     return (
         <div className="py-4 sm:py-8">
-            <div className="mx-auto max-w-2xl overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
+            <div className="min-w-0 overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
                 <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
                     <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar Usuario' : 'Información del Usuario'}</h3>
                     <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los detalles del usuario' : 'Completa los detalles para crear un nuevo usuario'}</p>
                 </div>
 
-                <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-6 sm:p-8">
+                <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
                     {errors._general && <div className="rounded-card bg-red-50 p-3 text-sm text-red-700" role="alert">{errors._general[0]}</div>}
 
-                    <div className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
                         <div>
                             <label htmlFor="name-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre completo <span className="text-red-600">*</span></label>
                             <Input id="name-field" name="name" required autoComplete="name" placeholder="Ej: Juan Pérez" defaultValue={usuario?.name ?? ''} error={errors?.name?.[0]} />

@@ -36,7 +36,7 @@
             @endif
 
             @if($users->count() > 0)
-            <div class="bg-white rounded-xl shadow-md border border-sky-100 overflow-hidden">
+            <div class="surface-panel min-w-0 overflow-hidden">
 
                 {{-- Desktop: tabla --}}
                 <div class="hidden md:block overflow-x-auto">
@@ -92,10 +92,10 @@
                 <div class="md:hidden space-y-3 p-4">
                     @foreach($users as $user)
                     <div class="bg-white rounded-xl border border-sky-100 p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <div>
+                        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+                            <div class="min-w-0">
                                 <p class="font-semibold text-gray-900">{{ $user->name }}</p>
-                                <p class="text-sm text-gray-500">@ {{ $user->username }}</p>
+                                <p class="break-words text-sm text-gray-500">@ {{ $user->username }}</p>
                             </div>
                             @if($user->role === 'ADMIN')
                             <span class="bg-brand-100 text-brand-800 rounded-full px-3 py-1 text-xs font-bold">Admin</span>
@@ -107,7 +107,7 @@
                             <span class="bg-gray-100 text-gray-600 rounded-full px-3 py-1 text-xs font-bold">Sin rol</span>
                             @endif
                         </div>
-                        <div class="text-sm text-gray-600 mb-3">
+                        <div class="break-all text-sm text-gray-600 mb-3">
                             <span>{{ $user->email }}</span>
                         </div>
                         <a href="{{ route('admin.users.edit', $user) }}" class="block w-full text-center bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold py-3 rounded-lg transition-colors">
