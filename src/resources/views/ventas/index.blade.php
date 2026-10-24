@@ -165,7 +165,7 @@
             <div class="md:hidden space-y-3">
                 @forelse($ventas as $venta)
                 <div class="bg-white rounded-xl border border-sky-100 p-4 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <span class="text-xs text-gray-500">Venta #{{ $venta->id }}</span>
                             <p class="font-semibold text-gray-900">{{ $venta->created_at->format('d/m/Y H:i') }}</p>
@@ -174,7 +174,7 @@
                             {{ $venta->isCompletada() ? 'Completada' : 'Anulada' }}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="text-sm">
                             <span class="text-gray-500">{{ $venta->items->count() }} items</span>
                             <span class="mx-2 text-gray-300">|</span>
@@ -186,8 +186,8 @@
                         </div>
                         <p class="text-lg font-bold text-gray-900">{{ formato_pesos($venta->total) }}</p>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500">{{ $venta->user->name }}</span>
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span class="min-w-0 text-gray-500">{{ $venta->user->name }}</span>
                         <div class="flex gap-3">
                             <a href="{{ route('ventas.show', $venta) }}" class="text-brand-300 hover:text-brand-400 font-semibold py-2 px-3">Ver</a>
                             @if($venta->isCompletada())

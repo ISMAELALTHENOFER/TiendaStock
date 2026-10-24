@@ -70,7 +70,7 @@
                     <div class="space-y-3 p-4 md:hidden">
                         @foreach ($categoria->productos as $producto)
                             <article class="rounded-card border border-border p-4">
-                                <div class="flex items-start justify-between gap-3">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
                                     <h3 class="min-w-0 break-words font-semibold text-ink">{{ $producto->nombre }}</h3>
                                     <span class="shrink-0 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-semibold text-ink">{{ $producto->cantidad }} u.</span>
                                 </div>

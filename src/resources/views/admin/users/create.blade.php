@@ -15,14 +15,14 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                <div class="bg-gradient-to-r from-sky-400 to-sky-500 px-6 py-8">
-                    <h3 class="text-white font-bold text-lg">Información del Usuario</h3>
-                    <p class="text-white/80 text-sm mt-1">Completa los detalles para crear un nuevo usuario</p>
+        <div class="w-full min-w-0">
+            <div class="surface-panel overflow-hidden">
+                <div class="border-b border-border px-4 py-5 sm:px-6">
+                    <h3 class="text-ink font-bold text-lg">Información del Usuario</h3>
+                    <p class="text-muted text-sm mt-1">Completa los detalles para crear un nuevo usuario</p>
                 </div>
 
-                <form action="{{ route('admin.users.store') }}" method="POST" class="p-8">
+                <form action="{{ route('admin.users.store') }}" method="POST" class="p-4 sm:p-6 lg:p-8">
                     @csrf
 
                     <div class="space-y-6">

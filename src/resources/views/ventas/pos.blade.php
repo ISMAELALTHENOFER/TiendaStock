@@ -39,7 +39,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
 
                     {{-- COLUMNA IZQUIERDA (3/5): Búsqueda y resultados --}}
-                    <div class="order-2 lg:order-1 lg:col-span-3 space-y-4">
+                    <div class="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3">
                         <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4">
                             <div class="relative">
                                 <input type="text"
@@ -102,7 +102,7 @@
                     </div>
 
                     {{-- COLUMNA DERECHA (2/5): Carrito --}}
-                    <div class="order-1 lg:order-2 lg:col-span-2 space-y-4">
+                    <div class="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-2">
                         <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
                             <h3 class="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
                                 <svg class="w-6 h-6 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

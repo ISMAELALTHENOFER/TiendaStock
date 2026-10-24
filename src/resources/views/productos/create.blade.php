@@ -10,14 +10,14 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full min-w-0">
             <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                 <div class="bg-gradient-to-r from-brand-400 to-brand-500 px-6 py-8">
                     <h3 class="text-white font-bold text-lg">Información del Producto</h3>
                     <p class="text-white/80 text-sm mt-1">Ingresa todos los detalles del producto</p>
                 </div>
 
-                <form action="{{ route('productos.store') }}" method="POST" enctype="multipart/form-data" class="p-8">
+                <form action="{{ route('productos.store') }}" method="POST" enctype="multipart/form-data" class="p-4 sm:p-6 lg:p-8">
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -25,7 +25,7 @@
                         {{-- Nombre — wrapped in duplicateCheck() so @blur can ask the
        backend whether a product with that exact name already exists and,
        if so, prompt the user to edit it instead of duplicating it. --}}
-                        <div class="col-span-2" x-data="duplicateCheck()">
+                        <div class="md:col-span-2" x-data="duplicateCheck()">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Nombre del Producto
                                 <span class="text-red-500">*</span>
@@ -41,13 +41,13 @@
                         {{-- Categoría (con alta inline) — span full width so the " Seleccionar
      Categoría" placeholder fits without clipping, and render an explicit
      chevron so the native dropdown arrow never overlaps the placeholder text. --}}
-                        <div class="col-span-2" x-data="inlineCategory()">
+                        <div class="md:col-span-2" x-data="inlineCategory()">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Categoría
                                 <span class="text-red-500">*</span>
                             </label>
-                            <div class="flex gap-2">
-                                <div class="relative flex-1">
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                                <div class="relative min-w-0 flex-1">
                                     <select name="categoria_id"
                                         class="w-full appearance-none pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all duration-200 @error('categoria_id') border-red-500 @enderror">
                                         <option value="">Seleccionar Categoría </option>
@@ -158,7 +158,7 @@
                         </div>
 
                         {{-- Imagen --}}
-                        <div class="col-span-2" x-data="productImage('')">
+                        <div class="md:col-span-2" x-data="productImage('')">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Imagen
                                 <span class="text-gray-400 font-normal text-xs">(Opcional)</span>
@@ -172,7 +172,7 @@
                         </div>
 
                         {{-- Descripción --}}
-                        <div class="col-span-2">
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Descripción
                                 <span class="text-gray-400 font-normal text-xs">(Opcional)</span>

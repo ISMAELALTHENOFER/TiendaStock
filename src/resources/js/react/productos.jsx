@@ -48,8 +48,8 @@ function MoneyInput({ label, name, initial = 0, error }) {
 
     return (
         <div>
-            <label className="block text-sm font-medium text-ink">{label}</label>
-            <Input type="text" inputMode="decimal" value={display} onInput={onInput} onBlur={onBlur} error={error} placeholder="0,00" className="mt-1" />
+            <label htmlFor={`${name}-field`} className="block text-sm font-medium text-ink">{label}</label>
+            <Input id={`${name}-field`} type="text" inputMode="decimal" value={display} onInput={onInput} onBlur={onBlur} error={error} placeholder="0,00" className="mt-1" />
             <input type="hidden" name={name} value={raw} />
             {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
         </div>
@@ -207,7 +207,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
 
     const formContent = (
         <div className={modal ? '' : 'py-4 sm:py-8'}>
-            <div className={modal ? 'overflow-hidden bg-surface' : 'mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface shadow-subtle'}>
+            <div className={modal ? 'min-w-0 bg-surface' : 'min-w-0 overflow-hidden rounded-card border border-border bg-surface shadow-subtle'}>
                 {modal ? (
                     <div className="flex items-start justify-between gap-4 bg-primary px-5 py-4 text-white sm:px-6">
                         <div>
@@ -228,7 +228,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     </div>
                 )}
 
-                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'max-h-[calc(100dvh-10rem)] space-y-4 overflow-y-auto p-5 sm:p-6' : 'space-y-6 p-6 sm:p-8'}>
+                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
                     {errors._general && (
                         <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
                     )}
@@ -241,8 +241,8 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
 
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600">*</span></label>
-                        <div className="mt-1 flex gap-2">
-                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? ''} className="flex-1">
+                        <div className="mt-1 flex flex-wrap gap-2">
+                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? ''} className="min-w-0 flex-1 basis-40">
                                 <option value="">Seleccioná una categoría</option>
                                 {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                             </Select>
@@ -273,7 +273,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         <textarea id="descripcion-field" name="descripcion" rows="3" defaultValue={producto?.descripcion ?? ''} placeholder="Detalles opcionales (material, cuidados, etc.)" className="mt-1 block w-full rounded-control border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted focus:border-primary focus:outline-none" />
                     </div>
 
-                    <ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} error={errors?.imagen?.[0]} />
+                    <div><ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} error={errors?.imagen?.[0]} /></div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
                         {modal ? (
@@ -445,7 +445,7 @@ export function ProductList({ categorias, routes }) {
                 </div>
             </div>
 
-            <div className="mb-6 flex flex-col gap-3 rounded-xl border border-[#e5eeff] bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+            <div className="mb-6 flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-subtle lg:flex-row lg:items-center">
                 <div className="min-w-0 flex-1">
                     <Input
                         ref={searchRef}
@@ -455,7 +455,7 @@ export function ProductList({ categorias, routes }) {
                         aria-label="Buscar por nombre, categoría, talle o color"
                     />
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[42rem]">
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-[2]">
                     <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => setFiltroCategoria(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todas las categorías</option>
                         {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
@@ -483,7 +483,7 @@ export function ProductList({ categorias, routes }) {
                 />
             ) : (
                 <div className="space-y-6">
-                    <Card className="hidden overflow-x-auto rounded-xl border border-[#e5eeff] bg-white p-0 shadow-sm sm:p-0 xl:block">
+                    <Card className="hidden overflow-x-auto p-0 sm:p-0 xl:block">
                          <table className="data-table w-full min-w-[960px] text-left text-sm">
                             <thead>
                                  <tr className="border-b border-border text-xs uppercase tracking-wide text-white">
@@ -529,7 +529,7 @@ export function ProductList({ categorias, routes }) {
 
                     <div className="space-y-4 xl:hidden">
                         {visibles.map((producto) => (
-                            <Card key={producto.id} className="border border-[#e5eeff] bg-white shadow-sm">
+                            <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
                                         ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
@@ -581,7 +581,7 @@ export function ProductList({ categorias, routes }) {
                              Mostrando <strong className="text-ink">{desde}</strong>–<strong className="text-ink">{hasta}</strong> de <strong className="text-ink">{filtrados.length}</strong> {filtrados.length === 1 ? 'producto' : 'productos'}
                         </p>
                         {totalPaginas > 1 && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center justify-center gap-3">
                                 <button type="button" disabled={paginaSegura <= 1} onClick={() => setPaginaActual(paginaSegura - 1)} className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-ink disabled:opacity-40">Anterior</button>
                                 <span className="text-sm text-muted">Página <strong className="text-ink">{paginaSegura}</strong> de <strong className="text-ink">{totalPaginas}</strong></span>
                                 <button type="button" disabled={paginaSegura >= totalPaginas} onClick={() => setPaginaActual(paginaSegura + 1)} className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-ink disabled:opacity-40">Siguiente</button>

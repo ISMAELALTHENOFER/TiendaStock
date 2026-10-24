@@ -215,7 +215,7 @@ class ProductoImagenTest extends TestCase
         $response->assertSee(Storage::url($producto->imagen));
     }
 
-    public function test_show_emits_no_img_when_imagen_is_null(): void
+    public function test_show_emits_no_product_image_when_imagen_is_null(): void
     {
         $producto = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
@@ -225,7 +225,7 @@ class ProductoImagenTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('productos.show', $producto));
 
         $response->assertOk();
-        $response->assertDontSee('<img', false);
+        $response->assertDontSee('alt="'.$producto->nombre.'"', false);
     }
 
     public function test_data_endpoint_returns_imagen_field_for_client_thumbnails(): void

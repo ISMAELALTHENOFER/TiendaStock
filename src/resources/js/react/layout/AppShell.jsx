@@ -33,6 +33,6 @@ export function AppShell({ user, routes, activePage, children }) {
     }, [open, isMobile]);
     const mobileClosed = isMobile && !open;
     return <div className={`min-h-dvh bg-canvas transition-[padding-left] duration-200 ${collapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-72'}`}><div ref={drawerRef} inert={mobileClosed}><Sidebar user={user} routes={routes} activePage={activePage} open={open} onClose={() => setOpen(false)} mobileClosed={mobileClosed} collapsed={collapsed} onToggleCollapse={() => setCollapsed((current) => !current)} /></div>{open && isMobile && <button className="fixed inset-0 z-30 bg-ink/50" onClick={() => setOpen(false)} aria-label="Cerrar navegación" />}
-        <div className="min-w-0 min-h-dvh"><Header user={user} sidebarOpen={open} onMenu={() => setOpen((current) => !current)} /><main className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">{children}</main></div>
+        <div className="min-w-0 min-h-dvh"><Header user={user} sidebarOpen={open} onMenu={() => setOpen((current) => !current)} /><main className="w-full min-w-0 p-4 sm:p-6 lg:p-8">{children}</main></div>
     </div>;
 }

@@ -46,7 +46,8 @@
                 @endif
 
                 {{-- Items --}}
-                <table class="w-full mb-6">
+                <div class="mb-6 overflow-x-auto">
+                <table class="w-full min-w-[28rem]">
                     <thead>
                         <tr class="border-b border-gray-200 text-left">
                             <th class="py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Producto</th>
@@ -66,6 +67,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
 
                 {{-- Totales --}}
                 <div class="border-t border-gray-200 pt-4 space-y-1 text-right">
@@ -142,6 +144,7 @@
 @push('styles')
 <style>
 @media print {
+    #recibo table { min-width: 0; }
     body * { visibility: hidden; }
     #recibo, #recibo * { visibility: visible; }
     #recibo { position: absolute; left: 0; top: 0; width: 100%; padding: 0; border: none; box-shadow: none; }

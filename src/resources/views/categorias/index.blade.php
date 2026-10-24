@@ -24,7 +24,7 @@
                     @foreach ($categorias as $categoria)
                         <article class="flex min-w-0 flex-col justify-between rounded-card border border-border bg-surface p-5 shadow-sm sm:p-6">
                             <div>
-                                <div class="flex min-w-0 items-start justify-between gap-3">
+                                <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
                                     <h2 class="min-w-0 break-words font-bold text-ink">{{ $categoria->nombre }}</h2>
                                     <span class="shrink-0 rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-ink">{{ $categoria->productos_count }} {{ $categoria->productos_count === 1 ? 'producto' : 'productos' }}</span>
                                 </div>
