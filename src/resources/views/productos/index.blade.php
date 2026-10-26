@@ -21,7 +21,7 @@
     <style>[x-cloak]{display:none!important}</style>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full min-w-0 sm:px-6 lg:px-8">
 
             @if(session('success'))
             <div class="mb-6 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-lg shadow-md" role="alert">
@@ -124,11 +124,16 @@
                     </div>
 
                     {{-- Indicador de resultados + limpiar: fuera del template x-for --}}
-                    <div class="flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center justify-between flex-wrap gap-3">
                         <div class="px-4 py-2 bg-brand-50 border border-brand-200 rounded-lg text-brand-700 text-sm">
                             Mostrando <strong x-text="rangoInicio"></strong>–<strong x-text="rangoFin"></strong>
                             de <strong x-text="totalFiltrados"></strong> producto(s)
                         </div>
+                        <label class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">Por página
+                            <select x-model.number="POR_PAGINA" @change="paginaActual = 1" aria-label="Productos por página" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-gray-700 focus:ring-2 focus:ring-brand-300">
+                                <option value="15">15</option><option value="30">30</option><option value="50">50</option>
+                            </select>
+                        </label>
                         <button
                             type="button"
                             x-show="hayFiltrosActivos"
@@ -359,11 +364,12 @@
 
                     {{-- Paginación client-side de a 50 filas sobre el resultado filtrado.
                          Los botones de nav se deshabilitan en los bordes; el buscador NUNCA se deshabilita. --}}
-                    <div x-show="totalPaginas > 1" class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                    <div x-show="totalPaginas > 1" class="pagination-controls p-4">
+                        <div class="pagination-actions">
                         <button type="button"
                             @click="paginaAnterior()"
                             :disabled="paginaActual === 1"
-                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-5 py-3 text-sm font-semibold text-gray-700 transition-all"
+                            class="inline-flex min-h-11 items-center gap-1 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300"
                             :class="paginaActual === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 hover:border-brand-300'">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -371,20 +377,21 @@
                             Anterior
                         </button>
 
-                        <div class="text-sm text-gray-600">
+                        <div class="text-sm text-gray-600" aria-live="polite">
                             Página <strong x-text="paginaActual"></strong> de <strong x-text="totalPaginas"></strong>
                         </div>
 
                         <button type="button"
                             @click="paginaSiguiente()"
                             :disabled="paginaActual === totalPaginas"
-                            class="inline-flex items-center gap-1 bg-white border-2 border-slate-200 rounded-lg px-5 py-3 text-sm font-semibold text-gray-700 transition-all"
+                            class="inline-flex min-h-11 items-center gap-1 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300"
                             :class="paginaActual === totalPaginas ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 hover:border-brand-300'">
                             Siguiente
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
+                        </div>
                     </div>
                 </div>
 
@@ -505,7 +512,7 @@ document.addEventListener('alpine:init', () => {
         /**
          * Aplica AND entre filtros activos. La caja de texto busca OR entre
          * nombre / categoria.nombre / talle / color. Los demás filtros acotan
-         * su campo correspondiente. Dispara desde 1 caracter (sin mínimo).
+         * su campo correspondiente. Dispara desde dos caracteres.
          */
         get filtrados() {
             const termino = this.busqueda.trim().toLowerCase();
@@ -530,7 +537,7 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 // Caja de texto principal: OR entre los 4 campos.
-                if (termino) {
+                if (termino.length >= 2) {
                     const enNombre = this.coincideTexto(producto.nombre, termino);
                     const enCategoria = this.coincideTexto(producto.categoria?.nombre, termino);
                     const enTalle = this.coincideTexto(producto.talle, termino);
