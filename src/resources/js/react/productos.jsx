@@ -8,9 +8,12 @@ import { Input } from './components/ui/Input.jsx';
 import { LoadingState } from './components/ui/LoadingState.jsx';
 import { Modal } from './components/ui/Modal.jsx';
 import { Select } from './components/ui/Select.jsx';
+import { Pagination } from './components/ui/Pagination.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
+import { saveResponse } from './lib/saveResponse.js';
+import { isInteractiveSearch } from './lib/interactiveSearch.js';
 
 const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
@@ -159,38 +162,16 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         if (token) headers['X-CSRF-TOKEN'] = token;
         try {
             const response = await fetch(formRef.current.action, { method: 'POST', headers, body: data });
-            if (response.redirected) {
-                if (onSaved) {
-                    setSubmitting(false);
-                    onSaved();
-                } else {
-                    window.location.assign(response.url);
-                }
-                return;
-            }
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                setSubmitting(false);
-                setErrors({ _general: ['El servidor respondió de forma inesperada. No se pudo guardar el producto.'] });
-                return;
-            }
-            const body = await response.json();
-            if (!response.ok) {
-                setSubmitting(false);
-                setErrors(body?.errors && Object.keys(body.errors).length
-                    ? body.errors
-                    : { _general: ['No se pudo guardar el producto. Revisá los datos e intentá nuevamente.'] });
-                return;
-            }
+            const body = await saveResponse(response);
             setSubmitting(false);
             if (onSaved) {
                 onSaved();
                 return;
             }
-            window.location.assign(body?.redirect || routes.productos);
-        } catch {
+            window.location.assign(body.redirect);
+        } catch (error) {
             setSubmitting(false);
-            setErrors({ _general: ['No se pudo guardar el producto. Reintentá.'] });
+            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar el producto. Reintentá.'] });
         }
     };
 
@@ -327,11 +308,11 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
     ) : formContent;
 }
 
-function acciones(producto, routes, setToggle, setEditingProducto) {
+function acciones(producto, routes, setToggle, setEditingProducto, setProductoViendo) {
     const nombre = producto.nombre;
     return (
         <div className="data-table-actions">
-            <a href={`${routes.productos}/${producto.id}`} className="data-table-action text-ink hover:bg-surface-muted" aria-label={`Ver ${nombre}`}>Ver</a>
+            <a href={`${routes.productos}/${producto.id}`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setProductoViendo(producto); }} className="data-table-action text-ink hover:bg-surface-muted" aria-label={`Ver ${nombre}`}>Ver</a>
             <a href={`${routes.productos}/${producto.id}/edit`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setEditingProducto(producto); }} className="data-table-action text-primary hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
             {producto.activo ? (
                 <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
@@ -359,11 +340,12 @@ export function ProductList({ categorias, routes }) {
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
+    const [pageSize, setPageSize] = useState(15);
     const [toggle, setToggle] = useState(null);
     const [crearAbierto, setCrearAbierto] = useState(false);
     const [productoEditando, setProductoEditando] = useState(null);
+    const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
-    const POR_PAGINA = 15;
 
     const cargar = useCallback(async () => {
         setCargando(true);
@@ -389,7 +371,7 @@ export function ProductList({ categorias, routes }) {
 
     const filtrados = useMemo(() => {
         if (!productos) return [];
-        const termino = busqueda.trim().toLowerCase();
+        const termino = isInteractiveSearch(busqueda) ? busqueda.trim().toLowerCase() : '';
         const tokens = termino.split(' ').filter(Boolean);
         return productos.filter((p) => {
             const matchesTermino = tokens.length === 0 || tokens.every((token) =>
@@ -405,11 +387,11 @@ export function ProductList({ categorias, routes }) {
     const talies = useMemo(() => [...new Set((productos || []).map((p) => p.talle).filter(Boolean))].sort(), [productos]);
     const colores = useMemo(() => [...new Set((productos || []).map((p) => p.color).filter(Boolean))].sort(), [productos]);
 
-    const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
+    const totalPaginas = Math.max(1, Math.ceil(filtrados.length / pageSize));
     const paginaSegura = Math.min(paginaActual, totalPaginas);
-    const visibles = filtrados.slice((paginaSegura - 1) * POR_PAGINA, paginaSegura * POR_PAGINA);
-    const desde = filtrados.length === 0 ? 0 : (paginaSegura - 1) * POR_PAGINA + 1;
-    const hasta = Math.min(paginaSegura * POR_PAGINA, filtrados.length);
+    const visibles = filtrados.slice((paginaSegura - 1) * pageSize, paginaSegura * pageSize);
+    const desde = filtrados.length === 0 ? 0 : (paginaSegura - 1) * pageSize + 1;
+    const hasta = Math.min(paginaSegura * pageSize, filtrados.length);
     const hayFiltros = Boolean(busqueda || filtroCategoria || filtroTalle || filtroColor);
 
     const limpiarFiltros = () => {
@@ -520,7 +502,7 @@ export function ProductList({ categorias, routes }) {
                                          <td className="px-4 py-3 text-right tabular-nums">
                                              <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
-                                          <td className="px-4 py-3">{acciones(producto, routes, setToggle, setProductoEditando)}</td>
+                                          <td className="px-4 py-3">{acciones(producto, routes, setToggle, setProductoEditando, setProductoViendo)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -571,23 +553,12 @@ export function ProductList({ categorias, routes }) {
                                         </dd>
                                     </div>
                                 </dl>
-                                <div className="mt-4 border-t border-border pt-3">{acciones(producto, routes, setToggle, setProductoEditando)}</div>
+                                <div className="mt-4 border-t border-border pt-3">{acciones(producto, routes, setToggle, setProductoEditando, setProductoViendo)}</div>
                             </Card>
                         ))}
                     </div>
 
-                    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                        <p className="text-sm text-muted">
-                             Mostrando <strong className="text-ink">{desde}</strong>–<strong className="text-ink">{hasta}</strong> de <strong className="text-ink">{filtrados.length}</strong> {filtrados.length === 1 ? 'producto' : 'productos'}
-                        </p>
-                        {totalPaginas > 1 && (
-                            <div className="flex flex-wrap items-center justify-center gap-3">
-                                <button type="button" disabled={paginaSegura <= 1} onClick={() => setPaginaActual(paginaSegura - 1)} className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-ink disabled:opacity-40">Anterior</button>
-                                <span className="text-sm text-muted">Página <strong className="text-ink">{paginaSegura}</strong> de <strong className="text-ink">{totalPaginas}</strong></span>
-                                <button type="button" disabled={paginaSegura >= totalPaginas} onClick={() => setPaginaActual(paginaSegura + 1)} className="rounded-control border border-border px-3 py-2 text-sm font-semibold text-ink disabled:opacity-40">Siguiente</button>
-                            </div>
-                        )}
-                    </div>
+                    <Pagination currentPage={paginaSegura} lastPage={totalPaginas} pageSize={pageSize} ariaLabel="Paginación de productos" summary={`Mostrando ${desde}–${hasta} de ${filtrados.length} productos`} onPageChange={setPaginaActual} onPageSizeChange={(size) => { setPageSize(size); setPaginaActual(1); }} />
                 </div>
             )}
 
@@ -619,6 +590,35 @@ export function ProductList({ categorias, routes }) {
                 onConfirm={confirmarToggle}
                 onClose={() => setToggle(null)}
             />
+
+            {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
+                <div className="space-y-6 p-4 sm:p-7">
+                    <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
+                        {productoViendo.imagen && <img src={`/storage/${productoViendo.imagen}`} alt={productoViendo.nombre} className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
+                            <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
+                        </div>
+                        <Badge tone={productoViendo.cantidad === 0 ? 'danger' : productoViendo.cantidad <= 5 ? 'warning' : 'success'}>
+                            {productoViendo.cantidad} {productoViendo.cantidad === 1 ? 'unidad' : 'unidades'}
+                        </Badge>
+                    </div>
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+                        {[
+                            ['Talle', productoViendo.talle || '—'],
+                            ['Color', productoViendo.color || '—'],
+                        ].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words font-medium text-ink">{value}</dd></div>)}
+                    </dl>
+                    <dl className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                        {[
+                            ['Costo', productoViendo.precio_compra],
+                            ['Precio de venta', productoViendo.precio_venta],
+                            ['Ganancia por unidad', productoViendo.precio_venta - productoViendo.precio_compra],
+                        ].map(([label, value]) => <div key={label} className="min-w-0 py-3 sm:px-3 first:sm:pl-0 last:sm:pr-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words text-base font-bold tabular-nums text-ink">{formatMoney(value)}</dd></div>)}
+                    </dl>
+                    {productoViendo.descripcion && <section aria-label="Descripción del producto" className="space-y-1"><h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Descripción</h4><p className="whitespace-pre-line break-words text-sm leading-6 text-ink">{productoViendo.descripcion}</p></section>}
+                </div>
+            </Modal>}
 
             {(crearAbierto || productoEditando) && (
                 <ProductForm

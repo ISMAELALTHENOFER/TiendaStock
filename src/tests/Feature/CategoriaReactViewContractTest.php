@@ -125,10 +125,24 @@ class CategoriaReactViewContractTest extends TestCase
             'productos_count',
             'last_page',
             'current_page',
-            '?page=',
+            "params.set('page'",
+            "params.set('per_page'",
+            "get('buscar')",
             'No hay categorías creadas aún',
             'Crear Primera Categoría',
         ] as $contract) {
+            $this->assertStringContainsString($contract, $source);
+        }
+
+        $this->assertStringContainsString("from './components/ui/Pagination.jsx'", $source);
+        $this->assertStringContainsString('<Pagination', $source);
+    }
+
+    public function test_shared_react_pagination_supports_links_callbacks_and_page_sizes(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/components/ui/Pagination.jsx'));
+
+        foreach (["[15, 30, 50]", 'hrefForPage', 'onPageChange', 'onPageSizeChange', 'aria-current', 'ariaLabel', 'disabled'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -170,7 +184,7 @@ class CategoriaReactViewContractTest extends TestCase
             '<Modal',
             'role="alert"',
             "headers = { Accept: 'application/json' }",
-            'response.redirected',
+            'saveResponse(response)',
             'routes.categorias',
             "defaultValue={categoria?.nombre ?? ''}",
             "defaultValue={categoria?.descripcion ?? ''}",
@@ -230,13 +244,13 @@ class CategoriaReactViewContractTest extends TestCase
             'nombre' => 'Accesorios',
             'descripcion' => 'Complementos',
         ], ['Accept' => 'application/json']);
-        $created->assertRedirect(route('categorias.index'));
+        $created->assertOk()->assertJsonPath('saved', true)->assertJsonPath('redirect', route('categorias.index'));
         $categoria = Categoria::where('nombre', 'Accesorios')->firstOrFail();
 
         $this->put(route('categorias.update', $categoria), [
             'nombre' => 'Accesorios nuevos',
             'descripcion' => 'Descripción actualizada',
-        ], ['Accept' => 'application/json'])->assertRedirect(route('categorias.index'));
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
         $this->assertDatabaseHas('categorias', [
             'id' => $categoria->id,
             'nombre' => 'Accesorios nuevos',

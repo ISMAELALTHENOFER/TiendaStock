@@ -5,7 +5,10 @@ import { Card } from './components/ui/Card.jsx';
 import { EmptyState } from './components/ui/EmptyState.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Modal } from './components/ui/Modal.jsx';
+import { Pagination } from './components/ui/Pagination.jsx';
 import { csrf } from './lib/api.js';
+import { saveResponse } from './lib/saveResponse.js';
+import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 
 function CategoryForm({ categoria, routes, onClose }) {
     const isEdit = Boolean(categoria);
@@ -25,20 +28,10 @@ function CategoryForm({ categoria, routes, onClose }) {
 
         try {
             const response = await fetch(action, { method: 'POST', headers, body });
-            if (response.redirected) {
-                window.location.assign(response.url);
-                return;
-            }
-            const contentType = response.headers.get('content-type') || '';
-            const result = contentType.includes('application/json') ? await response.json() : null;
-            if (!response.ok) {
-                setErrors(result?.errors || { _general: ['No se pudo guardar la categoría. Intentá nuevamente.'] });
-                setSubmitting(false);
-                return;
-            }
-            window.location.assign(result?.redirect || routes.categorias);
-        } catch {
-            setErrors({ _general: ['No se pudo guardar la categoría. Intentá nuevamente.'] });
+            const result = await saveResponse(response);
+            window.location.assign(result.redirect);
+        } catch (error) {
+            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar la categoría. Intentá nuevamente.'] });
             setSubmitting(false);
         }
     }
@@ -74,10 +67,20 @@ function CategoryForm({ categoria, routes, onClose }) {
 export function CategoriaGrid({ categorias, routes, initialModal = false }) {
     const [eliminar, setEliminar] = useState(null);
     const [modalCategoria, setModalCategoria] = useState(initialModal);
-    const data = categorias?.data || [];
+    const [buscar, setBuscar] = useState(new URLSearchParams(window.location.search).get('buscar') || '');
+    const liveSearch = useLiveSearchResults(categorias, { query: buscar, route: routes.categorias, pageSize: Number(categorias?.per_page) || 15 });
+    const page = liveSearch.results || categorias;
+    const data = page?.data || [];
     const summary = categorias?.summary || { total: categorias?.total ?? 0, productos: 0, vacias: 0 };
-    const currentPage = categorias?.current_page ?? 1;
-    const lastPage = categorias?.last_page ?? 1;
+    const currentPage = page?.current_page ?? 1;
+    const lastPage = page?.last_page ?? 1;
+    const pageSize = Number(page?.per_page) || 15;
+    const paginationHref = (page, size = pageSize) => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(page));
+        params.set('per_page', String(size));
+        return `${routes.categorias}?${params}`;
+    };
 
     const openEdit = (event, categoria) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -120,6 +123,15 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
                 ))}
             </section>
 
+            <form method="get" action={routes.categorias} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
+                <label htmlFor="category-search" className="sr-only">Buscar categorías</label>
+                <input id="category-search" name="buscar" value={buscar} onChange={(event) => setBuscar(event.target.value)} placeholder="Buscar categorías…" className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-4 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                <input type="hidden" name="per_page" value={pageSize} />
+                <Button type="submit">Buscar</Button>
+            </form>
+            {liveSearch.searching && <p role="status" className="mb-3 text-sm text-muted">Buscando categorías…</p>}
+            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
                     <EmptyState title="No hay categorías creadas aún" description="Las categorías agrupan tus productos para encontrarlos más rápido." />
@@ -154,14 +166,7 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
                 </div>
             )}
 
-            <div className="mt-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-                <p className="text-sm text-muted">Mostrando <strong className="text-ink">{categorias?.from ?? 0}–{categorias?.to ?? 0}</strong> de <strong className="text-ink">{categorias?.total ?? 0}</strong> {(categorias?.total ?? 0) === 1 ? 'categoría' : 'categorías'}</p>
-                {lastPage > 1 && <nav aria-label="Paginación de categorías" className="flex flex-wrap items-center gap-2">
-                    {currentPage <= 1 ? <button type="button" disabled className="inline-flex min-h-11 items-center rounded-control border border-border px-3 text-sm font-semibold opacity-50">Anterior</button> : <a href={`${routes.categorias}?page=${currentPage - 1}`} className="inline-flex min-h-11 items-center rounded-control border border-border px-3 text-sm font-semibold hover:bg-surface-muted">Anterior</a>}
-                    <span className="px-2 text-sm text-muted">Página <strong className="text-ink">{currentPage}</strong> de <strong className="text-ink">{lastPage}</strong></span>
-                    {currentPage >= lastPage ? <button type="button" disabled className="inline-flex min-h-11 items-center rounded-control border border-border px-3 text-sm font-semibold opacity-50">Siguiente</button> : <a href={`${routes.categorias}?page=${currentPage + 1}`} className="inline-flex min-h-11 items-center rounded-control border border-border px-3 text-sm font-semibold hover:bg-surface-muted">Siguiente</a>}
-                </nav>}
-            </div>
+                <Pagination currentPage={currentPage} lastPage={lastPage} pageSize={pageSize} ariaLabel="Paginación de categorías" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} categorías`} hrefForPage={(page) => paginationHref(page)} onPageSizeChange={(size) => window.location.assign(paginationHref(1, size))} />
 
             {modalCategoria !== false && <CategoryForm key={modalCategoria?.id ?? 'new'} categoria={modalCategoria === true ? null : modalCategoria} routes={routes} onClose={closeModal} />}
             <ConfirmDialog open={Boolean(eliminar)} title="Eliminar categoría" message={eliminar && eliminar.productos_count > 0 ? 'Esta categoría tiene productos. No se puede eliminar una categoría que tiene productos.' : `¿Eliminar la categoría «${eliminar?.nombre}»? Esta acción no se puede deshacer.`} confirmLabel="Sí, eliminar" tone="danger" onConfirm={confirmarEliminar} onClose={() => setEliminar(null)} />

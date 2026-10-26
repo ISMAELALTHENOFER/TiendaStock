@@ -96,7 +96,19 @@ class ProductoReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        foreach (['POR_PAGINA = 15', 'Anterior', 'Siguiente', 'Página', 'cantidad <= 5', 'danger'] as $contract) {
+        foreach (['pageSize, setPageSize] = useState(15)', 'currentPage={paginaSegura}', 'onPageChange={setPaginaActual}', 'cantidad <= 5', 'danger'] as $contract) {
+            $this->assertStringContainsString($contract, $source);
+        }
+
+        $this->assertStringContainsString("from './components/ui/Pagination.jsx'", $source);
+        $this->assertStringContainsString('<Pagination', $source);
+    }
+
+    public function test_product_blade_fallback_keeps_search_and_all_supported_page_sizes(): void
+    {
+        $source = file_get_contents(base_path('resources/views/productos/index.blade.php'));
+
+        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'POR_PAGINA: 15', 'paginaSiguiente()'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -147,7 +159,7 @@ class ProductoReactViewContractTest extends TestCase
             'file:cursor-pointer',
             'error={errors?.imagen?.[0]}',
             'role="alert"',
-            'El servidor respondió de forma inesperada. No se pudo guardar el producto.',
+            'saveResponse(response)',
             'defaultValue={producto?.categoria_id ?? \'\'}',
             'const closeInline = useCallback(() => setInlineOpen(false), []);',
             'onClose={closeInline}',
@@ -187,14 +199,12 @@ class ProductoReactViewContractTest extends TestCase
         $this->assertStringNotContainsString('routes.productosCreate;', $source);
     }
 
-    public function test_redirected_modal_save_refreshes_catalog_without_navigating_away(): void
+    public function test_modal_save_refreshes_catalog_only_after_validated_success(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        $this->assertStringContainsString(
-            "if (response.redirected) {\n                if (onSaved) {\n                    setSubmitting(false);\n                    onSaved();\n                } else {\n                    window.location.assign(response.url);\n                }\n                return;\n            }",
-            $source
-        );
+        $this->assertStringContainsString('saveResponse(response)', $source);
+        $this->assertStringNotContainsString('if (response.redirected)', $source);
     }
 
     public function test_product_catalog_opens_create_and_prefilled_edit_modals(): void
@@ -210,5 +220,14 @@ class ProductoReactViewContractTest extends TestCase
         $this->assertStringContainsString('max-w-[620px]', $modal);
         $this->assertStringContainsString('backdrop-blur-sm', $modal);
         $this->assertStringContainsString('event.key === \'Escape\'', $modal);
+    }
+
+    public function test_product_catalog_quick_view_reuses_modal_without_full_page_link(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
+
+        $this->assertStringContainsString('setProductoViendo(producto)', $source);
+        $this->assertStringContainsString('open title="Detalles del producto"', $source);
+        $this->assertStringNotContainsString('Ver página completa', $source);
     }
 }
