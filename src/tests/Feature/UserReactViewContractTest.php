@@ -95,6 +95,9 @@ class UserReactViewContractTest extends TestCase
             $this->assertStringContainsString($contract, $source);
         }
 
+        $this->assertStringContainsString("from './components/ui/Pagination.jsx'", $source);
+        $this->assertStringContainsString('<Pagination', $source);
+
         // The Ventas badge keeps the legacy blue semantic tone; the shared
         // Badge primitive must carry the info tone that completes the four
         // semantic states from the source spec (success/warning/danger/info).
@@ -109,7 +112,10 @@ class UserReactViewContractTest extends TestCase
         foreach ([
             'last_page',
             'current_page',
-            '?page=',
+            "next.set('page'",
+            "next.set('per_page'",
+            'params.get(\'buscar\')',
+            'name="buscar"',
             'Mostrando',
             'usuarios',
             'No hay usuarios en el sistema',

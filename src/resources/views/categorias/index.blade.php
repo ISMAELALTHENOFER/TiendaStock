@@ -12,13 +12,24 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="w-full">
             @if (session('success') || session('error'))
                 <div role="alert" class="mb-6 rounded-card border border-border p-4 text-sm {{ session('error') ? 'bg-red-50 text-red-700' : 'bg-surface text-ink' }}">
                     {{ session('error') ?? session('success') }}
                 </div>
             @endif
 
+            <form method="GET" action="{{ route('categorias.index') }}" data-live-search="true" data-live-results="#category-search-results" class="mb-6 flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-end">
+                <div class="min-w-0 flex-1">
+                    <label for="category-search" class="mb-1 block text-sm font-semibold text-ink">Buscar categorías</label>
+                    <input id="category-search" type="search" name="buscar" value="{{ request('buscar') }}" placeholder="Nombre o descripción" class="min-h-11 w-full rounded-control border-border bg-canvas text-ink shadow-sm focus:border-primary focus:ring-primary">
+                </div>
+                <input type="hidden" name="per_page" value="{{ $categorias->perPage() }}">
+                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Buscar</button>
+            </form>
+
+            <p data-live-status role="status" aria-live="polite" class="mb-2 text-sm text-red-700"></p>
+            <div id="category-search-results" aria-live="polite">
             @if ($categorias->count() > 0)
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     @foreach ($categorias as $categoria)
@@ -47,16 +58,17 @@
                     @endforeach
                 </div>
 
-                <div class="mt-6">
-                    {{ $categorias->links() }}
-                </div>
             @else
                 <div class="rounded-card border border-border bg-surface p-8 text-center shadow-sm sm:p-12">
-                    <h2 class="text-lg font-bold text-ink">No hay categorías creadas aún</h2>
-                    <p class="mt-2 text-sm text-muted">Las categorías agrupan tus productos para encontrarlos más rápido.</p>
-                    <a href="{{ route('categorias.create') }}" class="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Crear Primera Categoría</a>
+                    <h2 class="text-lg font-bold text-ink">{{ request()->filled('buscar') ? 'No se encontraron categorías' : 'No hay categorías creadas aún' }}</h2>
+                    <p class="mt-2 text-sm text-muted">{{ request()->filled('buscar') ? 'Probá con otro nombre o descripción.' : 'Las categorías agrupan tus productos para encontrarlos más rápido.' }}</p>
+                    @unless (request()->filled('buscar'))
+                        <a href="{{ route('categorias.create') }}" class="mt-5 inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Crear Primera Categoría</a>
+                    @endunless
                 </div>
             @endif
+            {{ $categorias->links() }}
+            </div>
         </div>
     </div>
 </x-app-layout>

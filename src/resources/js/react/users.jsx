@@ -5,7 +5,9 @@ import { Card } from './components/ui/Card.jsx';
 import { EmptyState } from './components/ui/EmptyState.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
+import { Pagination } from './components/ui/Pagination.jsx';
 import { csrf } from './lib/api.js';
+import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 
 function roleBadge(user) {
     if (user.role === 'ADMIN') return { tone: 'success', short: 'Admin', long: 'Administrador' };
@@ -15,9 +17,15 @@ function roleBadge(user) {
 }
 
 export function UserList({ users, routes }) {
-    const data = users?.data || [];
-    const currentPage = users?.current_page || 1;
-    const lastPage = users?.last_page || 1;
+    const params = new URLSearchParams(window.location.search);
+    const [buscar, setBuscar] = useState(params.get('buscar') || '');
+    const liveSearch = useLiveSearchResults(users, { query: buscar, route: routes.users, pageSize: Number(users?.per_page) || 15 });
+    const page = liveSearch.results || users;
+    const data = page?.data || [];
+    const currentPage = page?.current_page || 1;
+    const lastPage = page?.last_page || 1;
+    const pageSize = Number(page?.per_page) || 15;
+    const paginationUrl = (page) => { const next = new URLSearchParams(window.location.search); next.set('page', String(page)); next.set('per_page', String(pageSize)); return `${routes.users}?${next}`; };
 
     return (
         <div className="py-4 sm:py-8">
@@ -28,6 +36,15 @@ export function UserList({ users, routes }) {
                 </div>
                 <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo Usuario</a>
             </div>
+
+            <form method="get" action={routes.users} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
+                <label htmlFor="users-search" className="sr-only">Buscar usuarios</label>
+                <Input id="users-search" name="buscar" value={buscar} onChange={(event) => setBuscar(event.target.value)} placeholder="Buscar por nombre, usuario o email…" className="min-w-0 flex-1" />
+                <input type="hidden" name="per_page" value={pageSize} />
+                <Button type="submit">Buscar</Button>
+            </form>
+            {liveSearch.searching && <p role="status" className="mb-3 text-sm text-muted">Buscando usuarios…</p>}
+            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
@@ -85,18 +102,9 @@ export function UserList({ users, routes }) {
                         })}
                     </div>
 
-                    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                        <p className="text-sm text-muted">Mostrando <strong className="text-ink">{users?.from ?? 0}</strong>–<strong className="text-ink">{users?.to ?? 0}</strong> de <strong className="text-ink">{users?.total ?? 0}</strong> {(users?.total ?? 0) === 1 ? 'usuario' : 'usuarios'}</p>
-                        {lastPage > 1 && (
-                            <div className="flex items-center gap-3">
-                                {currentPage > 1 && <a href={`${routes.users}?page=${currentPage - 1}`} className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-muted">Anterior</a>}
-                                <span className="text-sm text-muted">Página <strong className="text-ink">{currentPage}</strong> de <strong className="text-ink">{lastPage}</strong></span>
-                                {currentPage < lastPage && <a href={`${routes.users}?page=${currentPage + 1}`} className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-muted">Siguiente</a>}
-                            </div>
-                        )}
-                    </div>
                 </div>
             )}
+            <Pagination currentPage={currentPage} lastPage={lastPage} pageSize={pageSize} ariaLabel="Paginación de usuarios" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} usuarios`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const next = new URLSearchParams(window.location.search); next.set('per_page', String(size)); next.set('page', '1'); window.location.assign(`${routes.users}?${next}`); }} />
         </div>
     );
 }

@@ -7,15 +7,34 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use App\Services\ActivityRecorder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request)
     {
-        $users = User::orderBy('name')->paginate(20);
+        $query = User::orderBy('name');
+
+        if ($request->filled('buscar')) {
+            $search = $request->input('buscar');
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = in_array((string) $request->input('per_page'), ['15', '30', '50'], true)
+            ? (int) $request->input('per_page')
+            : 15;
+        $users = $query->paginate($perPage)->withQueryString();
+
+        if ($request->expectsJson()) {
+            return response()->json($users);
+        }
 
         return view('admin.users.index', compact('users'));
     }

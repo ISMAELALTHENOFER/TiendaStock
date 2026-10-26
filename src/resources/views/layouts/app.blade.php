@@ -72,7 +72,7 @@
             'producto' => $producto?->toArray(),
             'users' => $users?->toArray(),
             'usuario' => $usuario?->toArray(),
-            'query' => request()->only(['desde', 'hasta', 'estado']),
+            'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page']),
             'errors' => $errors->getBag('default')->toArray(),
         ]])
     @else

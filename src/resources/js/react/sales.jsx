@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, CircleX, Minus, Package, Plus, Search, ShoppingBasket, ShoppingCart, Store, Trash2, Truck } from 'lucide-react';
 import { api } from './lib/api.js';
 import { Badge } from './components/ui/Badge.jsx';
@@ -7,6 +7,9 @@ import { Card } from './components/ui/Card.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
+import { Pagination } from './components/ui/Pagination.jsx';
+import { isInteractiveSearch } from './lib/interactiveSearch.js';
+import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const formatMoney = (value) => money.format(Number(value || 0));
@@ -45,7 +48,7 @@ function CancelForm({ sale, compact = false }) {
 }
 
 function SaleActions({ sale }) {
-    return <div className="flex items-center justify-end gap-2">
+    return <div className="flex items-center justify-start gap-2">
         <a href={`/ventas/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
         {sale.estado === 'completada' && <details className="relative">
             <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-control text-lg text-muted hover:bg-surface-muted" aria-label={`Acciones de venta #${sale.id}`} title={`Acciones de venta #${sale.id}`}>⋮</summary>
@@ -55,18 +58,26 @@ function SaleActions({ sale }) {
 }
 
 export function SalesHistory({ sales, query = {}, routes }) {
-    const data = sales?.data || [];
-    const [filters, setFilters] = useState({ desde: query.desde || '', hasta: query.hasta || '', estado: query.estado || '' });
+    const [filters, setFilters] = useState({ desde: query.desde || '', hasta: query.hasta || '', estado: query.estado || '', buscar: query.buscar || '' });
+    const liveSearch = useLiveSearchResults(sales, {
+        query: filters.buscar,
+        route: routes.ventas,
+        pageSize: Number(sales?.per_page) || 15,
+        filters: { desde: filters.desde, hasta: filters.hasta, estado: filters.estado },
+        enabled: !(filters.desde && filters.hasta && filters.desde > filters.hasta),
+    });
+    const page = liveSearch.results || sales;
+    const data = page?.data || [];
+    const pageSize = Number(page?.per_page) || 15;
     const paginationUrl = (page) => {
-        const params = new URLSearchParams({ page: String(page) });
-        if (query.desde) params.set('desde', query.desde);
-        if (query.hasta) params.set('hasta', query.hasta);
-        if (query.estado) params.set('estado', query.estado);
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(page));
+        params.set('per_page', String(pageSize));
         return `${routes.ventas}?${params}`;
     };
     const submit = (event) => {
+        event.preventDefault();
         if (filters.desde && filters.hasta && filters.desde > filters.hasta) {
-            event.preventDefault();
             window.alert('La fecha Desde debe ser menor o igual a Hasta.');
         }
     };
@@ -76,22 +87,26 @@ export function SalesHistory({ sales, query = {}, routes }) {
             <a href={routes.ventasPos} className="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Nueva Venta</a>
         </header>
         <Card>
-            <form method="get" action={routes.ventas} onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+            <form method="get" action={routes.ventas} onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+                <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3" htmlFor="sales-search">Buscar ventas<Input id="sales-search" name="buscar" value={filters.buscar} onChange={(event) => setFilters({ ...filters, buscar: event.target.value })} placeholder="Cliente, usuario o número…" className="mt-1" /></label>
                 <label className="text-sm font-medium text-ink" htmlFor="sales-from">Desde<Input id="sales-from" type="date" name="desde" value={filters.desde} onChange={(event) => setFilters({ ...filters, desde: event.target.value })} className="mt-1" /></label>
                 <label className="text-sm font-medium text-ink" htmlFor="sales-to">Hasta<Input id="sales-to" type="date" name="hasta" value={filters.hasta} onChange={(event) => setFilters({ ...filters, hasta: event.target.value })} className="mt-1" /></label>
                 <label className="text-sm font-medium text-ink" htmlFor="sales-status">Estado<Select id="sales-status" name="estado" value={filters.estado} onChange={(event) => setFilters({ ...filters, estado: event.target.value })} className="mt-1"><option value="">Todos los estados</option><option value="completada">Completadas</option><option value="anulada">Anuladas</option></Select></label>
+                <input type="hidden" name="per_page" value={pageSize} />
                 <Button type="submit">Filtrar</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted">Limpiar</a>
             </form>
         </Card>
+        {liveSearch.searching && <p role="status" className="text-sm text-muted">Buscando ventas…</p>}
+        {liveSearch.searchError && <p role="alert" className="text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
         {data.length === 0 ? <Card className="py-12 text-center"><p className="text-lg font-semibold text-ink">No hay ventas registradas.</p><p className="mt-1 text-sm text-muted">Las ventas realizadas aparecerán aquí.</p><a href={routes.ventasPos} className="mt-6 inline-flex min-h-11 items-center rounded-control bg-primary px-5 text-sm font-semibold text-white">Realizar primera venta</a></Card> : <>
             <div className="hidden overflow-x-auto rounded-card border border-border bg-surface shadow-subtle md:block">
-                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{['#', 'Fecha', 'Items', 'Total', 'Entrega', 'Procesado por', 'Estado', 'Acciones'].map((heading) => <th key={heading} scope="col" className="whitespace-nowrap px-4 py-3 text-left">{heading}</th>)}</tr></thead>
+                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Items', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
                      <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items?.length || 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} /></td></tr>)}</tbody>
                 </table>
             </div>
              <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Items</dt><dd>{sale.items?.length || 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesado por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} /></Card>)}</div>
         </>}
-        {sales?.last_page > 1 && <nav className="flex flex-wrap gap-2" aria-label="Paginación">{Array.from({ length: sales.last_page }, (_, index) => <a key={index} href={paginationUrl(index + 1)} className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-control border px-3 text-sm ${sales.current_page === index + 1 ? 'border-primary bg-primary text-white' : 'border-border bg-surface'}`}>{index + 1}</a>)}</nav>}
+        <Pagination currentPage={page?.current_page || 1} lastPage={page?.last_page || 1} pageSize={pageSize} ariaLabel="Paginación de ventas" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} ventas`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const params = new URLSearchParams(window.location.search); params.set('per_page', String(size)); params.set('page', '1'); window.location.assign(`${routes.ventas}?${params}`); }} />
     </div>;
 }
 

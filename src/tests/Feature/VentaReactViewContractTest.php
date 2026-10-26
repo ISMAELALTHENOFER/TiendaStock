@@ -20,6 +20,13 @@ class VentaReactViewContractTest extends TestCase
         $this->assertStringContainsString("@include('react.app'", $source);
     }
 
+    public function test_react_sales_host_receives_search_and_page_size_query_values(): void
+    {
+        $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+
+        $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page'])", $source);
+    }
+
     public function test_sales_index_can_roll_back_to_the_legacy_blade_surface(): void
     {
         $user = User::factory()->ventas()->create();
@@ -61,6 +68,25 @@ class VentaReactViewContractTest extends TestCase
         $this->assertStringNotContainsString('window.confirm', $source, 'The native sale cancellation prompt must be gone.');
         $this->assertStringContainsString('action={`/ventas/${sale.id}/cancel`}', $source);
         $this->assertStringContainsString('Cancelar venta #${sale.id}', $source);
+        $this->assertStringContainsString('className="flex items-center justify-start gap-2"', $source);
+    }
+
+    public function test_sales_table_headers_match_the_alignment_of_each_column(): void
+    {
+        $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
+
+        foreach ([
+            "['#', 'text-left']",
+            "['Fecha', 'text-left']",
+            "['Items', 'text-right']",
+            "['Total', 'text-right']",
+            "['Entrega', 'text-left']",
+            "['Procesado por', 'text-left']",
+            "['Estado', 'text-left']",
+            "['Acciones', 'text-left']",
+        ] as $column) {
+            $this->assertStringContainsString($column, $source);
+        }
     }
 
     public function test_react_sales_contract_preserves_payment_filters_and_receipt_metadata(): void
@@ -70,9 +96,12 @@ class VentaReactViewContractTest extends TestCase
         foreach ([
             'paidCents < totalCents',
             'URLSearchParams',
-            "params.set('desde', query.desde)",
-            "params.set('hasta', query.hasta)",
-            "params.set('estado', query.estado)",
+            'new URLSearchParams(window.location.search)',
+            "params.set('page', String(page))",
+            "params.set('per_page'",
+            'query.buscar',
+            'name="buscar"',
+            'page?.from',
             'Método de pago:',
             'Tipo de entrega:',
             'Procesado por:',
@@ -82,6 +111,9 @@ class VentaReactViewContractTest extends TestCase
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
+
+        $this->assertStringContainsString("from './components/ui/Pagination.jsx'", $source);
+        $this->assertStringContainsString('<Pagination', $source);
     }
 
     public function test_pos_catalog_and_checkout_affordances_remain_connected_to_live_data(): void
