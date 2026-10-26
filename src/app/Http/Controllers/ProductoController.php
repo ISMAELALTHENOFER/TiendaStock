@@ -10,6 +10,8 @@ use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
+use Throwable;
 
 class ProductoController extends Controller
 {
@@ -70,22 +72,35 @@ class ProductoController extends Controller
     {
         $data = $request->validated();
 
-        return DB::transaction(function () use ($data, $request) {
-            if ($request->hasFile('imagen')) {
-                // Stores under productos/ on the public disk; returns a generated
-                // relative path (never the client filename — path-traversal safe).
-                $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+        $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
+        if ($request->hasFile('imagen') && ! $newImage) {
+            throw new RuntimeException('Could not store product image.');
+        }
+        if ($newImage) {
+            $data['imagen'] = $newImage;
+        }
+
+        try {
+            return DB::transaction(function () use ($data, $request) {
+                $producto = Producto::create($data);
+
+                ActivityRecorder::recordAfterCommit(
+                    $request->user(), 'product.created', 'Product created', "Product {$producto->nombre} was created.", $producto
+                );
+
+                if ($request->expectsJson()) {
+                    return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
+                }
+
+                return redirect()->route('productos.index')
+                    ->with('success', 'Producto creado correctamente.');
+            });
+        } catch (Throwable $error) {
+            if ($newImage) {
+                Storage::disk('public')->delete($newImage);
             }
-
-            $producto = Producto::create($data);
-
-            ActivityRecorder::recordAfterCommit(
-                $request->user(), 'product.created', 'Product created', "Product {$producto->nombre} was created.", $producto
-            );
-
-            return redirect()->route('productos.index')
-                ->with('success', 'Producto creado correctamente.');
-        });
+            throw $error;
+        }
     }
 
     public function show(Producto $producto)
@@ -104,25 +119,42 @@ class ProductoController extends Controller
     {
         $data = $request->validated();
 
-        return DB::transaction(function () use ($data, $request, $producto) {
-            if ($request->hasFile('imagen')) {
-                // Reemplaza la imagen anterior si existía.
-                if ($producto->imagen) {
-                    Storage::disk('public')->delete($producto->imagen);
+        $oldImage = $producto->imagen;
+        $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
+        if ($request->hasFile('imagen') && ! $newImage) {
+            throw new RuntimeException('Could not store product image.');
+        }
+        if ($newImage) {
+            $data['imagen'] = $newImage;
+        }
+
+        try {
+            $response = DB::transaction(function () use ($data, $request, $producto) {
+                $producto->update($data);
+
+                ActivityRecorder::recordAfterCommit(
+                    $request->user(), 'product.updated', 'Product updated', "Product {$producto->nombre} was updated.", $producto
+                );
+
+                if ($request->expectsJson()) {
+                    return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
                 }
-                $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+
+                return redirect()->route('productos.index')
+                    ->with('success', 'Producto actualizado correctamente.');
+            });
+        } catch (Throwable $error) {
+            if ($newImage) {
+                Storage::disk('public')->delete($newImage);
             }
-            // Sin archivo nuevo => NO se toca `imagen`; se preserva el path existente.
+            throw $error;
+        }
 
-            $producto->update($data);
+        if ($newImage && $oldImage) {
+            Storage::disk('public')->delete($oldImage);
+        }
 
-            ActivityRecorder::recordAfterCommit(
-                $request->user(), 'product.updated', 'Product updated', "Product {$producto->nombre} was updated.", $producto
-            );
-
-            return redirect()->route('productos.index')
-                ->with('success', 'Producto actualizado correctamente.');
-        });
+        return $response;
     }
 
     /**
@@ -214,7 +246,8 @@ class ProductoController extends Controller
         if ($request->has('q') && strlen($request->q) >= 2) {
             $searchTerm = '%'.$request->q.'%';
 
-            $productos = Producto::with('categoria')
+            $productos = Producto::select('id', 'nombre', 'categoria_id', 'precio_venta', 'cantidad', 'color', 'talle')
+                ->with('categoria:id,nombre')
                 ->where('activo', true)
                 ->where('cantidad', '>', 0)
                 ->where(function ($query) use ($searchTerm) {

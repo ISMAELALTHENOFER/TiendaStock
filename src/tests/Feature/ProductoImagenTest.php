@@ -142,6 +142,25 @@ class ProductoImagenTest extends TestCase
         $this->assertNull($producto->imagen);
     }
 
+    public function test_json_save_has_explicit_success_without_changing_blade_redirects(): void
+    {
+        $this->actingAs($this->admin)->post(route('productos.store'), [
+            'nombre' => 'Desde React', 'categoria_id' => $this->categoria->id,
+            'precio_compra' => 10, 'precio_venta' => 20, 'cantidad' => 5,
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('saved', true)->assertJsonPath('redirect', route('productos.index'));
+
+        $this->post(route('productos.store'), ['nombre' => ''], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['nombre']);
+
+        $producto = Producto::where('nombre', 'Desde React')->firstOrFail();
+        $this->put(route('productos.update', $producto), [
+            'nombre' => 'Actualizado', 'categoria_id' => $this->categoria->id,
+            'precio_compra' => 10, 'precio_venta' => 20, 'cantidad' => 5,
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
+        $this->assertDatabaseHas('productos', ['id' => $producto->id, 'nombre' => 'Actualizado']);
+    }
+
     public function test_update_without_reupload_preserves_existing_imagen_path(): void
     {
         // Create a product with an existing image path (simulating a prior upload).
@@ -174,6 +193,7 @@ class ProductoImagenTest extends TestCase
         ]);
         $originalPath = $producto->imagen;
 
+        Storage::disk('public')->put($originalPath, 'original image');
         $newFile = $this->pngImage(1, 'nueva.png');
 
         $response = $this->actingAs($this->admin)->put(route('productos.update', $producto), [
@@ -193,6 +213,29 @@ class ProductoImagenTest extends TestCase
         $this->assertNotSame($originalPath, $producto->imagen);
         $this->assertStringStartsWith('productos/', $producto->imagen);
         Storage::disk('public')->assertExists($producto->imagen);
+        Storage::disk('public')->assertMissing($originalPath);
+    }
+
+    public function test_failed_image_replacement_keeps_old_file_and_removes_new_file(): void
+    {
+        $producto = Producto::factory()->conImagen()->create(['categoria_id' => $this->categoria->id]);
+        $originalPath = $producto->imagen;
+        Storage::disk('public')->put($originalPath, 'original image');
+        Producto::updating(function () { throw new \RuntimeException('Persistence failed'); });
+
+        try {
+            $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+                'nombre' => 'Changed', 'categoria_id' => $this->categoria->id,
+                'precio_compra' => 12, 'precio_venta' => 30, 'cantidad' => 10,
+                'imagen' => $this->pngImage(),
+            ])->assertStatus(500);
+        } finally {
+            Producto::flushEventListeners();
+        }
+
+        $this->assertSame($originalPath, $producto->fresh()->imagen);
+        Storage::disk('public')->assertExists($originalPath);
+        $this->assertSame([$originalPath], Storage::disk('public')->files('productos'));
     }
 
     public function test_show_renders_image_thumbnail_when_imagen_present(): void
