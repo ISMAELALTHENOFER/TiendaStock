@@ -28,7 +28,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
-    Route::get('/productos/data', [ProductoController::class, 'data'])->name('productos.data');
 
     Route::middleware('verified')->group(function () {
         Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');
@@ -36,6 +35,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:ADMIN,Control Stock')->group(function () {
+        Route::get('/productos/data', [ProductoController::class, 'data'])->name('productos.data');
         Route::resource('/categorias', CategoriaController::class);
         Route::post('/categorias/inline', [CategoriaController::class, 'storeInline'])->name('categorias.inline');
         // Duplicate detection on the create flow: advises the user to edit an
