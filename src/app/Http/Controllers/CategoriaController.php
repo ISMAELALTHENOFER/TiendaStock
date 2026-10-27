@@ -12,7 +12,11 @@ class CategoriaController extends Controller
 {
     public function index(Request $request)
     {
-        return view('categorias.index', $this->categoryGridData($request));
+        $data = $this->categoryGridData($request);
+
+        return $request->expectsJson()
+            ? response()->json($data['categorias'])
+            : view('categorias.index', $data);
     }
 
     public function create(Request $request)
@@ -35,7 +39,17 @@ class CategoriaController extends Controller
 
     private function categoryGridData(Request $request, ?Categoria $categoria = null): array
     {
-        $categorias = Categoria::withCount('productos')->orderBy('nombre')->paginate(12);
+        $categoriasQuery = Categoria::withCount('productos')->orderBy('nombre');
+
+        if ($request->filled('buscar')) {
+            $term = trim($request->string('buscar')->toString());
+            $categoriasQuery->where(function ($query) use ($term) {
+                $query->where('nombre', 'like', "%{$term}%")
+                    ->orWhere('descripcion', 'like', "%{$term}%");
+            });
+        }
+
+        $categorias = $categoriasQuery->paginate($this->pageSize($request))->withQueryString();
         $categoriaSummary = [
             'total' => Categoria::count(),
             'productos' => Producto::count(),
@@ -60,16 +74,40 @@ class CategoriaController extends Controller
                 $request->user(), 'category.created', 'Category created', "Category {$categoria->nombre} was created.", $categoria
             );
 
+            if ($request->expectsJson()) {
+                return response()->json(['saved' => true, 'redirect' => route('categorias.index')]);
+            }
+
             return redirect()->route('categorias.index')
                 ->with('success', 'Categoría creada correctamente.');
         });
     }
 
-    public function show(Categoria $categoria)
+    public function show(Request $request, Categoria $categoria)
     {
-        $categoria->load('productos');
+        $categoria->loadCount('productos');
+        $productosQuery = $categoria->productos()->orderBy('nombre');
 
-        return view('categorias.show', compact('categoria'));
+        if ($request->filled('buscar')) {
+            $term = trim($request->string('buscar')->toString());
+            $productosQuery->where(function ($query) use ($term) {
+                $query->where('nombre', 'like', "%{$term}%")
+                    ->orWhere('color', 'like', "%{$term}%")
+                    ->orWhere('talle', 'like', "%{$term}%")
+                    ->orWhere('descripcion', 'like', "%{$term}%");
+            });
+        }
+
+        $productos = $productosQuery->paginate($this->pageSize($request))->withQueryString();
+
+        return view('categorias.show', compact('categoria', 'productos'));
+    }
+
+    private function pageSize(Request $request): int
+    {
+        $pageSize = $request->query('per_page', '15');
+
+        return in_array($pageSize, ['15', '30', '50'], true) ? (int) $pageSize : 15;
     }
 
     private function usesReact(Request $request): bool
@@ -93,6 +131,10 @@ class CategoriaController extends Controller
             ActivityRecorder::recordAfterCommit(
                 $request->user(), 'category.updated', 'Category updated', "Category {$categoria->nombre} was updated.", $categoria
             );
+
+            if ($request->expectsJson()) {
+                return response()->json(['saved' => true, 'redirect' => route('categorias.index')]);
+            }
 
             return redirect()->route('categorias.index')
                 ->with('success', 'Categoría actualizada correctamente.');
