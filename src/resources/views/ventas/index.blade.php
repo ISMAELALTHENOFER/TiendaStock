@@ -18,10 +18,10 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full mx-auto sm:px-6 lg:px-8">
 
             {{-- Filtros --}}
-            <form method="GET" action="{{ route('ventas.index') }}" class="mb-6" x-data="{
+            <form method="GET" action="{{ route('ventas.index') }}" data-live-search="true" data-live-results="#sales-search-results" class="mb-6" x-data="{
                 desde: '{{ request('desde') }}',
                 hasta: '{{ request('hasta') }}',
                 validar() {
@@ -32,8 +32,14 @@
                     return true;
                 }
             }"
-            @submit.prevent="validar() && $el.submit()">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4 items-end">
+            @submit.prevent="validar()">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 items-end">
+                    <div>
+                        <label for="sales-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                        <input id="sales-search" type="search" name="buscar" value="{{ request('buscar') }}"
+                            placeholder="Venta, cliente o usuario"
+                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-gray-700 bg-white">
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
                         <input type="text" id="filtro-desde" name="desde" value="{{ request('desde') }}"
@@ -57,6 +63,7 @@
                             <option value="anulada" {{ request('estado') == 'anulada' ? 'selected' : '' }}>Anuladas</option>
                         </select>
                     </div>
+                    <input type="hidden" name="per_page" value="{{ $ventas->perPage() }}">
                     <div>
                         <button type="submit"
                             class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 md:py-2 px-4 rounded-lg transition-all duration-200">
@@ -72,6 +79,8 @@
                 </div>
             </form>
 
+            <p data-live-status role="status" aria-live="polite" class="mb-2 text-sm text-red-700"></p>
+            <div id="sales-search-results" aria-live="polite">
             {{-- Desktop: tabla --}}
             <div class="hidden md:block bg-white rounded-xl shadow-sm border border-sky-100 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -215,11 +224,8 @@
             </div>
 
             {{-- Paginación compartida --}}
-            @if($ventas->hasPages())
-            <div class="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
-                {{ $ventas->appends(request()->query())->links() }}
+            {{ $ventas->links() }}
             </div>
-            @endif
 
         </div>
     </div>

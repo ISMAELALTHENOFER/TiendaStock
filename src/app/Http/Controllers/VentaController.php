@@ -20,6 +20,15 @@ class VentaController extends Controller
         $query = Venta::with('user', 'items')
             ->orderBy('created_at', 'desc');
 
+        if ($request->filled('buscar')) {
+            $search = $request->input('buscar');
+            $query->where(function ($query) use ($search) {
+                $query->where('id', 'like', "%{$search}%")
+                    ->orWhere('cliente_nombre', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+            });
+        }
+
         if ($request->filled('desde')) {
             $query->whereDate('created_at', '>=', $request->desde);
         }
@@ -32,7 +41,14 @@ class VentaController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        $ventas = $query->paginate(15);
+        $perPage = in_array((string) $request->input('per_page'), ['15', '30', '50'], true)
+            ? (int) $request->input('per_page')
+            : 15;
+        $ventas = $query->paginate($perPage)->withQueryString();
+
+        if ($request->expectsJson()) {
+            return response()->json($ventas);
+        }
 
         return view('ventas.index', compact('ventas'));
     }

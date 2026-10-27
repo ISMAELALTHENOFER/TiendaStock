@@ -185,6 +185,18 @@
     .data-card-field { border-top: 1px solid var(--border); padding-top: .75rem; }
     .data-card-field dt { color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .data-card-field dd { margin-top: .25rem; color: var(--ink); font-weight: 600; }
+    .pagination-controls { display: flex; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid var(--border); padding: 1rem 0; }
+    .pagination-summary { flex: 1 1 100%; color: var(--muted); font-size: .875rem; }
+    .pagination-actions { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; justify-content: center; gap: .375rem; }
+    .pagination-actions > a, .pagination-actions > button { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); padding: .5rem .75rem; color: var(--ink); font-size: .875rem; font-weight: 600; line-height: 1.25; text-decoration: none; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+    .pagination-actions > a:hover, .pagination-actions > button:hover:not(:disabled) { border-color: var(--primary); background: var(--surface-muted); }
+    .pagination-actions > a:focus-visible, .pagination-actions > button:focus-visible, .pagination-size select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .pagination-actions > [aria-current="page"] { border-color: var(--primary); background: var(--primary); color: white; }
+    .pagination-actions > button:disabled { cursor: not-allowed; color: var(--muted); opacity: .55; }
+    .pagination-size { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .5rem; color: var(--muted); font-size: .875rem; white-space: nowrap; }
+    .pagination-size select { min-height: 2.75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); padding: .375rem .625rem; color: var(--ink); font: inherit; }
+    @media (min-width: 40rem) { .pagination-summary { flex: 1 1 12rem; } }
+    @media (max-width: 24rem) { .pagination-actions > a, .pagination-actions > button { min-width: 2.5rem; padding-inline: .5rem; } }
     .login-page { --primary: #006948; --primary-hover: #005b3e; --focus: #006948; background: #f8fafc; }
     .login-frame { max-width: 28rem; }
     .login-footer { line-height: 1.75; overflow-wrap: anywhere; }

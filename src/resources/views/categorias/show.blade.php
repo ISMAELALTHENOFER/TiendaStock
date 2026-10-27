@@ -13,7 +13,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
+        <div class="w-full space-y-6">
             <section class="overflow-hidden rounded-card border border-border bg-surface shadow-subtle" aria-labelledby="category-details-title">
                 <div class="border-b border-border px-5 py-4 sm:px-7">
                     <h2 id="category-details-title" class="text-lg font-bold text-ink">Información de la Categoría</h2>
@@ -25,7 +25,7 @@
                     </div>
                     <div>
                         <dt class="text-sm font-semibold text-muted">Total de Productos</dt>
-                        <dd class="mt-1 text-xl font-bold text-ink">{{ $categoria->productos->count() }}</dd>
+                        <dd class="mt-1 text-xl font-bold text-ink">{{ $categoria->productos_count }}</dd>
                     </div>
                     @if ($categoria->descripcion)
                         <div class="sm:col-span-2">
@@ -38,11 +38,25 @@
 
             <section class="overflow-hidden rounded-card border border-border bg-surface shadow-subtle" aria-labelledby="category-products-title">
                 <div class="border-b border-border px-5 py-4 sm:px-7">
-                    <h2 id="category-products-title" class="text-lg font-bold text-ink">Productos en esta Categoría</h2>
-                    <p class="mt-1 text-sm text-muted">{{ $categoria->productos->count() }} {{ $categoria->productos->count() === 1 ? 'producto' : 'productos' }}</p>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 id="category-products-title" class="text-lg font-bold text-ink">Productos en esta Categoría</h2>
+                            <p class="mt-1 text-sm text-muted">{{ $categoria->productos_count }} {{ $categoria->productos_count === 1 ? 'producto' : 'productos' }} en total</p>
+                        </div>
+                        <form method="GET" action="{{ route('categorias.show', $categoria) }}" data-live-search="true" data-live-results="#category-products-search-results" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                            <div class="min-w-0 sm:w-72">
+                                <label for="category-product-search" class="mb-1 block text-sm font-semibold text-ink">Buscar productos</label>
+                                <input id="category-product-search" type="search" name="buscar" value="{{ request('buscar') }}" placeholder="Nombre, color, talle o descripción" class="min-h-11 w-full rounded-control border-border bg-canvas text-ink shadow-sm focus:border-primary focus:ring-primary">
+                            </div>
+                            <input type="hidden" name="per_page" value="{{ $productos->perPage() }}">
+                            <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Buscar</button>
+                        </form>
+                    </div>
                 </div>
 
-                @if ($categoria->productos->isNotEmpty())
+                <p data-live-status role="status" aria-live="polite" class="px-5 text-sm text-red-700"></p>
+                <div id="category-products-search-results" aria-live="polite">
+                @if ($productos->total() > 0)
                     <div class="hidden overflow-x-auto md:block">
                         <table class="w-full text-sm">
                             <thead class="border-b border-border bg-surface-muted text-left text-xs font-semibold text-muted">
@@ -55,7 +69,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
-                                @foreach ($categoria->productos as $producto)
+                                @foreach ($productos as $producto)
                                     <tr class="hover:bg-surface-muted">
                                         <td class="px-5 py-4 font-semibold text-ink">{{ $producto->nombre }}</td>
                                         <td class="px-5 py-4 text-muted">{{ $producto->cantidad }}</td>
@@ -68,7 +82,7 @@
                         </table>
                     </div>
                     <div class="space-y-3 p-4 md:hidden">
-                        @foreach ($categoria->productos as $producto)
+                        @foreach ($productos as $producto)
                             <article class="rounded-card border border-border p-4">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <h3 class="min-w-0 break-words font-semibold text-ink">{{ $producto->nombre }}</h3>
@@ -84,10 +98,12 @@
                     </div>
                 @else
                     <div class="p-8 text-center sm:p-12">
-                        <h3 class="text-lg font-bold text-ink">Esta categoría aún no tiene productos</h3>
-                        <p class="mt-2 text-sm text-muted">Los productos asignados a esta categoría aparecerán acá.</p>
+                        <h3 class="text-lg font-bold text-ink">{{ request()->filled('buscar') ? 'No se encontraron productos' : 'Esta categoría aún no tiene productos' }}</h3>
+                        <p class="mt-2 text-sm text-muted">{{ request()->filled('buscar') ? 'Probá con otro nombre, color, talle o descripción.' : 'Los productos asignados a esta categoría aparecerán acá.' }}</p>
                     </div>
                 @endif
+                {{ $productos->links() }}
+                </div>
             </section>
         </div>
     </div>

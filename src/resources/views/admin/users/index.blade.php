@@ -18,7 +18,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="w-full mx-auto sm:px-6 lg:px-8">
 
             @if(session('success'))
             <div class="mb-6 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-lg shadow-md" role="alert">
@@ -35,6 +35,19 @@
             </div>
             @endif
 
+            <form method="GET" action="{{ route('admin.users.index') }}" data-live-search="true" data-live-results="#users-search-results" class="mb-6 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
+                <div>
+                    <label for="users-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar usuarios</label>
+                    <input id="users-search" type="search" name="buscar" value="{{ request('buscar') }}"
+                        placeholder="Nombre, usuario o email"
+                        class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-gray-700 bg-white">
+                </div>
+                <input type="hidden" name="per_page" value="{{ $users->perPage() }}">
+                <button type="submit" class="min-h-11 px-5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg">Buscar</button>
+            </form>
+
+            <p data-live-status role="status" aria-live="polite" class="mb-2 text-sm text-red-700"></p>
+            <div id="users-search-results" aria-live="polite">
             @if($users->count() > 0)
             <div class="surface-panel min-w-0 overflow-hidden">
 
@@ -117,9 +130,6 @@
                     @endforeach
                 </div>
 
-                <div class="p-6 bg-gray-50 border-t border-gray-200">
-                    {{ $users->links() }}
-                </div>
             </div>
             @else
             <div class="bg-white rounded-xl shadow-md border border-sky-100 overflow-hidden">
@@ -139,6 +149,9 @@
                 </div>
             </div>
             @endif
+
+            {{ $users->links() }}
+            </div>
 
         </div>
     </div>
