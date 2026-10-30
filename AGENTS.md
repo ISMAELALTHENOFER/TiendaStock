@@ -23,3 +23,7 @@
 - Tailwind scans `resources/views/**/*.blade.php` and `resources/js/react/**/*.{js,jsx}` per `tailwind.config.js`; add new template paths there if utility classes do not build.
 
 Preserve unrelated worktree changes: existing tracked deletions in docs, OpenSpec, and tooling are not an instruction to restore or endorse those deletions.
+
+## Project skills
+
+- React responsive interfaces: load `.opencode/skills/react-responsive/SKILL.md` when implementing or changing responsive React UI.

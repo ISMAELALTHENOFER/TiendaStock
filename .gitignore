@@ -4,6 +4,9 @@ src/config.php
 # Archivos y carpetas comunes a ignorar
 node_modules/
 vendor/
+!src/resources/views/vendor/
+!src/resources/views/vendor/pagination/
+!src/resources/views/vendor/pagination/tailwind.blade.php
 .DS_Store
 *.log
 
