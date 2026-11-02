@@ -265,6 +265,27 @@ class VentaPosTest extends TestCase
 
     // ─── Transactional Integrity (NFR-01) ────────────────────
 
+    public function test_transactional_stock_failure_redirects_to_pos_and_rolls_back(): void
+    {
+        $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'items' => [
+                ['producto_id' => $this->producto->id, 'cantidad' => 6],
+                ['producto_id' => $this->producto->id, 'cantidad' => 6],
+            ],
+            'subtotal' => 300,
+            'total' => 300,
+            'pago_con' => 300,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
+        ]);
+
+        $response->assertRedirect(route('ventas.pos'));
+        $response->assertSessionHas('error', 'Stock insuficiente para Remera Test. Disponible: 4, solicitado: 6');
+        $this->assertDatabaseCount('ventas', 0);
+        $this->assertDatabaseCount('venta_items', 0);
+        $this->assertSame(10, $this->producto->fresh()->cantidad);
+    }
+
     public function test_transactional_integrity_no_orphan_records_on_failure(): void
     {
         // When FormRequest validation fails (insufficient stock via withValidator),

@@ -116,7 +116,7 @@ class VentaController extends Controller
                 return $venta;
             });
         } catch (\RuntimeException $e) {
-            return redirect()->route('ventas.create')
+            return redirect()->route('ventas.pos')
                 ->with('error', $e->getMessage());
         }
 
