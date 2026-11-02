@@ -5,7 +5,9 @@ Hoja de ruta basada en la auditoría del 26/10/2026 y las decisiones posteriores
 Complementa a `tiendastock-mejoras-ui-responsive.md`. Ante diferencias, prevalecen las decisiones de este documento. Incluye **bugs, seguridad, eficiencia, interfaz, despliegue y deuda técnica**.
 
 Severidad: 🔴 alta (corregir primero) · 🟠 media · 🟢 baja.
-Verificado manualmente: marcado con ✔. El resto surge de lectura de código, sin reproducir.
+Verificado manualmente: marcado con ✔. El resto surge de lectura de código, sin reproducir. **✔ indica que el problema fue confirmado, no que esté corregido.**
+
+**Estado al 01/11/2026 (rama `developer`, commit `ddcd77e`):** ningún ítem de este documento está implementado. Los PR #33–#36 no corrigieron ninguno; las referencias de archivo y línea fueron revisadas contra ese commit. Quedan parcialmente cubiertos: 5.7 (Ventas y Dashboard ya tienen `<h1>`), la regla de stock (solo desactiva al llegar a cero, `app/Models/Producto.php:53-61`), la anulación (restaura stock, sin bloqueo ni reactivación) y la visibilidad por rol (`/productos/data` ya exige `ADMIN` o `Control Stock`, `routes/web.php:38`).
 
 ---
 
@@ -22,6 +24,7 @@ Verificado manualmente: marcado con ✔. El resto surge de lectura de código, s
 | 1.5 | Se pueden intentar vender productos desactivados con un POST armado. | `StoreVentaRequest.php:19` | Verificar estado y stock también dentro de la transacción con bloqueo; rechazar productos sin stock y probar carreras. |
 | 1.6 | Dinero manejado como `float`; `Producto` sin casts `decimal:2`. | `VentaController.php:83,105`, `StoreVentaRequest.php:58`, `app/Models/Producto.php:30-35,69` | Casts `decimal:2` y aritmética en centavos (enteros) o `bcmath`, redondeando una sola vez. |
 | 1.7 | `Producto::find()` por cada ítem dentro del validador (N+1). | `StoreVentaRequest.php:66-77` | Un solo `whereIn('id', ...)->get()->keyBy('id')`. |
+| 1.8 | Los mensajes dicen «mayor a cero» pero las reglas `total` y `pago_con` usan `min:0` y aceptan 0. El subtotal de cada ítem se calcula con el precio actual (`VentaController.php:105`) mientras el total de la venta es el del cliente (l.81), así que pueden no coincidir. | `StoreVentaRequest.php:23-27,44-46`, `VentaController.php:81,105` | Resolver junto con 1.1: reglas y mensajes coherentes, y el total derivado de los ítems guardados. |
 
 ## 2. Datos y seguridad 🔴/🟠
 
@@ -45,11 +48,12 @@ Verificado manualmente: marcado con ✔. El resto surge de lectura de código, s
 
 | # | Sev | Problema | Dónde | Corrección |
 |---|---|---|---|---|
-| 2.2 | 🟠 | El endpoint de actividad serializa el `User` completo (email, rol) y el modelo afectado (incluye `precio_compra`) a cualquier usuario verificado. | `app/Http/Controllers/DashboardActivityController.php:18-19` | Retirar la tarjeta de actividad del dashboard; revisar usos antes de retirar el endpoint y no mantener datos sensibles expuestos sin necesidad. Ver «Dashboard» en decisiones tomadas. |
-| 2.3 | 🟠 | Un ADMIN puede degradarse a sí mismo o al último ADMIN → nadie administra más. | `app/Http/Requests/Admin/UpdateUserRequest.php:36`, `Admin/UserController.php:72-91` | Prohibir cambiar el rol del último ADMIN o el propio. Test. |
+| 2.2 | 🟠 | El endpoint de actividad serializa el `User` completo (email, rol) y el modelo afectado (incluye `precio_compra`) a cualquier usuario verificado. | `app/Http/Controllers/DashboardActivityController.php:18-19` | Retirar la tarjeta de actividad del dashboard; revisar usos antes de retirar el endpoint y no mantener datos sensibles expuestos sin necesidad. Ver «Dashboard» en decisiones tomadas. **Nota:** el PR #35 tradujo la tarjeta en lugar de retirarla (`resources/js/react/dashboard.jsx:60`, `lib/dashboardActivityCopy.js`); la decisión de retirarla sigue vigente y esa traducción queda sin uso. |
+| 2.3 | 🟠 | Un ADMIN puede degradarse a sí mismo o al último ADMIN → nadie administra más. Al crear usuarios el rol se toma directo de la petición (`Admin/UserController.php:55`). | `app/Http/Requests/Admin/UpdateUserRequest.php:36`, `Admin/UserController.php:55,72-91` | Prohibir cambiar el rol del último ADMIN o el propio. Test. |
 | 2.4 | 🟢 | `$request->all()` en create/update de categorías. | `CategoriaController.php:71,129` | Usar `$request->validated()`. |
 | 2.5 | ~~🟢~~ | **Reemplazado por sección 12.** Usuarios creados por admin quedan sin `email_verified_at` y el middleware `verified` los bloquea si no hay mail. | `app/Models/User.php:11`, `Admin/UserController.php:50-56` | Setear `email_verified_at` al crearlos desde admin. |
-| 2.6 | 🟢 | El seeder crea el admin con contraseña por defecto. | `database/seeders/DatabaseSeeder.php:18-22` | Leerla de `.env` o impedir correr el seeder en `production`. |
+| 2.6 | 🟢 | El seeder crea el admin `test@example.com` con la contraseña por defecto de la factory (no se indica explícitamente). | `database/seeders/DatabaseSeeder.php:17-21`, `database/factories/UserFactory.php` | Leerla de `.env` o impedir correr el seeder en `production`. |
+| 2.7 | 🟠 | La visibilidad por rol decidida no está aplicada: `/dashboard` y sus endpoints `activity`/`analytics` aceptan cualquier usuario verificado; Control Stock recibe `precio_compra`; Ventas ve todas las ventas; todos los roles entran al dashboard al iniciar sesión. | `routes/web.php:23,33-34`, `resources/js/react/productos.jsx:499`, `VentaController.php:20`, `Auth/AuthenticatedSessionController.php:25` | Aplicar «Visibilidad por rol» y «Dashboard» en el servidor. Tests por rol (sección 9). |
 
 Preservar `.env` fuera del control de versiones, CSRF y validación de imágenes. Actualizar la autorización por rol en el servidor conforme a las decisiones de visibilidad y propiedad.
 
@@ -73,9 +77,9 @@ Preservar `.env` fuera del control de versiones, CSRF y validación de imágenes
 | 4.3 | Búsqueda de duplicados con `strtolower` + `LOWER()` falla con acentos/ñ; `LIKE` es sensible a mayúsculas en PostgreSQL. | `ProductoController.php:229,254-258`, `CategoriaController.php:47`, `VentaController.php:26-28` | `mb_strtolower` y normalizar el nombre guardado, o documentar la collation requerida. |
 | 4.4 | `composer dev` usa `pail`, que requiere `pcntl` (no existe en Windows). | `composer.json:49` | Script `dev:win` sin pail, o documentarlo. |
 | 4.5 | Tests solo en SQLite `:memory:`: no prueban los bloqueos y diferencias de MySQL. | `phpunit.xml:26-27` | Ejecutar pruebas específicas con MySQL para concurrencia y claves foráneas; definir el entorno de prueba sin usar datos reales. |
-| 4.6 | Tests JS (`node:test`) sin script npm, repartidos en dos carpetas. | `package.json`, `tests/js/`, `resources/js/react/lib/*.test.js` | `"test": "node --test"` (funciona en todos los SO) y unificar carpeta. |
+| 4.6 | Tests JS (`node:test`) sin script npm, repartidos en dos carpetas. | `package.json`, `tests/js/` (solo `productMoneyInput.test.js`), `resources/js/react/lib/*.test.js` | `"test": "node --test"` (funciona en todos los SO) y unificar carpeta junto a `lib/`. |
 | 4.7 | Vite escucha en todas las interfaces por defecto (expuesto en la LAN). | `vite.config.js:11` | Default `localhost`; LAN solo con `VITE_DEV_HOST`. |
-| 4.8 | Fuentes desde CDN (fonts.bunny.net): el POS sin internet pierde tipografía. Tres familias distintas. | `resources/views/layouts/app.blade.php:14`, `landing.blade.php:10` | Una sola familia empaquetada con Vite. |
+| 4.8 | Fuentes desde CDN (fonts.bunny.net): el POS sin internet pierde tipografía. Tres familias distintas. Flatpickr también se carga desde jsdelivr en todas las páginas. | `resources/views/layouts/app.blade.php:14,20,110-111`, `landing.blade.php:10` (sin reverificar) | Una sola familia empaquetada con Vite; Flatpickr se resuelve con 7.1. |
 
 Ya está bien: finales de línea LF forzados por `.gitattributes`, scripts npm neutrales, sin `public/hot` colgado.
 
@@ -87,18 +91,19 @@ Ya está bien: finales de línea LF forzados por `.gitattributes`, scripts npm n
 |---|---|---|---|---|
 | 5.1 ✔ | 🔴 | El focus-trap del Modal incluye `<input type="hidden">` → Tab queda trabado en el formulario de producto. | `resources/js/react/components/ui/Modal.jsx:21` | Selector: `button:not([disabled]), input:not([type=hidden]):not([disabled]), select, textarea, a[href], [tabindex]:not([tabindex="-1"])`. |
 | 5.2 | 🔴 | Con dos modales abiertos (Nueva Categoría dentro de Producto), Escape cierra el exterior y se pierde lo cargado. | `Modal.jsx:12-27`, `productos.jsx:270` | Pila de modales: solo el de arriba maneja teclado. |
-| 5.3 | 🔴 | El Toast de flash no se puede cerrar y en móvil tapa el botón de menú. | `resources/js/react/app.jsx:26`, `components/ui/Toast.jsx:24` | Estado `dismissed`, `onClose` y auto-ocultar. |
+| 5.3 | 🔴 | El Toast de flash no se puede cerrar y en móvil tapa el botón de menú: el botón × se muestra pero `app.jsx` nunca le pasa `onClose`. | `resources/js/react/app.jsx:26`, `components/ui/Toast.jsx:24` | Estado `dismissed`, `onClose` y auto-ocultar. |
 | 5.4 | 🟠 | Menú de acciones de venta (`<details>`) se corta dentro del `overflow-x-auto` y no cierra con Escape/click afuera. | `sales.jsx:53-55,102` | Usar el `Dropdown` compartido en un portal. |
 | 5.5 | 🟠 | Nueva categoría se agrega con `document.createElement` a un `<select>` de React: se pierde al re-render y no llega al filtro. | `productos.jsx:137-143` | Categorías en estado React + callback `onCategoryCreated`. |
 | 5.6 | 🟠 | Dropdown de cuenta declara `role="menu"` sin navegación por flechas ni foco. | `components/ui/Dropdown.jsx:15` | Tratarlo como *disclosure* (sin roles menu) y cerrar en `focusout`. |
-| 5.7 | 🟠 | Páginas sin `<h1>` (Productos, Usuarios, Categorías) y textos en inglés ("Close", "Loading…", "Workspace"). | `productos.jsx:416`, `users.jsx:34`, `categorias.jsx:326`, `Modal.jsx:37`, `Toast.jsx:24`, `LoadingState.jsx:1`, `Sidebar.jsx:5` | `<h1>` por página, textos en español. |
+| 5.7 | 🟠 | Páginas sin `<h1>` (Productos, Usuarios, Categorías; Ventas y Dashboard ya lo tienen) y textos en inglés ("Close", "Close notification", "Loading…", "Workspace"). | `productos.jsx:416`, `users.jsx:34`, `categorias.jsx:326`, `Modal.jsx:37`, `Toast.jsx:24`, `LoadingState.jsx:1`, `Sidebar.jsx:5` | `<h1>` por página, textos en español. |
 | 5.8 | 🟠 | Gráfico de ventas: valores solo en hover (`<title>`), etiquetas de 10 px; inusable en táctil. | `dashboard.jsx:31` | Mostrar valores o tabla oculta accesible; etiquetas ≥ 12 px. |
 | 5.9 | 🟢 | "Activar" en `text-green-600` sobre blanco: contraste ~3.3:1 (no cumple AA). | `productos.jsx:320` | `text-green-700` o superior. |
 | 5.10 | 🟢 | `id="modal-title"` fijo; `window.alert` para validar fechas; `URL.createObjectURL` sin liberar. | `Modal.jsx:37`, `sales.jsx:81`, `productos.jsx:71` | `useId`, error inline, `revokeObjectURL` en cleanup. |
+| 5.11 | 🟢 | La entrada Dashboard del menú incluye el rol `null`, así que se muestra a usuarios sin rol. | `layout/Sidebar.jsx:5` | Quitar `null` y ajustar los roles según 2.7. |
 
 ## 6. Vistas modernas y responsive 🟠
 
-> **Skills:** `impeccable` (rediseño/pulido), `frontend-design` (dirección visual), `responsive-design` o `fronted-responsive` (mobile-first), `accessibility`. El detalle por pantalla ya está en `tiendastock-mejoras-ui-responsive.md`: seguir ese documento.
+> **Skills:** `impeccable` (rediseño/pulido), `frontend-design` (dirección visual), `.opencode/skills/react-responsive` (mobile-first), `accessibility`. El detalle por pantalla ya está en `tiendastock-mejoras-ui-responsive.md`: seguir ese documento.
 
 | # | Problema | Dónde | Corrección |
 |---|---|---|---|
@@ -123,16 +128,16 @@ Ya está bien: finales de línea LF forzados por `.gitattributes`, scripts npm n
 
 ## 8. Deuda técnica y limpieza 🟢
 
-> **Skills:** `ponytail:ponytail-audit` (qué borrar), `documentation-editor` o `cognitive-doc-design` (README).
+> **Skills:** `ponytail:ponytail-audit` (qué borrar), `cognitive-doc-design` (README).
 
 | # | Problema | Dónde | Corrección |
 |---|---|---|---|
 | 8.1 | Código duplicado: formato de moneda ×3, `csrf` redefinido, submit con FormData ×3 (usuarios no usa `saveResponse`), badge de stock ×3. | `productos.jsx:18,155`, `sales.jsx:14-21`, `dashboard.jsx:10`, `users.jsx:120`, `categorias.jsx:238` | `lib/format.js` (ya existe `formatMoney`) y `submitForm` en `lib/api.js`. |
 | 8.2 | URLs hardcodeadas (`/productos/data`, `/ventas`) en vez del objeto `routes`. Rompe si se despliega en subcarpeta. | `productos.jsx`, `sales.jsx`, `Header.jsx:12-13`, `Sidebar.jsx:15` | Pasarlas por `routes` desde `layouts/app.blade.php:55-65`. |
 | 8.3 | Fallbacks Blade duplican React (`productos/index.blade.php` 617 líneas, `ventas/pos.blade.php` 445) y `layouts/navigation.blade.php` no se usa. **Decidido (26/10/2026): React queda definitivo.** | `resources/views/**`, `config/frontend.php`, `resources/views/layouts/app.blade.php` | Ver sección 10. |
-| 8.4 | `User::isAtLeast()` sin llamadores. | `app/Models/User.php:84-96` | Confirmar con grep y borrar. |
+| 8.4 | `User::isAtLeast()` sin llamadores en la aplicación; solo lo usan tests. | `app/Models/User.php:84-96`, `tests/Feature/UserRoleTest.php:63-86` | Borrarlo junto con esos tests. |
 | 8.5 | README raíz obsoleto (`config.php`, `db.php`, `DB_USER`); `.gitignore` raíz lista `src/config.php`; `composer.json` con nombre `laravel/laravel`. | `../README.md`, `../.gitignore`, `composer.json:3-5` | Reescribir README con el setup real (ver `AGENTS.md`/`SETUP.md`), renombrar paquete. |
-| 8.6 | Registro de idioma mezclado: "Gestiona/Ingresa" (tú) vs "Seleccioná/Intentá" (vos). **Decidido (26/10/2026): tuteo neutro profesional.** | Voseo hoy en `resources/js/react/categorias.jsx`, `productos.jsx`, `components/ui/ErrorState.jsx`, `lib/saveResponse.js` | Pasar todo a tú neutro ("Selecciona", "Intenta", "Ingresa", "Puedes"), sin regionalismos ni coloquialismos. Revisar también Blade de auth/perfil, `lang/es/*` y mensajes de validación en `app/Http/Requests/*` (por ejemplo "Debe agregar…" usa usted: unificar a tú). Si algún test asserta textos con voseo, actualizarlo. Hacerlo junto con 5.7 (textos en inglés). |
+| 8.6 | Registro de idioma mezclado: "Gestiona/Ingresa" (tú) vs "Seleccioná/Intentá" (vos). **Decidido (26/10/2026): tuteo neutro profesional.** | Voseo hoy en `resources/js/react/categorias.jsx`, `productos.jsx`, `dashboard.jsx:70` («Visualizá»), `components/ui/ErrorState.jsx`, `lib/saveResponse.js` | Pasar todo a tú neutro ("Selecciona", "Intenta", "Ingresa", "Puedes"), sin regionalismos ni coloquialismos. Revisar también Blade de auth/perfil, `lang/es/*` y mensajes de validación en `app/Http/Requests/*` (por ejemplo "Debe agregar…" usa usted: unificar a tú). Si algún test asserta textos con voseo, actualizarlo. Hacerlo junto con 5.7 (textos en inglés). |
 
 ## 10. Migrar todo el frontend a React 🟠
 
@@ -151,7 +156,7 @@ Ya está bien: finales de línea LF forzados por `.gitattributes`, scripts npm n
 ## 11. Despliegue en Railway con MySQL 🔴
 
 > **Decidido (26/10/2026): producción en Railway con MySQL.** Hoy el repo no tiene ninguna configuración de despliegue (sin `Procfile`, `nixpacks.toml`, `railway.json` ni `Dockerfile`).
-> **Skills:** `security-review` antes del primer deploy; `documentation-editor` para dejar el procedimiento en `SETUP.md`.
+> **Skills:** `security-review` antes del primer deploy; `cognitive-doc-design` para dejar el procedimiento en `SETUP.md`.
 
 | # | Sev | Problema | Dónde | Corrección |
 |---|---|---|---|---|
@@ -242,8 +247,8 @@ Correr: `php artisan test --filter=VentaPosTest`, luego `composer test` y `npm r
 
 Orden orientativo; preservar cambios existentes. Ramas, commits, push y PR requieren autorización explícita del usuario.
 
-1. **Ventas + datos** (secciones 1 y 2.1–2.3) — crítico, con tests de la sección 9. Revisar con `security-review` y, si querés doble revisión, `judgment-day`.
-2. **Usuarios y permisos** (2.3, 12 y visibilidad por rol), incluida la navegación inicial.
+1. **Ventas + datos** (secciones 1 y 2.1–2.3) — crítico, con tests de la sección 9. Revisar con `security-review` y, para una doble revisión, `judgment-day`. Primer paso sugerido: 1.2 (una línea, con test que fuerce el error de stock) y luego 1.1 + 1.8.
+2. **Usuarios y permisos** (2.3, 2.7, 5.11, 12 y visibilidad por rol), incluida la navegación inicial.
 3. **Dashboard y zona horaria** (4.1 y decisiones de dashboard).
 4. **Frontend React completo y responsive** (5, 6 y 10), con pruebas de flujos por rol.
 5. **Imágenes y preparación de producción** (11), con pruebas MySQL y respaldo.
