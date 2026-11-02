@@ -42,7 +42,7 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('Ingresa a TiendaStock para gestionar tu negocio.', $content);
     }
 
-    public function test_logout_and_profile_deletion_redirect_through_root_to_login(): void
+    public function test_logout_redirects_through_root_to_login(): void
     {
         $logoutUser = User::factory()->create();
         $logoutResponse = $this->actingAs($logoutUser)->post('/logout');
@@ -50,13 +50,6 @@ class RootRedirectTest extends TestCase
         $logoutResponse->assertRedirect('/');
         $this->get('/')->assertRedirect('/login');
 
-        $deletionUser = User::factory()->create();
-        $deletionResponse = $this->actingAs($deletionUser)->delete('/profile', [
-            'password' => 'password',
-        ]);
-
-        $deletionResponse->assertRedirect('/');
-        $this->get('/')->assertRedirect('/login');
     }
 
     public function test_authenticated_root_still_redirects_to_login_and_login_to_dashboard(): void

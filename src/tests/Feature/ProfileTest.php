@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Venta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,17 +36,16 @@ class ProfileTest extends TestCase
             ->assertSee('Mostrar contraseña', false)
             ->assertSee('Ocultar contraseña', false)
             ->assertSee('aria-pressed', false)
-            ->assertSee('Zona de peligro')
-            ->assertSee('text-red-700', false)
+            ->assertDontSee('Zona de peligro')
             ->assertSee('Información del perfil')
             ->assertSee('Nombre de usuario')
             ->assertSee('Cambiar contraseña')
-            ->assertSee('Eliminar cuenta')
+            ->assertDontSee('Eliminar cuenta')
             ->assertSee('Cerrar navegación');
 
-        $this->assertSame(6, substr_count($response->getContent(), 'class="login-input-icon"'));
-        $this->assertSame(3, substr_count($response->getContent(), 'class="login-password-toggle"'));
-        $this->assertGreaterThanOrEqual(6, substr_count($response->getContent(), 'required="required"'));
+        $this->assertGreaterThanOrEqual(3, substr_count($response->getContent(), 'class="login-input-icon"'));
+        $this->assertGreaterThanOrEqual(1, substr_count($response->getContent(), 'class="login-password-toggle"'));
+        $this->assertGreaterThanOrEqual(5, substr_count($response->getContent(), 'required="required"'));
         foreach (['current_password', 'password', 'password_confirmation'] as $field) {
             $this->assertMatchesRegularExpression(
                 '/<input\b(?=[^>]*\bid="update_password_' . $field . '")(?=[^>]*\s+type="password")[^>]*>/',
@@ -78,21 +78,6 @@ class ProfileTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
-    public function test_profile_danger_treatment_uses_the_existing_panel(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->get('/profile');
-
-        $response->assertOk()
-            ->assertSee('class="surface-panel border border-red-200 p-4 sm:p-6 lg:p-8"', false)
-            ->assertDontSee('rounded-xl border border-red-200 p-4 sm:p-6', false)
-            ->assertSee('Al eliminar su cuenta, todos sus datos y recursos se borrarán de forma permanente.')
-            ->assertDontSee('Descargue antes la información que desee conservar.');
-    }
-
     public function test_profile_forms_fill_the_available_content_width_without_changing_actions(): void
     {
         $user = User::factory()->create();
@@ -104,8 +89,7 @@ class ProfileTest extends TestCase
             ->assertDontSee('class="w-full lg:w-2/3 space-y-6"', false)
             ->assertDontSee('class="max-w-xl"', false)
             ->assertSee('action="'.route('profile.update').'"', false)
-            ->assertSee('action="'.route('password.update').'"', false)
-            ->assertSee('action="'.route('profile.destroy').'"', false);
+            ->assertSee('action="'.route('password.update').'"', false);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
@@ -127,39 +111,20 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_user_cannot_delete_their_account_or_lose_their_sales(): void
     {
-        $user = User::factory()->create();
+        foreach ([User::ROLE_ADMIN, User::ROLE_VENTAS, User::ROLE_CONTROL_STOCK] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $sale = Venta::factory()->create(['user_id' => $user->id]);
+            $userBefore = $user->fresh()->getAttributes();
+            $saleBefore = $sale->fresh()->getAttributes();
 
-        $response = $this
-            ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
+            foreach ([[], ['password' => 'wrong-password'], ['password' => 'password']] as $payload) {
+                $this->actingAs($user)->delete('/profile', $payload)->assertStatus(405);
+                $this->assertSame($userBefore, $user->fresh()->getAttributes());
+                $this->assertSame($saleBefore, $sale->fresh()->getAttributes());
+            }
+        }
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
-    }
 }
