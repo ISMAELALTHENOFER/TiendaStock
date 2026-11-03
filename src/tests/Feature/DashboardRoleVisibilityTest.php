@@ -54,7 +54,7 @@ class DashboardRoleVisibilityTest extends TestCase
 
         $sidebar = file_get_contents(resource_path('js/react/layout/Sidebar.jsx'));
         $this->assertStringContainsString("icon: LayoutDashboard, roles: ['ADMIN']", $sidebar);
-        $this->assertStringContainsString("user.role === 'ADMIN' ? routes.dashboard : '/profile'", $sidebar);
+        $this->assertStringContainsString("user.role === 'ADMIN' ? routes.dashboard : routes.profilePage", $sidebar);
     }
 
     public function test_blade_driver_restores_the_legacy_dashboard(): void

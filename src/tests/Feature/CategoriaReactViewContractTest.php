@@ -161,7 +161,7 @@ class CategoriaReactViewContractTest extends TestCase
             "params.set('page'",
             "params.set('per_page'",
             "get('buscar')",
-            'No hay categorías creadas aún',
+            'Aún no hay categorías',
             'Crear primera categoría',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);

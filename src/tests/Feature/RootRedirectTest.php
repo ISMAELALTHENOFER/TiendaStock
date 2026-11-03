@@ -10,6 +10,12 @@ class RootRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['frontend.routes.login' => 'blade']);
+    }
+
     public function test_public_root_redirects_to_login(): void
     {
         $response = $this->get('/');

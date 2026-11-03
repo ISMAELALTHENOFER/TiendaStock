@@ -24,6 +24,7 @@ class ProductoImagenTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        config(['frontend.routes.productos.show' => 'blade']);
 
         $this->admin = User::factory()->admin()->create();
         $this->categoria = Categoria::factory()->create();

@@ -12,6 +12,12 @@ class ProductoMoneyFormatTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['frontend.routes.productos.show' => 'blade']);
+    }
+
     public function test_show_renders_precio_compra_with_argentine_format(): void
     {
         $admin = User::factory()->admin()->create();

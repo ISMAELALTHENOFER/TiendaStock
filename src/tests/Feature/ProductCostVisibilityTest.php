@@ -12,6 +12,15 @@ class ProductCostVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config([
+            'frontend.routes.productos.show' => 'blade',
+            'frontend.routes.categorias.show' => 'blade',
+        ]);
+    }
+
     public function test_control_stock_cannot_view_cost_in_product_or_category_pages(): void
     {
         $category = Categoria::factory()->create();
