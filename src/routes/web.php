@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
-Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified', 'role:ADMIN'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'role:ADMIN'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -21,7 +21,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
 
-    Route::middleware(['verified', 'role:ADMIN'])->group(function () {
+    Route::middleware('role:ADMIN')->group(function () {
         Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');
         Route::get('/dashboard/analytics', DashboardAnalyticsController::class)->name('dashboard.analytics');
     });

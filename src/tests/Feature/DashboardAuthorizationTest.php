@@ -10,7 +10,7 @@ class DashboardAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_dashboard_endpoints_require_an_authenticated_verified_admin(): void
+    public function test_dashboard_endpoints_require_an_authenticated_admin(): void
     {
         foreach (['/dashboard', '/dashboard/activity', '/dashboard/analytics'] as $url) {
             $this->get($url)->assertRedirect('/login');
@@ -24,11 +24,6 @@ class DashboardAuthorizationTest extends TestCase
         }
 
         $this->actingAs(User::factory()->admin()->unverified()->create());
-        foreach (['/dashboard', '/dashboard/activity', '/dashboard/analytics'] as $url) {
-            $this->get($url)->assertRedirect(route('verification.notice'));
-        }
-
-        $this->actingAs(User::factory()->admin()->create());
         foreach (['/dashboard', '/dashboard/activity', '/dashboard/analytics'] as $url) {
             $this->get($url)->assertOk();
         }

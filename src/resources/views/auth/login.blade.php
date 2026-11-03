@@ -59,9 +59,6 @@
                 <span class="ml-2 text-sm text-gray-600 select-none">Recordarme</span>
             </label>
 
-            @if (Route::has('password.request'))
-                <a class="login-recovery-link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
-            @endif
         </div>
 
         <button type="submit" class="login-submit" x-bind:disabled="submitting" x-bind:aria-busy="submitting.toString()">

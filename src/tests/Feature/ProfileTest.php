@@ -75,7 +75,6 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('testuser', $user->username);
         $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
     }
 
     public function test_profile_forms_fill_the_available_content_width_without_changing_actions(): void
@@ -90,25 +89,6 @@ class ProfileTest extends TestCase
             ->assertDontSee('class="max-w-xl"', false)
             ->assertSee('action="'.route('profile.update').'"', false)
             ->assertSee('action="'.route('password.update').'"', false);
-    }
-
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->patch('/profile', [
-                'name' => 'Test User',
-                'username' => $user->username,
-                'email' => $user->email,
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
     public function test_user_cannot_delete_their_account_or_lose_their_sales(): void

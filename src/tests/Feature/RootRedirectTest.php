@@ -27,14 +27,6 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('action="'.route('login').'"', $content);
     }
 
-    public function test_login_links_to_password_recovery(): void
-    {
-        $content = $this->get('/login')->getContent();
-
-        $this->assertStringContainsString('href="'.route('password.request').'"', $content);
-        $this->assertStringContainsString('¿Olvidaste tu contraseña?', $content);
-    }
-
     public function test_login_explains_its_purpose(): void
     {
         $content = $this->get('/login')->getContent();
@@ -90,10 +82,10 @@ class RootRedirectTest extends TestCase
         }
     }
 
-    public function test_unverified_admin_is_still_required_to_verify_email(): void
+    public function test_removed_email_recovery_and_verification_routes_are_not_found(): void
     {
-        $user = User::factory()->admin()->unverified()->create();
-        $this->actingAs($user)->get('/login')->assertRedirect('/dashboard');
-        $this->get('/dashboard')->assertRedirect(route('verification.notice'));
+        foreach (['/forgot-password', '/reset-password/test-token', '/verify-email', '/email/verification-notification'] as $path) {
+            $this->get($path)->assertNotFound();
+        }
     }
 }

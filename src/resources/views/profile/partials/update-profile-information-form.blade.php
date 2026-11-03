@@ -9,10 +9,6 @@
         </p>
     </header>
 
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
-        @csrf
-    </form>
-
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-5">
         @csrf
         @method('patch')
@@ -43,23 +39,6 @@
             </div>
             <x-input-error id="email-error" class="mt-2" :messages="$errors->get('email')" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="mt-2 text-sm text-ink">
-                        Su dirección de correo electrónico no está verificada.
-
-                        <button type="submit" form="send-verification" class="inline-flex min-h-11 items-center rounded-md text-sm text-primary underline hover:text-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                            Reenviar correo de verificación
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 text-sm font-medium text-primary">
-                            Se envió un nuevo enlace de verificación a su correo electrónico.
-                        </p>
-                    @endif
-                </div>
-            @endif
         </div>
 
         <div class="flex flex-wrap items-center gap-4">

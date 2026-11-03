@@ -31,11 +31,11 @@ class DashboardActivityEndpointTest extends TestCase
         $this->getJson('/dashboard/activity')->assertUnauthorized();
     }
 
-    public function test_unverified_user_is_rejected(): void
+    public function test_admin_does_not_need_email_verification(): void
     {
         $user = User::factory()->admin()->unverified()->create();
 
-        $this->actingAs($user)->getJson('/dashboard/activity')->assertForbidden();
+        $this->actingAs($user)->getJson('/dashboard/activity')->assertOk();
     }
 
     public function test_verified_user_receives_an_explicit_empty_data_set(): void
