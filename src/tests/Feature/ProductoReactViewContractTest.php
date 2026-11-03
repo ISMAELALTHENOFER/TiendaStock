@@ -80,7 +80,7 @@ class ProductoReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
         foreach ([
-            '/productos/data',
+            'routes.productosData',
             'inactivos',
             'Buscar por nombre, categoría, talle o color',
             'Limpiar filtros',
@@ -169,8 +169,8 @@ class ProductoReactViewContractTest extends TestCase
         $money = file_get_contents(base_path('resources/js/react/lib/productMoneyInput.js'));
 
         foreach ([
-            '/categorias/inline',
-            '/productos/check-duplicate',
+            'routes.categoriasInline',
+            'routes.productoDuplicateCheck',
             'multipart/form-data',
             'ProductImage',
             'Vista previa',

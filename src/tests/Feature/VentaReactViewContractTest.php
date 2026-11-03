@@ -51,7 +51,7 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
-        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'productos/search', 'routes.ventas', 'no-print'] as $contract) {
+        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'routes.productosSearch', 'routes.ventas', 'no-print'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -121,7 +121,7 @@ class VentaReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
         foreach ([
-            '/productos/search?q=',
+            '`${routes.productosSearch}?q=${encodeURIComponent(query)}`',
             'Resultados mostrados:',
             'Limpiar búsqueda',
             'const available = product.cantidad - inCart',

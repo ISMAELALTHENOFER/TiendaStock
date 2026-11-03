@@ -130,7 +130,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         if (!nombre || nombre.length < 2 || nombre === lastCheckedName.current) return;
         lastCheckedName.current = nombre;
         try {
-            const dato = await api.get(`/productos/check-duplicate?nombre=${encodeURIComponent(nombre)}`);
+            const dato = await api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`);
             if (dato.exists) setDuplicado(dato);
         } catch {
             // Advisory only: the database unique rule is the final guard.
@@ -142,7 +142,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         setInlineSubmitting(true);
         setInlineError('');
         try {
-            const categoria = await api.post('/categorias/inline', { nombre: inlineNombre.trim() });
+            const categoria = await api.post(routes.categoriasInline, { nombre: inlineNombre.trim() });
             setCategoryOptions((current) => [...current, categoria]);
             setCategoryId(String(categoria.id));
             onCategoryCreated?.(categoria);
@@ -371,7 +371,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             setCargando(true);
             setError(false);
             try {
-                const response = await fetch(`${routes.productosData || '/productos/data'}?${params}`, {
+                const response = await fetch(`${routes.productosData}?${params}`, {
                     headers: { Accept: 'application/json' },
                     cache: 'no-store',
                     signal: controller.signal,

@@ -161,7 +161,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
         const timeout = window.setTimeout(async () => {
             setSearching(true);
             try {
-                const products = await api.get(`/productos/search?q=${encodeURIComponent(query)}`, { cache: 'no-store', signal: controller.signal });
+                const products = await api.get(`${routes.productosSearch}?q=${encodeURIComponent(query)}`, { cache: 'no-store', signal: controller.signal });
                 if (request === searchRequest.current) setResults(products);
             } catch (error) {
                 if (error.name !== 'AbortError' && request === searchRequest.current) { setResults([]); setSearchError(true); }
@@ -207,7 +207,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
         try {
             await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, routes, setErrors);
         } catch {
-            setErrors({ form: ['No se pudo registrar la venta. Reintente.'] });
+            setErrors({ form: ['No se pudo registrar la venta. Intenta nuevamente.'] });
         } finally {
             cartBusy.current = false;
             setSubmitting(false);

@@ -156,7 +156,7 @@ class ProductoDuplicateCheckTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
         $this->assertStringContainsString('verificarDuplicado', $source, 'Create form must wire verificarDuplicado on the nombre input.');
-        $this->assertStringContainsString('/productos/check-duplicate', $source, 'The duplicate-check endpoint URL must be embedded in the form.');
+        $this->assertStringContainsString('routes.productoDuplicateCheck', $source, 'The duplicate-check endpoint URL must be supplied by Laravel.');
         $this->assertStringContainsString('lastCheckedName', $source, 'The duplicate-check flow must track lastCheckedName to avoid re-prompting on the same name.');
         $this->assertStringContainsString('Sí, editar', $source, 'The duplicate prompt must offer to edit the existing product.');
     }

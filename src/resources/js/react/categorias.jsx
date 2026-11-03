@@ -31,7 +31,7 @@ function CategoryForm({ categoria, routes, onClose }) {
             const result = await saveResponse(response);
             window.location.assign(result.redirect);
         } catch (error) {
-            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar la categoría. Intentá nuevamente.'] });
+            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar la categoría. Intenta nuevamente.'] });
             setSubmitting(false);
         }
     }

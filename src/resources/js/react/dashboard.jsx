@@ -63,7 +63,7 @@ export function Dashboard({ user, metrics, categorias = [], routes }) {
         const id = ++request.current;
         const controller = new AbortController();
         setAnalytics({ state: 'loading', data: null });
-        api.get(`/dashboard/analytics?window=${windowDays}`, { cache: 'no-store', signal: controller.signal })
+        api.get(`${routes.dashboardAnalytics}?window=${windowDays}`, { cache: 'no-store', signal: controller.signal })
             .then((data) => { if (request.current === id) setAnalytics({ state: 'ready', data }); })
             .catch(() => { if (request.current === id && !controller.signal.aborted) setAnalytics({ state: 'error', data: null }); });
         return () => { request.current++; controller.abort(); };

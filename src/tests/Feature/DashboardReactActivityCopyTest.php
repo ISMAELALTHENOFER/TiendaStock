@@ -12,7 +12,7 @@ class DashboardReactActivityCopyTest extends TestCase
         $this->assertStringNotContainsString('/dashboard/activity', $dashboard);
         $this->assertStringNotContainsString('ActivityCard', $dashboard);
         $this->assertStringNotContainsString('Actividad reciente', $dashboard);
-        $this->assertStringContainsString('/dashboard/analytics', $dashboard);
+        $this->assertStringContainsString('routes.dashboardAnalytics', $dashboard);
         $this->assertStringContainsString('Acciones rápidas', $dashboard);
         $this->assertStringContainsString('const SHOW_LOW_STOCK_SECTION = false;', $dashboard);
         $this->assertStringContainsString('{SHOW_LOW_STOCK_SECTION && <Card>', $dashboard);

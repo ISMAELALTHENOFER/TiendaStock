@@ -76,7 +76,7 @@ export function UserList({ users, routes }) {
                                 <tr className="border-b border-border text-xs uppercase tracking-wide text-white">
                                     <th className="px-4 py-3">Nombre</th>
                                     <th className="px-4 py-3">Usuario</th>
-                                    <th className="px-4 py-3">Email</th>
+                                    <th className="px-4 py-3">Correo electrónico</th>
                                     <th className="px-4 py-3 text-center">Rol</th><th className="px-4 py-3 text-center">Estado</th>
                                     <th className="px-4 py-3 text-center">Acciones</th>
                                 </tr>
@@ -112,7 +112,7 @@ export function UserList({ users, routes }) {
                                         </div>
                                         <Badge tone={badge.tone}>{badge.short}</Badge>
                                     </div>
-                                     <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Email</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div><div className="data-card-field"><dt>Estado</dt><dd><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></dd></div></dl>
+                                     <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Correo electrónico</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div><div className="data-card-field"><dt>Estado</dt><dd><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></dd></div></dl>
                                      {user.id !== routes.currentUserId && <Button className="mt-3 w-full" variant="secondary" onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}
                                      <a href={`${routes.users}/${user.id}/edit`} className="mt-4 block min-h-11 w-full rounded-control bg-surface-muted px-4 py-3 text-center text-sm font-semibold text-primary transition-colors duration-200 hover:bg-border" aria-label={`Editar usuario ${user.username}`}>Editar usuario</a>
                                 </Card>
