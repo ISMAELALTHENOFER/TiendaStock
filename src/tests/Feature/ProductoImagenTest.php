@@ -155,6 +155,7 @@ class ProductoImagenTest extends TestCase
 
         $producto = Producto::where('nombre', 'Desde React')->firstOrFail();
         $this->put(route('productos.update', $producto), [
+            'stock_original' => $producto->cantidad,
             'nombre' => 'Actualizado', 'categoria_id' => $this->categoria->id,
             'precio_compra' => 10, 'precio_venta' => 20, 'cantidad' => 5,
         ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
@@ -170,6 +171,7 @@ class ProductoImagenTest extends TestCase
         $originalPath = $producto->imagen;
 
         $response = $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+            'stock_original' => $producto->cantidad,
             'nombre' => $producto->nombre,
             'categoria_id' => $this->categoria->id,
             'precio_compra' => 12.00,
@@ -197,6 +199,7 @@ class ProductoImagenTest extends TestCase
         $newFile = $this->pngImage(1, 'nueva.png');
 
         $response = $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+            'stock_original' => $producto->cantidad,
             'nombre' => $producto->nombre,
             'categoria_id' => $this->categoria->id,
             'precio_compra' => 12.00,
@@ -225,6 +228,7 @@ class ProductoImagenTest extends TestCase
 
         try {
             $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+                'stock_original' => $producto->cantidad,
                 'nombre' => 'Changed', 'categoria_id' => $this->categoria->id,
                 'precio_compra' => 12, 'precio_venta' => 30, 'cantidad' => 10,
                 'imagen' => $this->pngImage(),

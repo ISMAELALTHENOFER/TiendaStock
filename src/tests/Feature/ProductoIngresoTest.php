@@ -169,6 +169,7 @@ class ProductoIngresoTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+            'stock_original' => $producto->cantidad,
             'nombre' => $producto->nombre,
             'categoria_id' => $this->categoria->id,
             'precio_compra' => 5.00,

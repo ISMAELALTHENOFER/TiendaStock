@@ -69,9 +69,9 @@ class SaleCartTest extends TestCase
         $this->actingAs(User::factory()->ventas()->create());
         $cart = $this->postJson('/ventas/cart', ['producto_id' => $product->id, 'precio_venta' => '25.00'])->json('id');
         $payload = $this->payload($cart, $product);
-        $product->update(['activo' => false]);
+        $product->update(['cantidad' => 0]);
         $this->postJson('/ventas', $payload)->assertUnprocessable();
-        $product->update(['activo' => true]);
+        $product->update(['cantidad' => 10]);
         $payload['items'] = [
             ['producto_id' => $product->id, 'cantidad' => 6],
             ['producto_id' => $product->id, 'cantidad' => 6],

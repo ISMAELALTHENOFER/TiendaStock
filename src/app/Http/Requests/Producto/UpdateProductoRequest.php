@@ -18,7 +18,7 @@ class UpdateProductoRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->productoRules();
+        return $this->productoRules() + ['stock_original' => ['required', 'integer', 'min:0']];
     }
 
     /**

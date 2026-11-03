@@ -37,6 +37,8 @@
                       @submit.prevent="confirmar().then(r => r && $el.submit())">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="stock_original" value="{{ old('stock_original', $producto->cantidad) }}">
+                    @error('stock_original') <div role="alert" class="mb-4 rounded-lg bg-red-50 p-4 text-red-700">{{ $message }}</div> @enderror
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 

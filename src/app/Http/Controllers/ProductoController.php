@@ -10,6 +10,7 @@ use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
 
@@ -118,6 +119,8 @@ class ProductoController extends Controller
     public function update(UpdateProductoRequest $request, Producto $producto)
     {
         $data = $request->validated();
+        $stockOriginal = (int) $data['stock_original'];
+        unset($data['stock_original']);
 
         $oldImage = $producto->imagen;
         $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
@@ -129,7 +132,11 @@ class ProductoController extends Controller
         }
 
         try {
-            $response = DB::transaction(function () use ($data, $request, $producto) {
+            $response = DB::transaction(function () use ($data, $request, $producto, $stockOriginal) {
+                $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
+                if ((int) $producto->cantidad !== $stockOriginal) {
+                    throw ValidationException::withMessages(['stock_original' => 'El stock cambió desde que abriste el formulario. Revisa el inventario antes de guardar.']);
+                }
                 $producto->update($data);
 
                 ActivityRecorder::recordAfterCommit(
@@ -162,10 +169,18 @@ class ProductoController extends Controller
      * El producto permanece en la base de datos (preserva histórico de ventas)
      * y deja de aparecer en POS/búsqueda por defecto.
      */
-    public function destroy(Producto $producto)
+    public function destroy(Request $request, Producto $producto)
     {
-        return DB::transaction(function () use ($producto) {
-            $producto->update(['activo' => false]);
+        $data = $request->validate(['stock_original' => ['required', 'integer', 'min:0']]);
+        return DB::transaction(function () use ($producto, $data) {
+            $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
+            if ((int) $producto->cantidad !== (int) $data['stock_original']) {
+                if (request()->expectsJson()) {
+                    return response()->json(['message' => 'El stock cambió. Actualiza el inventario antes de desactivar.'], 409);
+                }
+                return redirect()->route('productos.index')->with('error', 'El stock cambió. Actualiza el inventario antes de desactivar.');
+            }
+            $producto->update(['cantidad' => 0]);
 
             ActivityRecorder::recordAfterCommit(
                 request()->user(), 'product.deactivated', 'Product deactivated', "Product {$producto->nombre} was deactivated.", $producto
@@ -176,28 +191,28 @@ class ProductoController extends Controller
         });
     }
 
-    /**
-     * Re-activation: invierte el soft-disable marcando activo=true.
-     * Es el espejo de destroy(): el registro vuelve al inventario disponible
-     * sin necesidad de re-cargarlo.
-     *
-     * Refuses to activate a 0-stock product: the model `saving` rule would
-     * silently force activo back to false anyway, but we surface a clear
-     * user-facing error instead of a silent no-op.
-     */
-    public function activate(Producto $producto)
+    public function activate(Request $request, Producto $producto)
     {
-        if ((int) $producto->cantidad === 0) {
-            return redirect()->route('productos.index')
-                ->with('error', 'No se puede activar un producto sin stock.');
-        }
+        $data = $request->validate(['cantidad' => ['required', 'integer', 'min:1', 'max:2147483647']]);
 
-        return DB::transaction(function () use ($producto) {
-            $producto->update(['activo' => true]);
+        return DB::transaction(function () use ($producto, $data) {
+            $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
+            if ($producto->activo || $producto->cantidad > 0) {
+                if (request()->expectsJson()) {
+                    return response()->json(['message' => 'El producto ya tiene stock. Actualiza el inventario antes de continuar.'], 409);
+                }
+                return redirect()->route('productos.index')
+                    ->with('error', 'El producto ya tiene stock. Actualiza el inventario antes de continuar.');
+            }
+            $producto->update(['cantidad' => $data['cantidad']]);
 
             ActivityRecorder::recordAfterCommit(
                 request()->user(), 'product.activated', 'Product activated', "Product {$producto->nombre} was activated.", $producto
             );
+
+            if (request()->expectsJson()) {
+                return response()->json(['saved' => true]);
+            }
 
             return redirect()->route('productos.index')
                 ->with('success', 'Producto activado correctamente.');

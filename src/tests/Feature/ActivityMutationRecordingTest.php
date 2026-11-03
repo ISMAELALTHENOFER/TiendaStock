@@ -203,6 +203,7 @@ class ActivityMutationRecordingTest extends TestCase
 
         try {
             $this->actingAs($admin)->put("/productos/{$producto->id}", [
+                'stock_original' => $producto->cantidad,
                 'nombre' => 'Changed Product', 'categoria_id' => $categoria->id,
                 'precio_compra' => 11, 'precio_venta' => 21, 'cantidad' => 5,
             ]);

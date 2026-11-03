@@ -71,6 +71,7 @@ class ProductoZeroStockTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->put(route('productos.update', $producto), [
+            'stock_original' => $producto->cantidad,
             'nombre' => $producto->nombre,
             'categoria_id' => $this->categoria->id,
             'precio_compra' => 10,
@@ -103,7 +104,7 @@ class ProductoZeroStockTest extends TestCase
             ->patch(route('productos.activate', $producto));
 
         $response->assertRedirect();
-        $response->assertSessionHas('error', 'No se puede activar un producto sin stock.');
+        $response->assertSessionHasErrors('cantidad');
 
         $this->assertDatabaseHas('productos', [
             'id' => $producto->id,
@@ -116,12 +117,12 @@ class ProductoZeroStockTest extends TestCase
     {
         $producto = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
-            'cantidad' => 1,
+            'cantidad' => 0,
             'activo' => false,
         ]);
 
         $response = $this->actingAs($this->admin)
-            ->patch(route('productos.activate', $producto));
+            ->patch(route('productos.activate', $producto), ['cantidad' => 1]);
 
         $response->assertRedirect(route('productos.index'));
         $response->assertSessionHas('success', 'Producto activado correctamente.');

@@ -32,7 +32,7 @@ class ProductoSoftDisableTest extends TestCase
             'activo' => true,
         ]);
 
-        $response = $this->actingAs($this->admin)->delete(route('productos.destroy', $producto));
+        $response = $this->actingAs($this->admin)->delete(route('productos.destroy', $producto), ['stock_original' => $producto->cantidad]);
 
         $response->assertRedirect(route('productos.index'));
         $response->assertSessionHas('success', 'Producto desactivado correctamente.');
@@ -41,6 +41,7 @@ class ProductoSoftDisableTest extends TestCase
         $this->assertDatabaseHas('productos', [
             'id' => $producto->id,
             'activo' => false,
+            'cantidad' => 0,
         ]);
         $this->assertDatabaseCount('productos', 1);
     }
@@ -56,6 +57,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Producto Inactivo',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.data'));
@@ -106,6 +108,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Producto Inactivo',
             'activo' => false,
+            'cantidad' => 0,
         ]);
         // Producto con stock 0 y activo=true (bypass del saving event).
         // Debe aparecer en inactivos aunque activo sea true, porque no está
@@ -141,6 +144,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'ZapatillaUnicaParaBusqueda Inactiva',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.search', ['q' => 'ZapatillaUnicaParaBusqueda']));
@@ -156,6 +160,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'SoloInactivoBusqueda',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.search', ['q' => 'SoloInactivoBusqueda']));

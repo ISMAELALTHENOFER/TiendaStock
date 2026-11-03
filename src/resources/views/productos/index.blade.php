@@ -38,8 +38,29 @@
             </div>
             @endif
 
+            @if(session('error'))
+                <div role="alert" class="mb-6 rounded-lg bg-red-50 p-4 text-red-700">{{ session('error') }}</div>
+            @endif
+
             {{-- Buscador client-side: el input vive fuera del x-for para no perder foco al re-renderizar filas --}}
             <div x-data="productSearch({{ Js::from($categorias) }})" x-init="cargarProductos()" class="space-y-6">
+
+                <dialog x-ref="activationDialog" aria-labelledby="activation-title" class="w-[calc(100%-2rem)] max-w-md rounded-xl p-5 shadow-lg backdrop:bg-black/50">
+                    <form :action="`/productos/${activationId}/activate`" method="POST" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="activation_id" :value="activationId">
+                        <h2 id="activation-title" class="text-lg font-bold">Activar producto</h2>
+                        <p>Ingresa el stock y confirma la activación.</p>
+                        <label for="activation-stock" class="block font-medium">Stock</label>
+                        <input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required autofocus value="{{ old('cantidad') }}" @if($errors->has('cantidad')) aria-invalid="true" aria-describedby="activation-error" @endif class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                        @error('cantidad') <p id="activation-error" role="alert" class="text-sm text-red-700">{{ $message }}</p> @enderror
+                        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <button type="button" @click="$refs.activationDialog.close()" class="min-h-11 rounded-lg border px-4">Cancelar</button>
+                            <button type="submit" class="min-h-11 rounded-lg bg-green-700 px-4 font-semibold text-white">Sí, activar</button>
+                        </div>
+                    </form>
+                </dialog>
 
                 {{-- Estado de carga: el input SIGUE habilitado (nunca se deshabilita) --}}
                 <div x-show="cargando" x-cloak class="bg-white rounded-xl shadow-sm border border-sky-100 p-8 text-center text-gray-400">
@@ -237,12 +258,13 @@
                                                     >
                                                         <input type="hidden" name="_token" :value="csrfToken">
                                                         <input type="hidden" name="_method" value="DELETE">
+                                                        <input type="hidden" name="stock_original" :value="producto.cantidad">
                                                         <button type="button"
                                                             title="Desactivar"
                                                             class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
                                                             @click="confirmDialogShow(
                                                                 'Desactivar producto',
-                                                                'El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.',
+                                                                'El stock pasará a cero y no se registrará una venta.',
                                                                 'Sí, desactivar',
                                                                 'bg-red-600 hover:bg-red-700'
                                                             ).then(r => r && document.getElementById('disable-form-' + producto.id).submit())">
@@ -266,12 +288,7 @@
                                                         <button type="button"
                                                             title="Activar"
                                                             class="text-green-600 hover:text-green-800 hover:bg-green-50 p-2 rounded-lg transition-colors duration-200"
-                                                            @click="confirmDialogShow(
-                                                                'Activar producto',
-                                                                '¿Activar el producto para que vuelva a estar disponible?',
-                                                                'Sí, activar',
-                                                                'bg-green-600 hover:bg-green-700'
-                                                            ).then(r => r && document.getElementById('activate-form-' + producto.id).submit())">
+                                                            @click="activationId = producto.id; $refs.activationDialog.showModal()">
                                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                             </svg>
@@ -347,14 +364,15 @@
                                         <form :id="`card-disable-form-${producto.id}`" :action="`/productos/${producto.id}`" method="POST" style="display:contents">
                                             <input type="hidden" name="_token" :value="csrfToken">
                                             <input type="hidden" name="_method" value="DELETE">
-                                            <button type="button" @click="confirmDialogShow('Desactivar producto','El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.','Sí, desactivar','bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('card-disable-form-' + producto.id).submit())" class="flex-1 text-center text-red-600 hover:text-red-800 hover:bg-red-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Desactivar</button>
+                                            <input type="hidden" name="stock_original" :value="producto.cantidad">
+                                            <button type="button" @click="confirmDialogShow('Desactivar producto','El stock pasará a cero y no se registrará una venta.','Sí, desactivar','bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('card-disable-form-' + producto.id).submit())" class="flex-1 text-center text-red-600 hover:text-red-800 hover:bg-red-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Desactivar</button>
                                         </form>
                                     </template>
                                     <template x-if="!producto.activo">
                                         <form :id="`card-activate-form-${producto.id}`" :action="`/productos/${producto.id}/activate`" method="POST" style="display:contents">
                                             <input type="hidden" name="_token" :value="csrfToken">
                                             <input type="hidden" name="_method" value="PATCH">
-                                            <button type="button" @click="confirmDialogShow('Activar producto','¿Activar el producto para que vuelva a estar disponible?','Sí, activar','bg-green-600 hover:bg-green-700').then(r => r && document.getElementById('card-activate-form-' + producto.id).submit())" class="flex-1 text-center text-green-600 hover:text-green-800 hover:bg-green-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Activar</button>
+                                            <button type="button" @click="activationId = producto.id; $refs.activationDialog.showModal()" class="flex-1 text-center text-green-600 hover:text-green-800 hover:bg-green-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Activar</button>
                                         </form>
                                     </template>
                                 </div>
@@ -444,6 +462,7 @@ document.addEventListener('alpine:init', () => {
 
         // Toggle administrativo: incluir productos desactivados en el fetch.
         verInactivos: false,
+        activationId: {{ Js::from(old('activation_id')) }},
 
         // Página actual del paginado cliente. Se resetea a 1 al cambiar filtros.
         paginaActual: 1,
@@ -454,6 +473,9 @@ document.addEventListener('alpine:init', () => {
         // Cuando un filtro cambia, ver la página 2 de resultados viejos no tiene
         // sentido. Los watchers resetean a la primera página.
         init() {
+            @if($errors->has('cantidad') && old('activation_id'))
+                this.$nextTick(() => this.$refs.activationDialog.showModal());
+            @endif
             this.$watch('busqueda', () => { this.paginaActual = 1; });
             this.$watch('filtroCategoria', () => { this.paginaActual = 1; });
             this.$watch('filtroTalle', () => { this.paginaActual = 1; });

@@ -210,6 +210,8 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                 )}
 
                 <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
+                    {isEdit && <input type="hidden" name="stock_original" value={producto.cantidad} />}
+                    {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors.stock_original[0]}</div>}
                     {errors._general && (
                         <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
                     )}
@@ -342,6 +344,9 @@ export function ProductList({ categorias, routes }) {
     const [paginaActual, setPaginaActual] = useState(1);
     const [pageSize, setPageSize] = useState(15);
     const [toggle, setToggle] = useState(null);
+    const [activationError, setActivationError] = useState('');
+    const [activating, setActivating] = useState(false);
+    const activationDialog = useRef(null);
     const [crearAbierto, setCrearAbierto] = useState(false);
     const [productoEditando, setProductoEditando] = useState(null);
     const [productoViendo, setProductoViendo] = useState(null);
@@ -367,6 +372,9 @@ export function ProductList({ categorias, routes }) {
     }, [verInactivos]);
 
     useEffect(() => { cargar(); }, [cargar]);
+    useEffect(() => {
+        if (toggle?.tipo === 'activar') activationDialog.current?.showModal();
+    }, [toggle]);
     useEffect(() => { setPaginaActual(1); }, [busqueda, filtroCategoria, filtroTalle, filtroColor]);
 
     const filtrados = useMemo(() => {
@@ -407,6 +415,28 @@ export function ProductList({ categorias, routes }) {
         const id = toggle.producto.id;
         const formId = toggle.tipo === 'activar' ? `activar-${id}` : `desactivar-${id}`;
         document.getElementById(formId)?.submit();
+    };
+
+    const activar = async (event) => {
+        event.preventDefault();
+        setActivating(true);
+        setActivationError('');
+        try {
+            const response = await fetch(`${routes.productos}/${toggle.producto.id}/activate`, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+                body: new FormData(event.currentTarget),
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.errors?.cantidad?.[0] || body.message || 'No se pudo activar el producto.');
+            activationDialog.current.close();
+            setToggle(null);
+            await cargar();
+        } catch (error) {
+            setActivationError(error.message);
+        } finally {
+            setActivating(false);
+        }
     };
 
     return (
@@ -573,23 +603,35 @@ export function ProductList({ categorias, routes }) {
                     <form id={`desactivar-${producto.id}`} action={`/productos/${producto.id}`} method="POST">
                         <input type="hidden" name="_token" value={csrf()} />
                         <input type="hidden" name="_method" value="DELETE" />
-                    </form>
-                    <form id={`activar-${producto.id}`} action={`/productos/${producto.id}/activate`} method="POST">
-                        <input type="hidden" name="_token" value={csrf()} />
-                        <input type="hidden" name="_method" value="PATCH" />
+                        <input type="hidden" name="stock_original" value={producto.cantidad} />
                     </form>
                 </div>
             ))}
 
             <ConfirmDialog
-                open={Boolean(toggle)}
+                open={toggle?.tipo === 'desactivar'}
                 title={toggle?.tipo === 'activar' ? 'Activar producto' : 'Desactivar producto'}
-                 message={toggle?.tipo === 'activar' ? `¿Activar «${toggle?.producto?.nombre}» para que vuelva a estar disponible?` : `«${toggle?.producto?.nombre}» se desactivará, no se borrará. Podrás reactivarlo si vuelve a tener stock.`}
+                 message={`«${toggle?.producto?.nombre}» se desactivará y su stock pasará a cero. No se registrará una venta.`}
                 confirmLabel={toggle?.tipo === 'activar' ? 'Sí, activar' : 'Sí, desactivar'}
                 tone={toggle?.tipo === 'activar' ? 'primary' : 'danger'}
                 onConfirm={confirmarToggle}
                 onClose={() => setToggle(null)}
             />
+
+            <dialog ref={activationDialog} aria-labelledby="activation-title" onCancel={(event) => { if (activating) event.preventDefault(); }} onClose={() => { setToggle(null); setActivationError(''); }} className="w-[calc(100%-2rem)] max-w-md rounded-card p-5 shadow-subtle backdrop:bg-black/50">
+                <form onSubmit={activar} className="space-y-4">
+                    <h2 id="activation-title" className="text-lg font-bold">Activar producto</h2>
+                    <p>Ingresa el stock de «{toggle?.producto?.nombre}» y confirma la activación.</p>
+                    <label htmlFor="activation-stock" className="block font-medium">Stock</label>
+                    <input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required autoFocus aria-invalid={Boolean(activationError)} aria-describedby={activationError ? 'activation-error' : undefined} className="w-full rounded-control border border-border px-3 py-2" />
+                    <input type="hidden" name="_method" value="PATCH" />
+                    {activationError && <p id="activation-error" role="alert" className="text-sm text-red-700">{activationError}</p>}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="secondary" disabled={activating} onClick={() => activationDialog.current.close()}>Cancelar</Button>
+                        <Button type="submit" disabled={activating}>Sí, activar</Button>
+                    </div>
+                </form>
+            </dialog>
 
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
