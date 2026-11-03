@@ -22,6 +22,10 @@ class VentaController extends Controller
         $query = Venta::with('user', 'items')
             ->orderBy('created_at', 'desc');
 
+        if (! $request->user()->isAdmin()) {
+            $query->where('user_id', $request->user()->id);
+        }
+
         if ($request->filled('buscar')) {
             $search = $request->input('buscar');
             $query->where(function ($query) use ($search) {
@@ -159,6 +163,9 @@ class VentaController extends Controller
      */
     public function show(Venta $venta)
     {
+        $user = auth()->user();
+        abort_unless($user->isAdmin() || ($user->isVentas() && $venta->user_id === $user->id), 403);
+
         $venta->load('user', 'items.producto');
 
         return view('ventas.show', compact('venta'));
