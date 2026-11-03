@@ -6,13 +6,12 @@ use App\Http\Requests\Producto\StoreProductoRequest;
 use App\Http\Requests\Producto\UpdateProductoRequest;
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\ProductoImagen;
 use App\Services\ActivityRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
-use Throwable;
 
 class ProductoController extends Controller
 {
@@ -58,9 +57,17 @@ class ProductoController extends Controller
             ? (int) $request->query('per_page')
             : 15;
         $productos = $query->paginate($perPage)->withQueryString();
-        if ($request->user()?->role !== 'ADMIN') {
-            $productos->getCollection()->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
-        }
+        $imageHashes = ProductoImagen::whereIn('producto_id', $productos->getCollection()->pluck('id'))
+            ->pluck('sha1', 'producto_id');
+        $productos->getCollection()->each(function (Producto $producto) use ($request, $imageHashes): void {
+            if ($request->user()?->role !== 'ADMIN') {
+                $producto->makeHidden(['precio_compra', 'ganancia']);
+            }
+            if ($producto->imagen) {
+                $url = route('productos.imagen', $producto);
+                $producto->setAttribute('imagen', isset($imageHashes[$producto->id]) ? $url.'?v='.$imageHashes[$producto->id] : $url);
+            }
+        });
 
         $options = (clone $base)->select('talle', 'color')->distinct()->get();
 
@@ -94,39 +101,31 @@ class ProductoController extends Controller
             $data['precio_compra'] = 0;
         }
 
-        $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
-        if ($request->hasFile('imagen') && ! $newImage) {
-            throw new RuntimeException('Could not store product image.');
-        }
-        if ($newImage) {
-            $data['imagen'] = $newImage;
-        }
-
-        try {
-            return DB::transaction(function () use ($data, $request) {
-                $producto = Producto::create($data);
-
-                ActivityRecorder::recordAfterCommit(
-                    $request->user(), 'product.created', 'Product created', "Product {$producto->nombre} was created.", $producto
-                );
-
-                if ($request->expectsJson()) {
-                    return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
-                }
-
-                return redirect()->route('productos.index')
-                    ->with('success', 'Producto creado correctamente.');
-            });
-        } catch (Throwable $error) {
-            if ($newImage) {
-                Storage::disk('public')->delete($newImage);
+        return DB::transaction(function () use ($data, $request) {
+            $file = $request->file('imagen');
+            unset($data['imagen']);
+            $producto = Producto::create($data);
+            if ($file) {
+                $producto->update(['imagen' => 'database/'.$producto->id]);
+                $this->persistImage($producto, $file->get());
             }
-            throw $error;
-        }
+
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'product.created', 'Product created', "Product {$producto->nombre} was created.", $producto
+            );
+
+            if ($request->expectsJson()) {
+                return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
+            }
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto creado correctamente.');
+        });
     }
 
     public function show(Producto $producto)
     {
+        $producto->load(['imagenRecord:producto_id,sha1']);
         if (request()->user()?->role !== 'ADMIN') {
             $producto->makeHidden(['precio_compra', 'ganancia']);
         }
@@ -135,6 +134,7 @@ class ProductoController extends Controller
 
     public function edit(Producto $producto)
     {
+        $producto->load(['imagenRecord:producto_id,sha1']);
         if (request()->user()?->role !== 'ADMIN') {
             $producto->makeHidden(['precio_compra', 'ganancia']);
         }
@@ -152,46 +152,65 @@ class ProductoController extends Controller
         $stockOriginal = (int) $data['stock_original'];
         unset($data['stock_original']);
 
-        $oldImage = $producto->imagen;
-        $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
-        if ($request->hasFile('imagen') && ! $newImage) {
-            throw new RuntimeException('Could not store product image.');
-        }
-        if ($newImage) {
-            $data['imagen'] = $newImage;
-        }
-
-        try {
-            $response = DB::transaction(function () use ($data, $request, $producto, $stockOriginal) {
-                $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
-                if ((int) $producto->cantidad !== $stockOriginal) {
-                    throw ValidationException::withMessages(['stock_original' => 'El stock cambió desde que abriste el formulario. Revisa el inventario antes de guardar.']);
-                }
-                $producto->update($data);
-
-                ActivityRecorder::recordAfterCommit(
-                    $request->user(), 'product.updated', 'Product updated', "Product {$producto->nombre} was updated.", $producto
-                );
-
-                if ($request->expectsJson()) {
-                    return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
-                }
-
-                return redirect()->route('productos.index')
-                    ->with('success', 'Producto actualizado correctamente.');
-            });
-        } catch (Throwable $error) {
-            if ($newImage) {
-                Storage::disk('public')->delete($newImage);
+        $response = DB::transaction(function () use ($data, $request, $producto, $stockOriginal) {
+            $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
+            if ((int) $producto->cantidad !== $stockOriginal) {
+                throw ValidationException::withMessages(['stock_original' => 'El stock cambió desde que abriste el formulario. Revisa el inventario antes de guardar.']);
             }
-            throw $error;
-        }
+            $file = $request->file('imagen');
+            unset($data['imagen']);
+            $producto->update($data);
+            if ($file) {
+                $producto->update(['imagen' => 'database/'.$producto->id]);
+                $this->persistImage($producto, $file->get());
+            }
 
-        if ($newImage && $oldImage) {
-            Storage::disk('public')->delete($oldImage);
-        }
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'product.updated', 'Product updated', "Product {$producto->nombre} was updated.", $producto
+            );
+
+            if ($request->expectsJson()) {
+                return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
+            }
+
+            return redirect()->route('productos.index')
+                ->with('success', 'Producto actualizado correctamente.');
+        });
 
         return $response;
+    }
+
+    public function image(Producto $producto, Request $request)
+    {
+        $image = ProductoImagen::where('producto_id', $producto->id)->first();
+        if ($image) {
+            $response = response($image->bytes)->header('Content-Type', $image->mime)
+                ->header('ETag', '"'.$image->sha1.'"')
+                ->header('Cache-Control', 'private, max-age=31536000, immutable');
+            $response->isNotModified($request);
+
+            return $response;
+        }
+
+        if ($producto->imagen && Storage::disk('public')->exists($producto->imagen)) {
+            return Storage::disk('public')->response($producto->imagen)
+                ->header('Cache-Control', 'private, max-age=3600');
+        }
+
+        abort(404);
+    }
+
+    private function persistImage(Producto $producto, string $bytes): void
+    {
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes);
+        $dimensions = function_exists('getimagesizefromstring') ? @getimagesizefromstring($bytes) : false;
+        ProductoImagen::updateOrCreate(['producto_id' => $producto->id], [
+            'bytes' => $bytes,
+            'mime' => $mime,
+            'width' => $dimensions ? $dimensions[0] : null,
+            'height' => $dimensions ? $dimensions[1] : null,
+            'sha1' => sha1($bytes),
+        ]);
     }
 
     /**

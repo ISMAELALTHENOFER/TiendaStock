@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Categoria;
 use App\Models\Producto;
+use App\Models\ProductoImagen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -55,7 +56,7 @@ class ProductoImagenTest extends TestCase
         return new UploadedFile($tmpPath, $name, 'image/png', null, true);
     }
 
-    public function test_valid_image_upload_stores_under_productos_and_saves_relative_path(): void
+    public function test_valid_image_upload_stores_bytes_in_database_not_public_disk(): void
     {
         $file = $this->pngImage(1, 'remera.png');
 
@@ -75,10 +76,12 @@ class ProductoImagenTest extends TestCase
         $producto = Producto::where('nombre', 'Remera con foto')->first();
         $this->assertNotNull($producto);
         $this->assertNotNull($producto->imagen);
-        $this->assertStringStartsWith('productos/', $producto->imagen);
-
-        // File physically exists on the public disk under the stored path.
-        Storage::disk('public')->assertExists($producto->imagen);
+        $this->assertSame('database/'.$producto->id, $producto->imagen);
+        $image = ProductoImagen::where('producto_id', $producto->id)->firstOrFail();
+        $this->assertSame($file->get(), $image->bytes);
+        $this->assertSame('image/png', $image->mime);
+        $this->assertSame(sha1($file->get()), $image->sha1);
+        $this->assertSame([], Storage::disk('public')->files('productos'));
     }
 
     public function test_invalid_mime_rejected_with_422_and_no_file_persisted(): void
@@ -213,13 +216,12 @@ class ProductoImagenTest extends TestCase
         $response->assertRedirect(route('productos.index'));
 
         $producto->refresh();
-        $this->assertNotSame($originalPath, $producto->imagen);
-        $this->assertStringStartsWith('productos/', $producto->imagen);
-        Storage::disk('public')->assertExists($producto->imagen);
-        Storage::disk('public')->assertMissing($originalPath);
+        $this->assertSame('database/'.$producto->id, $producto->imagen);
+        $this->assertDatabaseHas('producto_imagenes', ['producto_id' => $producto->id]);
+        Storage::disk('public')->assertExists($originalPath);
     }
 
-    public function test_failed_image_replacement_keeps_old_file_and_removes_new_file(): void
+    public function test_failed_product_update_does_not_persist_image_bytes_or_remove_legacy_source(): void
     {
         $producto = Producto::factory()->conImagen()->create(['categoria_id' => $this->categoria->id]);
         $originalPath = $producto->imagen;
@@ -240,6 +242,7 @@ class ProductoImagenTest extends TestCase
         $this->assertSame($originalPath, $producto->fresh()->imagen);
         Storage::disk('public')->assertExists($originalPath);
         $this->assertSame([$originalPath], Storage::disk('public')->files('productos'));
+        $this->assertDatabaseMissing('producto_imagenes', ['producto_id' => $producto->id]);
     }
 
     public function test_show_renders_image_thumbnail_when_imagen_present(): void
@@ -259,7 +262,7 @@ class ProductoImagenTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('<img', false);
-        $response->assertSee(Storage::url($producto->imagen));
+        $response->assertSee(route('productos.imagen', $producto));
     }
 
     public function test_show_emits_no_product_image_when_imagen_is_null(): void
@@ -280,10 +283,45 @@ class ProductoImagenTest extends TestCase
         $producto = Producto::factory()->conImagen()->create([
             'categoria_id' => $this->categoria->id,
         ]);
+        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $sha1 = sha1($bytes);
+        ProductoImagen::create(['producto_id' => $producto->id, 'bytes' => $bytes, 'mime' => 'image/png', 'sha1' => $sha1]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.data'));
 
         $response->assertOk();
-        $response->assertJsonFragment(['id' => $producto->id, 'imagen' => $producto->imagen]);
+        $response->assertJsonFragment(['id' => $producto->id, 'imagen' => route('productos.imagen', $producto).'?v='.$sha1]);
+        $this->assertStringNotContainsString(base64_encode($bytes), $response->getContent());
+    }
+
+    public function test_database_image_endpoint_is_authenticated_and_supports_etags(): void
+    {
+        $producto = Producto::factory()->create(['categoria_id' => $this->categoria->id, 'imagen' => 'database/1']);
+        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $sha1 = sha1($bytes);
+        ProductoImagen::create(['producto_id' => $producto->id, 'bytes' => $bytes, 'mime' => 'image/png', 'sha1' => $sha1]);
+
+        $url = route('productos.imagen', $producto);
+        $this->get($url)->assertRedirect(route('login'));
+        $this->actingAs(User::factory()->create())->get($url)->assertForbidden();
+        $response = $this->actingAs($this->admin)->get($url);
+        $response->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('ETag', '"'.$sha1.'"')
+            ->assertHeader('Cache-Control', 'private, max-age=31536000, immutable')->assertContent($bytes);
+        $this->actingAs($this->admin)->get($url, ['If-None-Match' => '"'.$sha1.'"'])->assertStatus(304);
+    }
+
+    public function test_image_import_is_idempotent_and_preserves_source_file(): void
+    {
+        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $path = 'productos/import.png';
+        Storage::disk('public')->put($path, $bytes);
+        $producto = Producto::factory()->create(['categoria_id' => $this->categoria->id, 'imagen' => $path]);
+
+        $this->artisan('productos:import-images')->assertSuccessful();
+        $this->artisan('productos:import-images')->assertSuccessful();
+
+        $this->assertSame(1, ProductoImagen::where('producto_id', $producto->id)->count());
+        Storage::disk('public')->assertExists($path);
+        $this->assertSame($bytes, Storage::disk('public')->get($path));
     }
 }

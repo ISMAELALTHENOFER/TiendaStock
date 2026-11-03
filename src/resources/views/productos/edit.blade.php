@@ -1,4 +1,3 @@
-@use('Illuminate\Support\Facades\Storage')
 <x-app-layout :producto="$producto" :categorias="$categorias">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -172,7 +171,7 @@
                         </div>
 
                         {{-- Imagen (Opcional) — preserva la existente si no se reemplaza --}}
-                        <div class="md:col-span-2" x-data="productImage('{{ $producto->imagen ? Storage::url($producto->imagen) : '' }}')">
+                        <div class="md:col-span-2" x-data="productImage('{{ $producto->imagen ? route('productos.imagen', $producto).($producto->imagenRecord ? '?v='.$producto->imagenRecord->sha1 : '') : '' }}')">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Imagen
                                 <span class="text-gray-400 font-normal text-xs">(Opcional)</span>
@@ -180,7 +179,7 @@
 
                             @if($producto->imagen)
                             <div class="mb-3 flex items-center gap-3">
-                                <img src="{{ Storage::url($producto->imagen) }}" alt="Imagen actual"
+                                <img src="{{ route('productos.imagen', $producto) }}{{ $producto->imagenRecord ? '?v='.$producto->imagenRecord->sha1 : '' }}" alt="Imagen actual"
                                     class="h-24 w-24 object-cover rounded-lg border border-slate-200 shadow-sm">
                                 <p class="text-xs text-slate-500">Imagen actual. Si no elegís un archivo nuevo, se conserva.</p>
                             </div>

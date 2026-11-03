@@ -6,6 +6,7 @@ use Database\Factories\ProductoFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Producto extends Model
 {
@@ -44,6 +45,11 @@ class Producto extends Model
     public function ventaItems(): HasMany
     {
         return $this->hasMany(VentaItem::class);
+    }
+
+    public function imagenRecord(): HasOne
+    {
+        return $this->hasOne(ProductoImagen::class);
     }
 
     protected static function booted()

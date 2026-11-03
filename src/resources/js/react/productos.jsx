@@ -257,7 +257,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         <textarea id="descripcion-field" name="descripcion" rows="3" defaultValue={producto?.descripcion ?? ''} placeholder="Detalles opcionales (material, cuidados, etc.)" className="mt-1 block w-full rounded-control border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted focus:border-primary focus:outline-none" />
                     </div>
 
-                    <div><ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} error={errors?.imagen?.[0]} /></div>
+                    <div><ProductImage value={producto?.imagen || ''} error={errors?.imagen?.[0]} /></div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
                         {modal ? (
@@ -512,7 +512,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <tr key={producto.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                                         <td className="px-4 py-3">
                                             {producto.imagen
-                                                ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-12 w-12 rounded-lg object-cover" />
+                                                ? <img src={producto.imagen} alt={producto.nombre} className="h-12 w-12 rounded-lg object-cover" />
                                                 : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                         </td>
                                         <td className="px-4 py-3 font-semibold text-ink">
@@ -540,7 +540,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                             <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
-                                        ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
+                                        ? <img src={producto.imagen} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
                                         : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                     <div className="min-w-0">
                                         <p className="font-bold text-ink">{producto.nombre}</p>
@@ -632,7 +632,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                        {productoViendo.imagen && <img src={`/storage/${productoViendo.imagen}`} alt={productoViendo.nombre} className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>

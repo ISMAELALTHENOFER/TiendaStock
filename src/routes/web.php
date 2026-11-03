@@ -20,6 +20,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
+    Route::get('/productos/{producto}/imagen', [ProductoController::class, 'image'])
+        ->whereNumber('producto')
+        ->middleware('role:ADMIN,Control Stock,Ventas')
+        ->name('productos.imagen');
 
     Route::middleware('role:ADMIN')->group(function () {
         Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');

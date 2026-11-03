@@ -194,7 +194,7 @@
                                     <tr class="hover:bg-sky-50/50 transition-colors duration-200">
                                         <td class="px-6 py-4">
                                             <template x-if="producto.imagen">
-                                                <img :src="'/storage/' + producto.imagen"
+                                                <img :src="producto.imagen"
                                                     :alt="producto.nombre"
                                                     class="h-12 w-12 object-cover rounded-lg border border-slate-200">
                                             </template>
@@ -312,7 +312,7 @@
                             <div class="bg-white rounded-xl border border-sky-100 p-4 space-y-3 shadow-sm">
                                 <div class="flex items-start gap-3">
                                     <template x-if="producto.imagen">
-                                        <img :src="'/storage/' + producto.imagen" :alt="producto.nombre" class="h-14 w-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">
+                                        <img :src="producto.imagen" :alt="producto.nombre" class="h-14 w-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">
                                     </template>
                                     <template x-if="!producto.imagen">
                                         <span class="inline-flex h-14 w-14 rounded-lg bg-slate-100 items-center justify-center text-slate-300 flex-shrink-0">

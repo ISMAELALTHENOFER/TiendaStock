@@ -1,4 +1,3 @@
-@use('Illuminate\Support\Facades\Storage')
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -67,7 +66,7 @@
                     <div class="md:col-span-2">
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Imagen</dt>
                         <dd>
-                            <img src="{{ Storage::url($producto->imagen) }}" alt="{{ $producto->nombre }}"
+                            <img src="{{ route('productos.imagen', $producto) }}{{ $producto->imagenRecord ? '?v='.$producto->imagenRecord->sha1 : '' }}" alt="{{ $producto->nombre }}"
                                 class="h-40 w-40 object-cover rounded-xl border border-slate-200 shadow-sm">
                         </dd>
                     </div>
