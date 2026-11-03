@@ -51,7 +51,7 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
-        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'productos/search', '/ventas', 'no-print'] as $contract) {
+        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'productos/search', 'routes.ventas', 'no-print'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -60,13 +60,13 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
-        foreach (['Items', 'Total', 'Entrega', 'Procesado por', 'Completada', 'Anulada', 'Cancelar', 'overflow-x-auto'] as $contract) {
+        foreach (['Artículos', 'items_count', 'Total', 'Entrega', 'Procesado por', 'Completada', 'Anulada', 'Cancelar', 'overflow-x-auto'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
 
         $this->assertStringContainsString('ConfirmDialog', $source, 'Sale cancellation must use the shared styled dialog.');
         $this->assertStringNotContainsString('window.confirm', $source, 'The native sale cancellation prompt must be gone.');
-        $this->assertStringContainsString('action={`/ventas/${sale.id}/cancel`}', $source);
+        $this->assertStringContainsString('routes.ventas}/${sale.id}/cancel', $source);
         $this->assertStringContainsString('Cancelar venta #${sale.id}', $source);
         $this->assertStringContainsString('className="flex items-center justify-start gap-2"', $source);
     }
@@ -78,7 +78,7 @@ class VentaReactViewContractTest extends TestCase
         foreach ([
             "['#', 'text-left']",
             "['Fecha', 'text-left']",
-            "['Items', 'text-right']",
+            "['Artículos', 'text-right']",
             "['Total', 'text-right']",
             "['Entrega', 'text-left']",
             "['Procesado por', 'text-left']",

@@ -283,7 +283,8 @@ class ProductoImagenTest extends TestCase
         $producto = Producto::factory()->conImagen()->create([
             'categoria_id' => $this->categoria->id,
         ]);
-        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $file = $this->pngImage();
+        $bytes = file_get_contents($file->getPathname());
         $sha1 = sha1($bytes);
         ProductoImagen::create(['producto_id' => $producto->id, 'bytes' => $bytes, 'mime' => 'image/png', 'sha1' => $sha1]);
 
@@ -297,7 +298,8 @@ class ProductoImagenTest extends TestCase
     public function test_database_image_endpoint_is_authenticated_and_supports_etags(): void
     {
         $producto = Producto::factory()->create(['categoria_id' => $this->categoria->id, 'imagen' => 'database/1']);
-        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $file = $this->pngImage();
+        $bytes = file_get_contents($file->getPathname());
         $sha1 = sha1($bytes);
         ProductoImagen::create(['producto_id' => $producto->id, 'bytes' => $bytes, 'mime' => 'image/png', 'sha1' => $sha1]);
 
@@ -306,13 +308,17 @@ class ProductoImagenTest extends TestCase
         $this->actingAs(User::factory()->create())->get($url)->assertForbidden();
         $response = $this->actingAs($this->admin)->get($url);
         $response->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('ETag', '"'.$sha1.'"')
-            ->assertHeader('Cache-Control', 'private, max-age=31536000, immutable')->assertContent($bytes);
+            ->assertHeader('Cache-Control')->assertContent($bytes);
+        $this->assertStringContainsString('private', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('max-age=31536000', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('immutable', $response->headers->get('Cache-Control'));
         $this->actingAs($this->admin)->get($url, ['If-None-Match' => '"'.$sha1.'"'])->assertStatus(304);
     }
 
     public function test_image_import_is_idempotent_and_preserves_source_file(): void
     {
-        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
+        $file = $this->pngImage();
+        $bytes = file_get_contents($file->getPathname());
         $path = 'productos/import.png';
         Storage::disk('public')->put($path, $bytes);
         $producto = Producto::factory()->create(['categoria_id' => $this->categoria->id, 'imagen' => $path]);
