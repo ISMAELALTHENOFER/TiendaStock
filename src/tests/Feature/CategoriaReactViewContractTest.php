@@ -145,7 +145,7 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString('ConfirmDialog', $source, 'The grid must use the shared ConfirmDialog.');
         $this->assertStringNotContainsString('window.confirm', $source, 'The legacy native confirm() must be gone from the React grid.');
 
-        foreach (['Nueva Categoría', 'Ver', 'Editar', 'Eliminar'] as $contract) {
+        foreach (['Nueva categoría', 'Ver', 'Editar', 'Eliminar'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -162,7 +162,7 @@ class CategoriaReactViewContractTest extends TestCase
             "params.set('per_page'",
             "get('buscar')",
             'No hay categorías creadas aún',
-            'Crear Primera Categoría',
+            'Crear primera categoría',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }

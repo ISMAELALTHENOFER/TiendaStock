@@ -39,25 +39,25 @@ function CategoryForm({ categoria, routes, onClose }) {
     const error = (field) => errors[field]?.[0];
 
     return (
-        <Modal open title={isEdit ? 'Editar Categoría' : 'Nueva Categoría'} onClose={onClose} size="product">
+        <Modal open title={isEdit ? 'Editar categoría' : 'Nueva categoría'} onClose={onClose} size="product">
             <form onSubmit={submit} className="p-4 sm:p-7">
                 <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualiza los datos de esta categoría.' : 'Añade una clasificación para organizar tu inventario.'}</p>
                 {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 p-3 text-sm text-red-700">{error('_general')}</p>}
                 <div className="space-y-5">
                     <div>
-                        <label htmlFor="categoria-nombre" className="mb-1.5 block text-sm font-semibold text-ink">Nombre de Categoría <span className="text-red-600">*</span></label>
+                        <label htmlFor="categoria-nombre" className="mb-1.5 block text-sm font-semibold text-ink">Nombre de categoría <span className="text-red-600">*</span></label>
                         <input id="categoria-nombre" name="nombre" type="text" required maxLength={255} defaultValue={categoria?.nombre ?? ''} placeholder="Ej: Ropa, Electrónica, Alimentos..." aria-invalid={Boolean(error('nombre'))} aria-describedby={error('nombre') ? 'categoria-nombre-error' : undefined} className="min-h-11 w-full rounded-control border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
                         {error('nombre') && <p id="categoria-nombre-error" role="alert" className="mt-1 text-sm text-red-600">{error('nombre')}</p>}
                     </div>
                     <div>
-                        <label htmlFor="categoria-descripcion" className="mb-1.5 block text-sm font-semibold text-ink">Descripción <span className="font-normal text-muted">(Opcional)</span></label>
+                        <label htmlFor="categoria-descripcion" className="mb-1.5 block text-sm font-semibold text-ink">Descripción <span className="font-normal text-muted">(opcional)</span></label>
                         <textarea id="categoria-descripcion" name="descripcion" rows="3" maxLength={500} defaultValue={categoria?.descripcion ?? ''} placeholder="Describe los productos que pertenecen a este grupo..." aria-invalid={Boolean(error('descripcion'))} aria-describedby={error('descripcion') ? 'categoria-descripcion-error' : undefined} className="w-full resize-y rounded-control border border-border bg-surface px-3.5 py-3 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
                         {error('descripcion') && <p id="categoria-descripcion-error" role="alert" className="mt-1 text-sm text-red-600">{error('descripcion')}</p>}
                     </div>
                 </div>
                 <div className="mt-7 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
                     <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>Cancelar</Button>
-                    <Button type="submit" disabled={submitting}>{submitting ? 'Guardando…' : isEdit ? 'Guardar Cambios' : 'Guardar Categoría'}</Button>
+                    <Button type="submit" disabled={submitting}>{submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar categoría'}</Button>
                 </div>
             </form>
         </Modal>
@@ -104,17 +104,17 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
         <div className="py-4 sm:py-8">
             <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="page-title">Categorías de Productos</h1>
+                    <h1 className="page-title">Categorías de productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todas tus categorías de productos</p>
                 </div>
-                <Button type="button" onClick={() => setModalCategoria(true)}>＋ <span>Nueva Categoría</span></Button>
+                <Button type="button" onClick={() => setModalCategoria(true)}>＋ <span>Nueva categoría</span></Button>
             </div>
 
             <section aria-label="Resumen de categorías" className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                    ['Total Categorías', summary.total, '▦', 'text-primary'],
-                    ['Productos Asignados', summary.productos, '▣', 'text-primary'],
-                    ['Categorías Vacías', summary.vacias, '▱', 'text-muted'],
+                    ['Total de categorías', summary.total, '▦', 'text-primary'],
+                    ['Productos asignados', summary.productos, '▣', 'text-primary'],
+                    ['Categorías vacías', summary.vacias, '▱', 'text-muted'],
                 ].map(([label, value, icon, tone]) => (
                     <Card key={label} className="flex min-h-24 items-center justify-between border border-border p-4 shadow-sm sm:p-5">
                         <div><p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p><p className="mt-1 text-2xl font-bold tabular-nums text-ink">{value}</p></div>
@@ -134,8 +134,8 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
-                    <EmptyState title="No hay categorías creadas aún" description="Las categorías agrupan tus productos para encontrarlos más rápido." />
-                    <Button type="button" className="mt-5" onClick={() => setModalCategoria(true)}>Crear Primera Categoría</Button>
+                    <EmptyState title="Aún no hay categorías" description="Las categorías agrupan tus productos para encontrarlos más rápido." />
+                    <Button type="button" className="mt-5" onClick={() => setModalCategoria(true)}>Crear primera categoría</Button>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

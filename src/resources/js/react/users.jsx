@@ -46,10 +46,10 @@ export function UserList({ users, routes }) {
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="page-title">Usuarios del Sistema</h1>
-                    <p className="mt-1 text-sm text-muted">Gestiona todos los usuarios de la plataforma</p>
+                    <h1 className="page-title">Usuarios del sistema</h1>
+                    <p className="mt-1 text-sm text-muted">Gestiona los usuarios de la plataforma.</p>
                 </div>
-                <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo Usuario</a>
+                <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo usuario</a>
             </div>
 
             <form method="get" action={routes.users} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
@@ -65,8 +65,8 @@ export function UserList({ users, routes }) {
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
-                    <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para comenzar" />
-                    <a href={routes.usersCreate} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Crear Primer Usuario</a>
+                    <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para empezar." />
+                    <a href={routes.usersCreate} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Crear primer usuario</a>
                 </Card>
             ) : (
                 <div className="space-y-6">
@@ -161,7 +161,7 @@ export function UserForm({ routes, usuario = null }) {
             window.location.assign(body?.redirect || routes.users);
         } catch {
             setSubmitting(false);
-            setErrors({ _general: ['No se pudo guardar el usuario. Inténtelo de nuevo.'] });
+            setErrors({ _general: ['No se pudo guardar el usuario. Inténtalo de nuevo.'] });
         }
     }
 
@@ -174,8 +174,8 @@ export function UserForm({ routes, usuario = null }) {
         <div className="py-4 sm:py-8">
             <div className="min-w-0 overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
                 <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                    <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar Usuario' : 'Información del Usuario'}</h3>
-                    <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los detalles del usuario' : 'Completa los detalles para crear un nuevo usuario'}</p>
+                    <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar usuario' : 'Información del usuario'}</h3>
+                    <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los datos del usuario.' : 'Completa los datos para crear un usuario.'}</p>
                 </div>
 
                 <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
@@ -229,7 +229,7 @@ export function UserForm({ routes, usuario = null }) {
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
                         <a href={routes.users} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-muted">Cancelar</a>
-                        <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Actualizar Usuario' : 'Crear Usuario'}</Button>
+                        <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Actualizar usuario' : 'Crear usuario'}</Button>
                     </div>
                 </form>
             </div>

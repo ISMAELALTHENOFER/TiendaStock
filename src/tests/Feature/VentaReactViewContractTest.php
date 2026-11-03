@@ -107,7 +107,7 @@ class VentaReactViewContractTest extends TestCase
             'Procesado por:',
             'Estado:',
             'ANULADA',
-            'Gracias por su compra',
+            'Gracias por tu compra',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
