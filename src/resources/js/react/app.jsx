@@ -21,7 +21,7 @@ export default function App({ props }) {
         'admin.users.index': <UserList users={props.users} routes={props.routes} />,
         'admin.users.create': <UserForm routes={props.routes} />,
         'admin.users.edit': <UserForm usuario={props.usuario} routes={props.routes} />,
-    }[props.page] || <Dashboard user={props.user} metrics={props.metrics} routes={props.routes} />;
+    }[props.page] || <Dashboard user={props.user} metrics={props.metrics} categorias={props.categorias} routes={props.routes} />;
 
     return <><AppShell user={props.user} routes={props.routes} activePage={props.page}>{page}</AppShell><Toast message={props.flash?.success || props.flash?.error || props.flash?.warning || props.flash?.info} type={flashType} /></>;
 }

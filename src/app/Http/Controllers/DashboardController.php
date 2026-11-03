@@ -11,6 +11,7 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         return view('dashboard', [
+            'categorias' => Categoria::orderBy('nombre')->get(),
             'productosCount' => Producto::count(),
             'categoriasCount' => Categoria::count(),
             'productosActivos' => Producto::where('activo', true)->count(),

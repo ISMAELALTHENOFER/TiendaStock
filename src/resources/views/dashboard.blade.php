@@ -1,4 +1,4 @@
-<x-app-layout :metrics="compact('productosCount', 'categoriasCount', 'productosActivos', 'productosAgotados', 'productosBajoStock', 'valorTotal')">
+<x-app-layout :metrics="compact('productosCount', 'categoriasCount', 'productosActivos', 'productosAgotados', 'productosBajoStock', 'valorTotal')" :categorias="$categorias">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>

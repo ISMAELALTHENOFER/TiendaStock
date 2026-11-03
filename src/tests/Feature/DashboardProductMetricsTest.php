@@ -66,6 +66,20 @@ class DashboardProductMetricsTest extends TestCase
             ->assertSee('Valor del inventario activo')->assertSee('$12.50');
     }
 
+    public function test_react_dashboard_receives_categories_for_the_product_quick_action(): void
+    {
+        config(['frontend.driver' => 'react', 'frontend.routes.dashboard' => 'react']);
+        $category = Categoria::factory()->create(['nombre' => 'Dashboard category']);
+        $response = $this->actingAs(User::factory()->admin()->create())->get('/dashboard')->assertOk();
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('Dashboard category', $props['categorias'][0]['nombre']);
+
+        $dashboard = file_get_contents(resource_path('js/react/dashboard.jsx'));
+        $this->assertStringContainsString("label !== 'Nuevo Producto'", $dashboard);
+        $this->assertStringContainsString('<ProductForm routes={routes} categorias={categorias} modal', $dashboard);
+    }
+
     public function test_non_admins_cannot_access_either_driver(): void
     {
         foreach (['react', 'blade'] as $driver) {
