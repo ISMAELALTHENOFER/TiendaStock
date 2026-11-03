@@ -44,7 +44,7 @@
                             <div class="relative">
                                 <input type="text"
                                     x-model="searchQuery"
-                                    @input.debounce.300ms="searchProducts"
+                                    @input="searchProducts"
                                     @keydown.enter.prevent="addFirstResult"
                                     placeholder="Buscar productos por nombre..."
                                     class="w-full px-5 py-3 pl-12 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700">
@@ -263,6 +263,9 @@ document.addEventListener('alpine:init', () => {
         searchQuery: '',
         searchResults: [],
         searching: false,
+        searchRequest: 0,
+        searchController: null,
+        searchTimer: null,
         cart: [],
         cartId: null,
         adding: false,
@@ -300,21 +303,35 @@ document.addEventListener('alpine:init', () => {
         },
 
         async searchProducts() {
-            if (this.searchQuery.length < 2) {
+            const request = ++this.searchRequest;
+            clearTimeout(this.searchTimer);
+            this.searchController?.abort();
+            this.searchController = null;
+            const query = this.searchQuery.trim();
+            if (query.length < 2) {
                 this.searchResults = [];
+                this.searching = false;
                 return;
             }
 
             this.searching = true;
-            try {
-                const response = await fetch(`/productos/search?q=${encodeURIComponent(this.searchQuery)}`);
-                this.searchResults = await response.json();
-            } catch (e) {
-                console.error('Error en búsqueda:', e);
-                this.searchResults = [];
-            } finally {
-                this.searching = false;
-            }
+            this.searchTimer = setTimeout(async () => {
+                const controller = new AbortController();
+                this.searchController = controller;
+                try {
+                    const response = await fetch(`/productos/search?q=${encodeURIComponent(query)}`, { signal: controller.signal, cache: 'no-store' });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const products = await response.json();
+                    if (request === this.searchRequest) this.searchResults = products;
+                } catch (error) {
+                    if (error.name !== 'AbortError' && request === this.searchRequest) {
+                        console.error('Error en búsqueda:', error);
+                        this.searchResults = [];
+                    }
+                } finally {
+                    if (request === this.searchRequest) this.searching = false;
+                }
+            }, 250);
         },
 
         async addToCart(product) {

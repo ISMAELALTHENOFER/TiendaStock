@@ -144,21 +144,32 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
     const total = totalCents / 100;
     const paidCents = Math.round(parseMoney(paid) * 100);
     const change = Math.max(0, parseMoney(paid) - total);
-    const searchProducts = async (value) => {
+    useEffect(() => {
         const request = ++searchRequest.current;
-        setSearch(value);
+        const controller = new AbortController();
+        const query = search.trim();
         setSearchError(false);
-        if (value.trim().length < 2) { setResults([]); setSearching(false); return; }
-        setSearching(true);
-        try {
-            const products = await api.get(`/productos/search?q=${encodeURIComponent(value)}`);
-            if (request === searchRequest.current) setResults(products);
-        } catch {
-            if (request === searchRequest.current) { setResults([]); setSearchError(true); }
-        } finally {
-            if (request === searchRequest.current) setSearching(false);
+        if (query.length < 2) {
+            setResults([]);
+            setSearching(false);
+            return () => controller.abort();
         }
-    };
+
+        const timeout = window.setTimeout(async () => {
+            setSearching(true);
+            try {
+                const products = await api.get(`/productos/search?q=${encodeURIComponent(query)}`, { cache: 'no-store', signal: controller.signal });
+                if (request === searchRequest.current) setResults(products);
+            } catch (error) {
+                if (error.name !== 'AbortError' && request === searchRequest.current) { setResults([]); setSearchError(true); }
+            } finally {
+                if (request === searchRequest.current) setSearching(false);
+            }
+        }, 250);
+
+        return () => { window.clearTimeout(timeout); controller.abort(); };
+    }, [search]);
+    const searchProducts = (value) => { setSearch(value); setSearchError(false); };
     const add = async (product) => {
         if (cartBusy.current) return;
         cartBusy.current = true;

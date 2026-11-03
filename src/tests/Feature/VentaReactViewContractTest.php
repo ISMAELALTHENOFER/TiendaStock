@@ -172,6 +172,19 @@ class VentaReactViewContractTest extends TestCase
         $this->assertSame(2, substr_count($source, 'paidCents < totalCents'));
     }
 
+    public function test_pos_search_debounces_and_aborts_stale_requests_in_both_hosts(): void
+    {
+        $react = file_get_contents(resource_path('js/react/sales.jsx'));
+        $blade = file_get_contents(resource_path('views/ventas/pos.blade.php'));
+
+        $this->assertStringContainsString('signal: controller.signal', $react);
+        $this->assertStringContainsString('window.setTimeout(async () =>', $react);
+        $this->assertStringContainsString('}, 250);', $react);
+        $this->assertStringContainsString('this.searchController?.abort()', $blade);
+        $this->assertStringContainsString('}, 250);', $blade);
+        $this->assertStringContainsString('request === this.searchRequest', $blade);
+    }
+
     public function test_pos_delivery_and_payment_use_accessible_choice_tiles(): void
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
