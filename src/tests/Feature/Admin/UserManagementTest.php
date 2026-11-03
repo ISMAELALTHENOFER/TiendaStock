@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\User;
+use App\Models\Venta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,6 +39,17 @@ class UserManagementTest extends TestCase
         // Blade-rendered fields (see UserReactViewContractTest for the full
         // coexistence contract).
         $response->assertSeeHtml('id="react-root"');
+    }
+
+    public function test_admin_users_index_filters_inactive_accounts(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->create(['activo' => true]);
+        $inactive = User::factory()->create(['activo' => false]);
+
+        $response = $this->actingAs($admin)->getJson('/admin/users?inactivos=1');
+
+        $response->assertOk()->assertJsonFragment(['id' => $inactive->id])->assertJsonMissing(['id' => $admin->id]);
     }
 
     public function test_admin_user_can_view_create_form(): void
@@ -170,5 +182,60 @@ class UserManagementTest extends TestCase
         $user->refresh();
         $this->assertSame('Updated Name', $user->name);
         $this->assertSame($originalPassword, $user->password);
+    }
+
+    public function test_admin_can_reset_another_users_password(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create();
+
+        $this->actingAs($admin)->put("/admin/users/{$user->id}", [
+            'name' => $user->name, 'username' => $user->username, 'email' => $user->email,
+            'role' => 'Ventas', 'password' => 'new-password', 'password_confirmation' => 'new-password',
+        ])->assertRedirect('/admin/users');
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('new-password', $user->refresh()->password));
+    }
+
+    public function test_admin_can_activate_and_deactivate_other_accounts_without_deleting_history(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->ventas()->create();
+        $sale = Venta::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($admin)->post("/admin/users/{$user->id}/deactivate")->assertRedirect('/admin/users');
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'activo' => false]);
+        $this->assertDatabaseHas('ventas', ['id' => $sale->id, 'user_id' => $user->id]);
+        $this->post("/admin/users/{$user->id}/activate")->assertRedirect('/admin/users');
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'activo' => true]);
+    }
+
+    public function test_admin_cannot_deactivate_self_or_last_active_admin(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->post("/admin/users/{$admin->id}/deactivate")->assertForbidden();
+        $this->post('/admin/users', [
+            'name' => 'Another Admin', 'username' => 'anotheradmin', 'email' => 'another@example.com',
+            'role' => 'ADMIN', 'password' => 'password', 'password_confirmation' => 'password',
+        ])->assertRedirect('/admin/users');
+        $admin->refresh();
+        $this->put("/admin/users/{$admin->id}", [
+            'name' => $admin->name, 'username' => $admin->username, 'email' => $admin->email, 'role' => 'Ventas',
+        ])->assertForbidden();
+    }
+
+    public function test_admin_cannot_change_own_role(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->put("/admin/users/{$admin->id}", [
+            'name' => $admin->name, 'username' => $admin->username, 'email' => $admin->email, 'role' => 'Ventas',
+        ])->assertForbidden();
+    }
+
+    public function test_admin_only_can_change_account_active_state(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $this->actingAs($user)->post("/admin/users/{$user->id}/deactivate")->assertForbidden();
+        $this->assertTrue($user->refresh()->activo);
     }
 }

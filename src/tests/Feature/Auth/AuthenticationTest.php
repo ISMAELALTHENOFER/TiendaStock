@@ -99,6 +99,36 @@ class AuthenticationTest extends TestCase
         $this->assertSame(1, substr_count($response->getContent(), __('auth.failed')));
     }
 
+    public function test_inactive_account_is_reported_only_after_valid_password(): void
+    {
+        $user = User::factory()->create(['activo' => false]);
+
+        $this->post('/login', ['username' => $user->username, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors(['username' => __('auth.failed')]);
+        $this->post('/login', ['username' => 'missing-user', 'password' => 'password'])
+            ->assertSessionHasErrors(['username' => __('auth.failed')]);
+        $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+            ->assertSessionHasErrors(['username' => 'Esta cuenta está desactivada.']);
+        $this->assertGuest();
+    }
+
+    public function test_inactive_authenticated_user_is_logged_out_on_next_non_logout_request(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $this->actingAs($user);
+        $user->update(['activo' => false]);
+
+        $this->get('/profile')->assertRedirect('/login');
+        $this->assertGuest();
+    }
+
+    public function test_inactive_authenticated_user_can_still_explicitly_logout(): void
+    {
+        $user = User::factory()->create(['activo' => false]);
+        $this->actingAs($user)->post('/logout')->assertRedirect('/');
+        $this->assertGuest();
+    }
+
     public function test_missing_credentials_keep_field_errors_without_authentication_alert(): void
     {
         $this->post('/login', [])->assertSessionHasErrors(['username', 'password']);

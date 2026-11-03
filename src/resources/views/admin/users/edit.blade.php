@@ -72,7 +72,7 @@
                         <!-- Password -->
                         <div>
                             <label for="password" class="block text-sm font-bold text-gray-900 mb-3">
-                                Contraseña (dejar en blanco para mantener la actual)
+                                Nueva contraseña (dejar en blanco para mantener la actual)
                             </label>
                             <input type="password" id="password" name="password"
                                 placeholder="••••••••"

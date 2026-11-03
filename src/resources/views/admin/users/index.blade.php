@@ -45,6 +45,11 @@
                 <input type="hidden" name="per_page" value="{{ $users->perPage() }}">
                 <button type="submit" class="min-h-11 px-5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg">Buscar</button>
             </form>
+            <form method="GET" action="{{ route('admin.users.index') }}" class="mb-5">
+                <input type="hidden" name="buscar" value="{{ request('buscar') }}">
+                <input type="hidden" name="per_page" value="{{ $users->perPage() }}">
+                <label class="flex min-h-11 items-center gap-2"><input type="checkbox" name="inactivos" value="1" onchange="this.form.submit()" @checked(request()->boolean('inactivos'))> Ver inactivos</label>
+            </form>
 
             <p data-live-status role="status" aria-live="polite" class="mb-2 text-sm text-red-700"></p>
             <div id="users-search-results" aria-live="polite">
@@ -60,6 +65,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Usuario</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
                                 <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Rol</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
                                 <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
@@ -85,6 +91,7 @@
                                     <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 rounded-full px-3 py-1 text-xs font-bold">Sin rol</span>
                                     @endif
                                 </td>
+                                <td class="px-6 py-4 text-center"><span class="rounded-full px-3 py-1 text-xs font-bold {{ $user->activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">{{ $user->activo ? 'Activo' : 'Inactivo' }}</span></td>
                                 <td class="px-6 py-4 text-center">
                                     <a href="{{ route('admin.users.edit', $user) }}"
                                         title="Editar usuario"
@@ -94,6 +101,12 @@
                                         </svg>
                                         Editar
                                     </a>
+                                    @if($user->id !== auth()->id())
+                                    <form method="POST" action="{{ route($user->activo ? 'admin.users.deactivate' : 'admin.users.activate', $user) }}" class="inline" onsubmit="return confirm('¿Confirmas {{ $user->activo ? 'la desactivación' : 'la activación' }} de este usuario?')">
+                                        @csrf
+                                        <button class="ml-2 rounded-lg px-3 py-2 font-semibold {{ $user->activo ? 'text-red-700' : 'text-green-700' }}">{{ $user->activo ? 'Desactivar' : 'Activar' }}</button>
+                                    </form>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -119,6 +132,7 @@
                             @else
                             <span class="bg-gray-100 text-gray-600 rounded-full px-3 py-1 text-xs font-bold">Sin rol</span>
                             @endif
+                            <span class="rounded-full px-3 py-1 text-xs font-bold {{ $user->activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">{{ $user->activo ? 'Activo' : 'Inactivo' }}</span>
                         </div>
                         <div class="break-all text-sm text-gray-600 mb-3">
                             <span>{{ $user->email }}</span>
@@ -126,6 +140,11 @@
                         <a href="{{ route('admin.users.edit', $user) }}" class="block w-full text-center bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold py-3 rounded-lg transition-colors">
                             Editar usuario
                         </a>
+                        @if($user->id !== auth()->id())
+                        <form method="POST" action="{{ route($user->activo ? 'admin.users.deactivate' : 'admin.users.activate', $user) }}" onsubmit="return confirm('¿Confirmas {{ $user->activo ? 'la desactivación' : 'la activación' }} de este usuario?')">
+                            @csrf <button class="mt-2 min-h-11 w-full rounded-lg font-semibold {{ $user->activo ? 'text-red-700' : 'text-green-700' }}">{{ $user->activo ? 'Desactivar' : 'Activar' }}</button>
+                        </form>
+                        @endif
                     </div>
                     @endforeach
                 </div>

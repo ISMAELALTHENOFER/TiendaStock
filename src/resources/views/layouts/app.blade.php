@@ -49,6 +49,7 @@
                 ->filter()
                 ->all(),
             'routes' => [
+                'currentUserId' => Auth::id(),
                 'canViewProductCost' => Auth::user()->role === 'ADMIN',
                 'dashboard' => route('dashboard'),
                 'ventas' => route('ventas.index'),
@@ -59,6 +60,8 @@
                 'categoriasCreate' => route('categorias.create'),
                 'users' => route('admin.users.index'),
                 'usersCreate' => route('admin.users.create'),
+                'usersActivate' => route('admin.users.activate', ['user' => '__USER__']),
+                'usersDeactivate' => route('admin.users.deactivate', ['user' => '__USER__']),
             ],
             'sales' => $ventas?->toArray(),
             'sale' => $venta?->toArray(),
@@ -69,7 +72,7 @@
             'producto' => $producto?->toArray(),
             'users' => $users?->toArray(),
             'usuario' => $usuario?->toArray(),
-            'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page']),
+            'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos']),
             'errors' => $errors->getBag('default')->toArray(),
         ]])
     @else

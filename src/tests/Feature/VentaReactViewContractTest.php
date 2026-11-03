@@ -24,7 +24,7 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
 
-        $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page'])", $source);
+        $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos'])", $source);
     }
 
     public function test_sales_index_can_roll_back_to_the_legacy_blade_surface(): void

@@ -91,6 +91,10 @@ class UserReactViewContractTest extends TestCase
             'Control Stock',
             'Sin rol',
             'Editar',
+            'Ver inactivos',
+            'Activo',
+            'Inactivo',
+            'ConfirmDialog',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }

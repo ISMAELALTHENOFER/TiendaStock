@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::resource('users', AdminUserController::class)
                 ->except(['show', 'destroy']);
+            Route::post('users/{user}/deactivate', [AdminUserController::class, 'deactivate'])->name('users.deactivate');
+            Route::post('users/{user}/activate', [AdminUserController::class, 'activate'])->name('users.activate');
         });
 
     Route::middleware('role:ADMIN,Ventas')->group(function () {
