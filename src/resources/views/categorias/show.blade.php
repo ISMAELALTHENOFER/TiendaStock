@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :categoria="$categoria" :productos="$productos">
     <x-slot name="header">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div class="min-w-0">

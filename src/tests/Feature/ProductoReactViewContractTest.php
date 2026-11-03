@@ -75,6 +75,29 @@ class ProductoReactViewContractTest extends TestCase
         $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Editar Producto');
     }
 
+    public function test_product_detail_uses_react_by_default_and_keeps_blade_fallback_and_admin_cost_visibility(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->create(['role' => 'Control Stock']);
+        $categoria = Categoria::factory()->create();
+        $producto = Producto::factory()->create(['categoria_id' => $categoria->id, 'precio_compra' => 20, 'precio_venta' => 40, 'imagen' => 'database/test']);
+
+        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $response->assertOk()->assertSee('id="react-root"', false);
+        $this->assertSame('productos.show', $props['page'] ?? null);
+        $this->assertSame(true, $props['routes']['canViewProductCost'] ?? null);
+        $this->assertStringStartsWith(route('productos.imagen', $producto), $props['routes']['productoImage'] ?? '');
+
+        $this->actingAs($staff)->get(route('productos.show', $producto))
+            ->assertOk()->assertSee('id="react-root"', false)
+            ->assertDontSee('"precio_compra"', false);
+        config(['frontend.routes.productos.show' => 'blade']);
+        $this->actingAs($admin)->get(route('productos.show', $producto))
+            ->assertOk()->assertDontSee('id="react-root"', false)->assertSee('Detalles del producto');
+    }
+
     public function test_react_product_index_preserves_catalog_search_and_filters(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));

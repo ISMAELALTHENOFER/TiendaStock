@@ -33,7 +33,7 @@
 </head>
 
     <body class="font-sans antialiased bg-canvas">
-    @if ($useReact && in_array($routeName, ['profile.edit', 'dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'categorias.create', 'categorias.edit', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
+    @if ($useReact && in_array($routeName, ['profile.edit', 'dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'productos.show', 'categorias.index', 'categorias.create', 'categorias.edit', 'categorias.show', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
         @include('react.app', ['props' => [
             'page' => $routeName,
             'status' => session('status'),
@@ -65,7 +65,11 @@
                 'productosSearch' => route('productos.search'),
                 'productoDuplicateCheck' => route('productos.check-duplicate'),
                 'productosCreate' => route('productos.create'),
+                'productoEdit' => isset($producto) ? route('productos.edit', $producto) : null,
+                'productoImage' => isset($producto) && $producto->imagen ? route('productos.imagen', $producto).($producto->imagenRecord ? '?v='.$producto->imagenRecord->sha1 : '') : null,
                 'categorias' => route('categorias.index'),
+                'categoriaEdit' => isset($categoria) ? route('categorias.edit', $categoria) : null,
+                'categoriaDetail' => isset($categoria) ? route('categorias.show', $categoria) : null,
                 'categoriasCreate' => route('categorias.create'),
                 'categoriasInline' => route('categorias.inline'),
                 'users' => route('admin.users.index'),
@@ -78,8 +82,11 @@
             'categorias' => request()->routeIs('categorias.index', 'categorias.create', 'categorias.edit')
                 ? $categorias->toArray() + ['summary' => request()->attributes->get('categoriaSummary', [])]
                 : $categorias?->toArray(),
-            'categoria' => isset($categoria) ? $categoria->toArray() : null,
+            'categoria' => request()->routeIs('categorias.show')
+                ? request()->attributes->get('categoriaDetail')?->toArray()
+                : (isset($categoria) ? $categoria->toArray() : null),
             'producto' => $producto?->toArray(),
+            'productosPage' => request()->routeIs('categorias.show') ? request()->attributes->get('categoriaProductsPage')?->toArray() : null,
             'users' => $users?->toArray(),
             'usuario' => $usuario?->toArray(),
             'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos']),

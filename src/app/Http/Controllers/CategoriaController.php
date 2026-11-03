@@ -86,6 +86,7 @@ class CategoriaController extends Controller
     public function show(Request $request, Categoria $categoria)
     {
         $categoria->loadCount('productos');
+        $request->attributes->set('categoriaDetail', $categoria);
         $productosQuery = $categoria->productos()->orderBy('nombre');
 
         if ($request->filled('buscar')) {
@@ -102,6 +103,7 @@ class CategoriaController extends Controller
         if ($request->user()?->role !== 'ADMIN') {
             $productos->getCollection()->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
         }
+        $request->attributes->set('categoriaProductsPage', $productos);
 
         return view('categorias.show', compact('categoria', 'productos'));
     }

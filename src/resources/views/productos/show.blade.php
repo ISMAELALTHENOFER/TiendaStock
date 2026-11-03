@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :producto="$producto">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <div>

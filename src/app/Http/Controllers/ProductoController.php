@@ -125,7 +125,7 @@ class ProductoController extends Controller
 
     public function show(Producto $producto)
     {
-        $producto->load(['imagenRecord:producto_id,sha1']);
+        $producto->load(['imagenRecord:producto_id,sha1', 'categoria']);
         if (request()->user()?->role !== 'ADMIN') {
             $producto->makeHidden(['precio_compra', 'ganancia']);
         }

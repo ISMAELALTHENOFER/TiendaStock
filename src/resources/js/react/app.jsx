@@ -9,6 +9,8 @@ const SalesPos = lazy(() => import('./sales.jsx').then((module) => ({ default: m
 const SaleShow = lazy(() => import('./sales.jsx').then((module) => ({ default: module.SaleShow })));
 const ProductList = lazy(() => import('./productos.jsx').then((module) => ({ default: module.ProductList })));
 const ProductForm = lazy(() => import('./productos.jsx').then((module) => ({ default: module.ProductForm })));
+const ProductShow = lazy(() => import('./details.jsx').then((module) => ({ default: module.ProductShow })));
+const CategoryShow = lazy(() => import('./details.jsx').then((module) => ({ default: module.CategoryShow })));
 const CategoriaGrid = lazy(() => import('./categorias.jsx').then((module) => ({ default: module.CategoriaGrid })));
 const UserList = lazy(() => import('./users.jsx').then((module) => ({ default: module.UserList })));
 const UserForm = lazy(() => import('./users.jsx').then((module) => ({ default: module.UserForm })));
@@ -29,9 +31,11 @@ export default function App({ props }) {
         'productos.index': <ProductList categorias={props.categorias} routes={props.routes} lowStockThreshold={props.lowStockThreshold} />,
         'productos.create': <ProductForm categorias={props.categorias} routes={props.routes} />,
         'productos.edit': <ProductForm producto={props.producto} categorias={props.categorias} routes={props.routes} />,
+        'productos.show': <ProductShow producto={props.producto} routes={props.routes} lowStockThreshold={props.lowStockThreshold} />,
         'categorias.index': <CategoriaGrid categorias={props.categorias} routes={props.routes} />,
         'categorias.create': <CategoriaGrid categorias={props.categorias} routes={props.routes} initialModal />,
         'categorias.edit': <CategoriaGrid categorias={props.categorias} routes={props.routes} initialModal={props.categoria} />,
+        'categorias.show': <CategoryShow categoria={props.categoria} productos={props.productosPage} routes={props.routes} canViewProductCost={props.routes.canViewProductCost} query={props.query} />,
         'admin.users.index': <UserList users={props.users} routes={props.routes} />,
         'admin.users.create': <UserForm routes={props.routes} />,
         'admin.users.edit': <UserForm usuario={props.usuario} routes={props.routes} />,

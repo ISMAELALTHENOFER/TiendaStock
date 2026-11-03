@@ -20,9 +20,11 @@ return [
             'index' => env('FRONTEND_PRODUCTOS_INDEX_DRIVER', 'react'),
             'create' => env('FRONTEND_PRODUCTOS_CREATE_DRIVER', 'react'),
             'edit' => env('FRONTEND_PRODUCTOS_EDIT_DRIVER', 'react'),
+            'show' => env('FRONTEND_PRODUCTOS_SHOW_DRIVER', 'react'),
         ],
         'categorias' => [
             'index' => env('FRONTEND_CATEGORIAS_INDEX_DRIVER', 'react'),
+            'show' => env('FRONTEND_CATEGORIAS_SHOW_DRIVER', 'react'),
         ],
         'admin' => [
             'users' => [
