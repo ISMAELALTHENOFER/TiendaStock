@@ -39,10 +39,10 @@ class InventoryReadAccessTest extends TestCase
 
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin)->getJson(route('productos.data'))
-                ->assertOk()->assertJsonPath('0.precio_compra', '999.00');
+                ->assertOk()->assertJsonPath('data.0.precio_compra', '999.00');
         $controlStock = User::factory()->controlStock()->create();
         $this->actingAs($controlStock)->getJson(route('productos.data'))
-            ->assertOk()->assertJsonMissingPath('0.precio_compra')->assertJsonMissingPath('0.ganancia');
+            ->assertOk()->assertJsonMissingPath('data.0.precio_compra')->assertJsonMissingPath('data.0.ganancia');
         $this->get(route('categorias.index'))->assertOk();
     }
 

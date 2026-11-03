@@ -334,16 +334,18 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
  * server-driven via hidden native forms confirmed with the shared dialog.
  */
 export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
-    const [verInactivos, setVerInactivos] = useState(false);
-    const [busqueda, setBusqueda] = useState('');
-    const [filtroCategoria, setFiltroCategoria] = useState('');
-    const [filtroTalle, setFiltroTalle] = useState('');
-    const [filtroColor, setFiltroColor] = useState('');
-    const [productos, setProductos] = useState(null);
+    const params = new URLSearchParams(window.location.search);
+    const [verInactivos, setVerInactivos] = useState(params.get('inactivos') === '1');
+    const [busqueda, setBusqueda] = useState(params.get('buscar') || '');
+    const [filtroCategoria, setFiltroCategoria] = useState(params.get('categoria_id') || '');
+    const [filtroTalle, setFiltroTalle] = useState(params.get('talle') || '');
+    const [filtroColor, setFiltroColor] = useState(params.get('color') || '');
+    const [catalogo, setCatalogo] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(false);
-    const [paginaActual, setPaginaActual] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
+    const [paginaActual, setPaginaActual] = useState(Number(params.get('page')) || 1);
+    const [pageSize, setPageSize] = useState([15, 30, 50].includes(Number(params.get('per_page'))) ? Number(params.get('per_page')) : 15);
+    const [reload, setReload] = useState(0);
     const [toggle, setToggle] = useState(null);
     const [activationError, setActivationError] = useState('');
     const [activating, setActivating] = useState(false);
@@ -353,61 +355,54 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
 
-    const cargar = useCallback(async () => {
-        setCargando(true);
-        setError(false);
-        try {
-            const response = await fetch(`/productos/data${verInactivos ? '?inactivos=1' : ''}`, {
-                headers: { Accept: 'application/json' },
-                cache: 'no-store',
-            });
-            if (!response.ok) throw new Error('carga');
-            const data = await response.json();
-            setProductos(data);
-            setPaginaActual(1);
-        } catch {
-            setError(true);
-        } finally {
-            setCargando(false);
-        }
-    }, [verInactivos]);
-
-    useEffect(() => { cargar(); }, [cargar]);
+    useEffect(() => {
+        const controller = new AbortController();
+        const params = new URLSearchParams({ per_page: String(pageSize), page: String(paginaActual) });
+        if (verInactivos) params.set('inactivos', '1');
+        if (isInteractiveSearch(busqueda)) params.set('buscar', busqueda.trim());
+        if (filtroCategoria) params.set('categoria_id', filtroCategoria);
+        if (filtroTalle) params.set('talle', filtroTalle);
+        if (filtroColor) params.set('color', filtroColor);
+        const timeout = window.setTimeout(async () => {
+            setCargando(true);
+            setError(false);
+            try {
+                const response = await fetch(`${routes.productosData || '/productos/data'}?${params}`, {
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                if (!response.ok) throw new Error('carga');
+                setCatalogo(await response.json());
+            } catch (requestError) {
+                if (requestError.name !== 'AbortError') setError(true);
+            } finally {
+                if (!controller.signal.aborted) setCargando(false);
+            }
+        }, busqueda ? 250 : 0);
+        return () => { window.clearTimeout(timeout); controller.abort(); };
+    }, [verInactivos, busqueda, filtroCategoria, filtroTalle, filtroColor, paginaActual, pageSize, reload, routes.productosData]);
     useEffect(() => {
         if (toggle?.tipo === 'activar') activationDialog.current?.showModal();
     }, [toggle]);
-    useEffect(() => { setPaginaActual(1); }, [busqueda, filtroCategoria, filtroTalle, filtroColor]);
-
-    const filtrados = useMemo(() => {
-        if (!productos) return [];
-        const termino = isInteractiveSearch(busqueda) ? busqueda.trim().toLowerCase() : '';
-        const tokens = termino.split(' ').filter(Boolean);
-        return productos.filter((p) => {
-            const matchesTermino = tokens.length === 0 || tokens.every((token) =>
-                [p.nombre, p.categoria?.nombre, p.talle, p.color].some((campo) => campo && campo.toLowerCase().includes(token))
-            );
-            const matchesCategoria = !filtroCategoria || String(p.categoria_id) === filtroCategoria;
-            const matchesTalle = !filtroTalle || p.talle === filtroTalle;
-            const matchesColor = !filtroColor || p.color === filtroColor;
-            return matchesTermino && matchesCategoria && matchesTalle && matchesColor;
-        });
-    }, [productos, busqueda, filtroCategoria, filtroTalle, filtroColor]);
-
-    const talies = useMemo(() => [...new Set((productos || []).map((p) => p.talle).filter(Boolean))].sort(), [productos]);
-    const colores = useMemo(() => [...new Set((productos || []).map((p) => p.color).filter(Boolean))].sort(), [productos]);
-
-    const totalPaginas = Math.max(1, Math.ceil(filtrados.length / pageSize));
-    const paginaSegura = Math.min(paginaActual, totalPaginas);
-    const visibles = filtrados.slice((paginaSegura - 1) * pageSize, paginaSegura * pageSize);
-    const desde = filtrados.length === 0 ? 0 : (paginaSegura - 1) * pageSize + 1;
-    const hasta = Math.min(paginaSegura * pageSize, filtrados.length);
+    const visibles = catalogo?.data || [];
+    const total = catalogo?.total || 0;
+    const talies = catalogo?.filters?.talles || [];
+    const colores = catalogo?.filters?.colores || [];
+    const totalPaginas = catalogo?.last_page || 1;
+    const paginaSegura = catalogo?.current_page || 1;
+    const desde = catalogo?.from || 0;
+    const hasta = catalogo?.to || 0;
     const hayFiltros = Boolean(busqueda || filtroCategoria || filtroTalle || filtroColor);
+    const cargar = () => { setPaginaActual(1); setReload((value) => value + 1); };
+    const cambiarFiltro = (setter) => (value) => { setter(value); setPaginaActual(1); };
 
     const limpiarFiltros = () => {
         setBusqueda('');
         setFiltroCategoria('');
         setFiltroTalle('');
         setFiltroColor('');
+        setPaginaActual(1);
         searchRef.current?.focus();
     };
 
@@ -449,7 +444,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label htmlFor="show-inactive-products" className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">
-                        <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => setVerInactivos(event.target.checked)} className="h-4 w-4 rounded border-border accent-primary" />
+                        <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => { setVerInactivos(event.target.checked); setPaginaActual(1); }} className="h-4 w-4 rounded border-border accent-primary" />
                         Ver inactivos
                     </label>
                     <a href={routes.productosCreate} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCrearAbierto(true); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline-offset-4">
@@ -463,21 +458,21 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                     <Input
                         ref={searchRef}
                         value={busqueda}
-                        onChange={(event) => setBusqueda(event.target.value)}
+                        onChange={(event) => { setBusqueda(event.target.value); setPaginaActual(1); }}
                         placeholder="Buscar por nombre, categoría, talle o color..."
                         aria-label="Buscar por nombre, categoría, talle o color"
                     />
                 </div>
                 <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-[2]">
-                    <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => setFiltroCategoria(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => cambiarFiltro(setFiltroCategoria)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todas las categorías</option>
                         {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                     </Select></label>
-                    <label className="text-xs font-semibold text-muted">Talle<Select aria-label="Filtrar por talle" value={filtroTalle} onChange={(event) => setFiltroTalle(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Talle<Select aria-label="Filtrar por talle" value={filtroTalle} onChange={(event) => cambiarFiltro(setFiltroTalle)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todos los talles</option>
                         {talies.map((talle) => <option key={talle} value={talle}>{talle}</option>)}
                     </Select></label>
-                    <label className="text-xs font-semibold text-muted">Color<Select aria-label="Filtrar por color" value={filtroColor} onChange={(event) => setFiltroColor(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Color<Select aria-label="Filtrar por color" value={filtroColor} onChange={(event) => cambiarFiltro(setFiltroColor)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todos los colores</option>
                         {colores.map((color) => <option key={color} value={color}>{color}</option>)}
                     </Select></label>
@@ -489,7 +484,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 <LoadingState label="Cargando catálogo..." />
             ) : error ? (
                 <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisá tu conexión e intentá nuevamente." onRetry={() => cargar()} />
-            ) : filtrados.length === 0 ? (
+            ) : total === 0 ? (
                 <EmptyState
                     title="No se encontraron productos"
                     description="Prueba con otros términos de búsqueda"
@@ -589,11 +584,11 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                         ))}
                     </div>
 
-                    <Pagination currentPage={paginaSegura} lastPage={totalPaginas} pageSize={pageSize} ariaLabel="Paginación de productos" summary={`Mostrando ${desde}–${hasta} de ${filtrados.length} productos`} onPageChange={setPaginaActual} onPageSizeChange={(size) => { setPageSize(size); setPaginaActual(1); }} />
+                    <Pagination currentPage={paginaSegura} lastPage={totalPaginas} pageSize={pageSize} ariaLabel="Paginación de productos" summary={`Mostrando ${desde}–${hasta} de ${total} productos`} onPageChange={setPaginaActual} onPageSizeChange={(size) => { setPageSize(size); setPaginaActual(1); }} />
                 </div>
             )}
 
-            {filtrados.length === 0 && hayFiltros && !cargando && !error && (
+            {total === 0 && hayFiltros && !cargando && !error && (
                 <div className="mt-4 text-center">
                     <Button variant="secondary" onClick={limpiarFiltros}>Ver todos los productos</Button>
                 </div>

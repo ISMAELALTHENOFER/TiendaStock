@@ -27,42 +27,57 @@ class ProductoController extends Controller
         return view('productos.index', compact('categorias'));
     }
 
-    /**
-     * Devuelve el catálogo completo como JSON para filtrado client-side.
-     *
-     * El navegador NO debe cachear la respuesta: tras editar/desactivar/reactivar
-     * un producto y volver al índice, la lista debe reflejar el cambio de
-     * inmediato. Un Cache-Control: public, max-age=300 servía datos stalidados
-     * por 5 minutos; degradamos a no-store para que cada navegación vuelva a
-     * pedir el catálogo fresco (el costo es despreciable: un SELECT con JOIN).
-     *
-     * Default: solo productos activos (el POS y el buscador operan sobre el
-     * inventario disponible). El flag ?inactivos=1 incluye los desactivados
-     * para la vista administrativa.
-     */
     public function data(Request $request)
     {
-        $query = Producto::with('categoria')->orderBy('nombre');
+        $base = Producto::query();
+        $this->applyInventoryScope($base, $request);
 
-        // Las dos vistas son complementarias y exhaustivas:
-        //   Default (inventario disponible):  activo=true AND cantidad > 0
-        //   ?inactivos=1 (no disponibles):     activo=false OR cantidad = 0
-        // Así ningún producto queda invisible en ambos listados.
+        $query = (clone $base)->with('categoria')->orderBy('nombre')->orderBy('id');
+        $tokens = preg_split('/\s+/', trim($request->string('buscar')->toString()), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (count($tokens) && mb_strlen(implode('', $tokens)) >= 2) {
+            foreach ($tokens as $token) {
+                $like = '%'.$token.'%';
+                $query->where(function ($matches) use ($like) {
+                    $matches->where('nombre', 'like', $like)
+                        ->orWhere('talle', 'like', $like)
+                        ->orWhere('color', 'like', $like)
+                        ->orWhereHas('categoria', fn ($category) => $category->where('nombre', 'like', $like));
+                });
+            }
+        }
+        if ($request->filled('categoria_id')) {
+            $query->where('categoria_id', $request->integer('categoria_id'));
+        }
+        foreach (['talle', 'color'] as $field) {
+            if ($request->filled($field)) {
+                $query->where($field, $request->query($field));
+            }
+        }
+
+        $perPage = in_array((string) $request->query('per_page'), ['15', '30', '50'], true)
+            ? (int) $request->query('per_page')
+            : 15;
+        $productos = $query->paginate($perPage)->withQueryString();
+        if ($request->user()?->role !== 'ADMIN') {
+            $productos->getCollection()->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
+        }
+
+        $options = (clone $base)->select('talle', 'color')->distinct()->get();
+
+        return response()->json($productos->toArray() + ['filters' => [
+            'talles' => $options->pluck('talle')->filter()->unique()->sort()->values(),
+            'colores' => $options->pluck('color')->filter()->unique()->sort()->values(),
+        ]])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    private function applyInventoryScope($query, Request $request): void
+    {
         if ($request->boolean('inactivos')) {
-            $query->where(function ($q) {
-                $q->where('activo', false)->orWhere('cantidad', 0);
-            });
+            $query->where(fn ($products) => $products->where('activo', false)->orWhere('cantidad', 0));
         } else {
             $query->where('activo', true)->where('cantidad', '>', 0);
         }
-
-        $productos = $query->get();
-        if ($request->user()?->role !== 'ADMIN') {
-            $productos->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
-        }
-
-        return response()->json($productos)
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     public function create()

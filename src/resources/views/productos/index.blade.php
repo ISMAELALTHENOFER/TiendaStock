@@ -151,7 +151,7 @@
                             de <strong x-text="totalFiltrados"></strong> producto(s)
                         </div>
                         <label class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">Por página
-                            <select x-model.number="POR_PAGINA" @change="paginaActual = 1" aria-label="Productos por página" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-gray-700 focus:ring-2 focus:ring-brand-300">
+                            <select x-model.number="POR_PAGINA" @change="paginaActual = 1; cargarProductos()" aria-label="Productos por página" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-gray-700 focus:ring-2 focus:ring-brand-300">
                                 <option value="15">15</option><option value="30">30</option><option value="50">50</option>
                             </select>
                         </label>
@@ -443,10 +443,11 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('productSearch', (categorias) => ({
-        // Tamaño de página. El catálogo entero vive en memoria; solo se
-        // renderizan 15 filas por vez para no saturar el DOM.
-        POR_PAGINA: 15,
+    Alpine.data('productSearch', (categorias) => {
+        const params = new URLSearchParams(window.location.search);
+        return ({
+        // El servidor filtra y pagina el catálogo; el navegador solo conserva la página actual.
+        POR_PAGINA: [15, 30, 50].includes(Number(params.get('per_page'))) ? Number(params.get('per_page')) : 15,
 
         // Catálogo vacío hasta que cargue vía fetch; el buscador ya es usable
         // (los filtros no dependen del catálogo, solo filtran 0 filas).
@@ -456,19 +457,28 @@ document.addEventListener('alpine:init', () => {
         // Estado de carga: el input NUNCA se deshabilita por esto.
         cargando: false,
         errorCarga: false,
+        talles: [],
+        colores: [],
 
         // Estado de filtros: el input principal nunca se deshabilita ni se recrea.
-        busqueda: '',
-        filtroCategoria: '',
-        filtroTalle: '',
-        filtroColor: '',
+        busqueda: params.get('buscar') || '',
+        filtroCategoria: params.get('categoria_id') || '',
+        filtroTalle: params.get('talle') || '',
+        filtroColor: params.get('color') || '',
 
         // Toggle administrativo: incluir productos desactivados en el fetch.
-        verInactivos: false,
+        verInactivos: params.get('inactivos') === '1',
         activationId: {{ Js::from(old('activation_id')) }},
 
         // Página actual del paginado cliente. Se resetea a 1 al cambiar filtros.
-        paginaActual: 1,
+        paginaActual: Math.max(1, Number(params.get('page')) || 1),
+        totalFiltrados: 0,
+        totalPaginas: 1,
+        rangoInicio: 0,
+        rangoFin: 0,
+        searchTimer: null,
+        searchController: null,
+        searchRequest: 0,
 
         // Token CSRF leído una sola vez del meta (no se hardcodea).
         csrfToken: document.querySelector('meta[name="csrf-token"]')?.content ?? '',
@@ -479,12 +489,11 @@ document.addEventListener('alpine:init', () => {
             @if($errors->has('cantidad') && old('activation_id'))
                 this.$nextTick(() => this.$refs.activationDialog.showModal());
             @endif
-            this.$watch('busqueda', () => { this.paginaActual = 1; });
-            this.$watch('filtroCategoria', () => { this.paginaActual = 1; });
-            this.$watch('filtroTalle', () => { this.paginaActual = 1; });
-            this.$watch('filtroColor', () => { this.paginaActual = 1; });
-            // Re-fetch del catálogo al toggle: la visibilidad de inactivos cambia el conjunto.
-            this.$watch('verInactivos', () => { this.cargarProductos(); });
+            this.$watch('busqueda', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroCategoria', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroTalle', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroColor', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('verInactivos', () => { this.paginaActual = 1; this.cargarProductos(); });
         },
 
         /**
@@ -492,39 +501,50 @@ document.addEventListener('alpine:init', () => {
          * buscador usable y ofrece reintentar, sin bloquear la UI.
          */
         async cargarProductos() {
-            this.cargando = true;
+            clearTimeout(this.searchTimer);
+            this.searchController?.abort();
+            const request = ++this.searchRequest;
+            const controller = new AbortController();
+            this.searchController = controller;
             this.errorCarga = false;
-            try {
-                const url = new URL('{{ route('productos.data') }}', window.location.origin);
-                if (this.verInactivos) {
-                    url.searchParams.set('inactivos', '1');
+            const url = new URL('{{ route('productos.data') }}', window.location.origin);
+            url.searchParams.set('page', String(this.paginaActual));
+            url.searchParams.set('per_page', String(this.POR_PAGINA));
+            if (this.verInactivos) url.searchParams.set('inactivos', '1');
+            if (this.busqueda.trim().length >= 2) url.searchParams.set('buscar', this.busqueda.trim());
+            if (this.filtroCategoria) url.searchParams.set('categoria_id', this.filtroCategoria);
+            if (this.filtroTalle.trim()) url.searchParams.set('talle', this.filtroTalle.trim());
+            if (this.filtroColor.trim()) url.searchParams.set('color', this.filtroColor.trim());
+            this.searchTimer = setTimeout(async () => {
+                this.cargando = true;
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store',
+                        signal: controller.signal,
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const page = await response.json();
+                    if (request !== this.searchRequest) return;
+                    this.productos = page.data;
+                    this.totalFiltrados = page.total;
+                    this.totalPaginas = Math.max(1, page.last_page);
+                    this.paginaActual = page.current_page;
+                    this.rangoInicio = page.from || 0;
+                    this.rangoFin = page.to || 0;
+                    this.talles = page.filters.talles;
+                    this.colores = page.filters.colores;
+                } catch (error) {
+                    if (error.name !== 'AbortError' && request === this.searchRequest) {
+                        console.error('Error al cargar el catálogo:', error);
+                        this.errorCarga = true;
+                        this.productos = [];
+                        this.totalFiltrados = 0;
+                    }
+                } finally {
+                    if (request === this.searchRequest) this.cargando = false;
                 }
-                const response = await fetch(url.toString(), {
-                    headers: { 'Accept': 'application/json' },
-                    // El catálogo muta con cada edit/activate/destroy; nunca
-                    // servir una versión cacheada por el navegador. El backend
-                    // ya envía Cache-Control: no-store, pero `cache: 'no-store'
-                    // refuerza la intención desde el cliente y evita heurísticas
-                    // de caché en navegadores antiguos o proxies.
-                    cache: 'no-store',
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                this.productos = await response.json();
-                this.paginaActual = 1;
-            } catch (e) {
-                console.error('Error al cargar el catálogo:', e);
-                this.errorCarga = true;
-                this.productos = [];
-            } finally {
-                this.cargando = false;
-            }
-        },
-
-        /** Coincidencia OR en los 4 campos de texto, case-insensitive. Soporta null. */
-        coincideTexto(valor, termino) {
-            if (!termino) return true;
-            const haystack = (valor ?? '').toString().toLowerCase();
-            return haystack.includes(termino);
+            }, this.busqueda ? 250 : 0);
         },
 
         get hayFiltrosActivos() {
@@ -534,86 +554,25 @@ document.addEventListener('alpine:init', () => {
                 || this.filtroColor.trim() !== '';
         },
 
-        /**
-         * Aplica AND entre filtros activos. La caja de texto busca OR entre
-         * nombre / categoria.nombre / talle / color. Los demás filtros acotan
-         * su campo correspondiente. Dispara desde dos caracteres.
-         */
-        get filtrados() {
-            const termino = this.busqueda.trim().toLowerCase();
-            const talle = this.filtroTalle.trim().toLowerCase();
-            const color = this.filtroColor.trim().toLowerCase();
-            const categoriaId = this.filtroCategoria;
-
-            return this.productos.filter((producto) => {
-                // Filtro por categoría exacta (id).
-                if (categoriaId !== '' && String(producto.categoria_id) !== String(categoriaId)) {
-                    return false;
-                }
-
-                // Filtro por talle: solo dentro del campo talle.
-                if (talle && !this.coincideTexto(producto.talle, talle)) {
-                    return false;
-                }
-
-                // Filtro por color: solo dentro del campo color.
-                if (color && !this.coincideTexto(producto.color, color)) {
-                    return false;
-                }
-
-                // Caja de texto principal: OR entre los 4 campos.
-                if (termino.length >= 2) {
-                    const enNombre = this.coincideTexto(producto.nombre, termino);
-                    const enCategoria = this.coincideTexto(producto.categoria?.nombre, termino);
-                    const enTalle = this.coincideTexto(producto.talle, termino);
-                    const enColor = this.coincideTexto(producto.color, termino);
-                    if (!(enNombre || enCategoria || enTalle || enColor)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-        },
-
-        get totalFiltrados() {
-            return this.filtrados.length;
-        },
-
-        // --- Paginación client-side sobre el resultado filtrado ---
-
-        get totalPaginas() {
-            return Math.max(1, Math.ceil(this.totalFiltrados / this.POR_PAGINA));
-        },
-
-        /** Slice del resultado filtrado correspondiente a la página actual. */
+        // El servidor entrega productos filtrados y paginados.
+        /** Server already returns only the requested page. */
+        get filtrados() { return this.productos; },
         get productosPagina() {
-            const inicio = (this.paginaActual - 1) * this.POR_PAGINA;
-            return this.filtrados.slice(inicio, inicio + this.POR_PAGINA);
-        },
-
-        /** Índice (1-based) del primer producto visible en la página actual. */
-        get rangoInicio() {
-            if (this.totalFiltrados === 0) return 0;
-            return (this.paginaActual - 1) * this.POR_PAGINA + 1;
-        },
-
-        /** Índice (1-based) del último producto visible en la página actual. */
-        get rangoFin() {
-            return Math.min(this.paginaActual * this.POR_PAGINA, this.totalFiltrados);
+            return this.productos;
         },
 
         irAPagina(n) {
             const destino = Math.max(1, Math.min(n, this.totalPaginas));
             this.paginaActual = destino;
+            this.cargarProductos();
         },
 
         paginaAnterior() {
-            if (this.paginaActual > 1) this.paginaActual--;
+            if (this.paginaActual > 1) { this.paginaActual--; this.cargarProductos(); }
         },
 
         paginaSiguiente() {
-            if (this.paginaActual < this.totalPaginas) this.paginaActual++;
+            if (this.paginaActual < this.totalPaginas) { this.paginaActual++; this.cargarProductos(); }
         },
 
         limpiar() {
@@ -637,6 +596,6 @@ document.addEventListener('alpine:init', () => {
                 maximumFractionDigits: 2,
             });
         },
-    }));
+    });
 });
 </script>

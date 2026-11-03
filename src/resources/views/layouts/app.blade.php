@@ -55,6 +55,7 @@
                 'ventas' => route('ventas.index'),
                 'ventasPos' => route('ventas.pos'),
                 'productos' => route('productos.index'),
+                'productosData' => route('productos.data'),
                 'productosCreate' => route('productos.create'),
                 'categorias' => route('categorias.index'),
                 'categoriasCreate' => route('categorias.create'),

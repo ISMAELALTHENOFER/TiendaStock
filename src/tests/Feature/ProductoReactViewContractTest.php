@@ -92,11 +92,11 @@ class ProductoReactViewContractTest extends TestCase
         }
     }
 
-    public function test_react_product_index_preserves_fifteen_row_pagination_and_low_stock_badge(): void
+    public function test_react_product_index_uses_server_pagination_and_shared_stock_threshold(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        foreach (['pageSize, setPageSize] = useState(15)', 'currentPage={paginaSegura}', 'onPageChange={setPaginaActual}', 'stockTone(producto.cantidad, lowStockThreshold)', 'danger'] as $contract) {
+        foreach (['pageSize, setPageSize] = useState([15, 30, 50].includes', 'page: String(paginaActual)', 'catalogo?.data', 'onPageChange={setPaginaActual}', 'stockTone(producto.cantidad, lowStockThreshold)', 'danger'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
 
@@ -108,7 +108,7 @@ class ProductoReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/views/productos/index.blade.php'));
 
-        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'POR_PAGINA: 15', 'paginaSiguiente()'] as $contract) {
+        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'per_page', 'paginaSiguiente()'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }

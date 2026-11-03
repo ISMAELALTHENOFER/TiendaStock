@@ -129,7 +129,7 @@ class ProductoSoftDisableTest extends TestCase
         // Inactivos muestra: el desactivado + el de stock 0. No el activo con stock.
         $response->assertJsonFragment(['id' => $inactive->id, 'activo' => false]);
         $response->assertJsonFragment(['id' => $zeroStock->id]);
-        $this->assertNotContains($active->id, array_column($response->json(), 'id'));
+        $this->assertNotContains($active->id, array_column($response->json('data'), 'id'));
     }
 
     public function test_search_endpoint_excludes_inactive_products(): void
