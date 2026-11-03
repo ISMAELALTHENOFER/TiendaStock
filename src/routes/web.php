@@ -21,7 +21,7 @@ Route::get('/dashboard', function () {
         'productosActivos' => Producto::where('activo', true)->count(),
         'valorTotal' => Producto::sum('precio_venta'),
     ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'role:ADMIN'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,7 +29,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/productos/search', [ProductoController::class, 'search'])->name('productos.search');
 
-    Route::middleware('verified')->group(function () {
+    Route::middleware(['verified', 'role:ADMIN'])->group(function () {
         Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');
         Route::get('/dashboard/analytics', DashboardAnalyticsController::class)->name('dashboard.analytics');
     });

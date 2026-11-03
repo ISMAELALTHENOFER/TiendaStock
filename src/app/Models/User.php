@@ -60,6 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === self::ROLE_ADMIN;
     }
 
+    public function defaultDestination(): string
+    {
+        return route(match ($this->role) {
+            self::ROLE_ADMIN => 'dashboard',
+            self::ROLE_VENTAS => 'ventas.pos',
+            self::ROLE_CONTROL_STOCK => 'productos.index',
+            default => 'profile.edit',
+        }, absolute: false);
+    }
+
     public function isVentas(): bool
     {
         return $this->role === self::ROLE_VENTAS;

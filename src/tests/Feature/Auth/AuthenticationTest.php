@@ -50,7 +50,26 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false));
+    }
+
+    public function test_login_defaults_follow_the_user_role(): void
+    {
+        foreach (['ADMIN' => 'dashboard', 'Ventas' => 'ventas.pos', 'Control Stock' => 'productos.index', '' => 'profile.edit', 'invalid' => 'profile.edit'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+                ->assertRedirect(route($destination, absolute: false));
+            $this->post('/logout');
+        }
+    }
+
+    public function test_intended_dashboard_redirect_remains_subject_to_role_authorization(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $this->get('/dashboard')->assertRedirect('/login');
+        $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+            ->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertForbidden();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

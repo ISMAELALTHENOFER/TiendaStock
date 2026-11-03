@@ -62,13 +62,13 @@ class CheckRoleMiddlewareTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_authenticated_user_can_access_dashboard(): void
+    public function test_ventas_user_cannot_access_dashboard(): void
     {
         $user = User::factory()->ventas()->create();
 
         $response = $this->actingAs($user)->get('/dashboard');
 
-        $response->assertOk();
+        $response->assertForbidden();
     }
 
     public function test_ventas_user_cannot_access_productos(): void

@@ -5,7 +5,7 @@
             <div class="flex h-dvh flex-1 flex-col bg-sidebar">
             <div class="flex min-h-0 flex-1 flex-col">
                     <div class="flex min-h-16 flex-shrink-0 items-center justify-between border-b border-white/10 px-5" :class="sidebarCollapsed ? 'justify-center px-0' : ''">
-                        <a href="{{ route('dashboard') }}" aria-label="TiendaStock, Dashboard" :class="sidebarCollapsed ? 'lg:sr-only' : ''" class="flex min-h-11 items-center gap-3 text-white">
+                        <a href="{{ route(Auth::user()->isAdmin() ? 'dashboard' : 'profile.edit') }}" aria-label="{{ Auth::user()->isAdmin() ? 'TiendaStock, Dashboard' : 'TiendaStock, perfil' }}" :class="sidebarCollapsed ? 'lg:sr-only' : ''" class="flex min-h-11 items-center gap-3 text-white">
                             <img src="{{ asset('images/tiendastock-mark.svg') }}" alt="" class="h-7 w-7 object-contain">
                             <span class="text-lg font-bold">TiendaStock</span>
                         </a>
@@ -15,6 +15,7 @@
                         </button>
                     </div>
                     <nav id="desktop-sidebar-navigation" class="flex-1 space-y-6 overflow-y-auto px-3 py-6" :class="sidebarCollapsed ? 'lg:px-2' : ''">
+                        @if(Auth::user()->isAdmin())
                         <div><p class="px-3 text-xs font-semibold uppercase tracking-widest text-white/60" :class="sidebarCollapsed ? 'lg:sr-only' : ''">Workspace</p><div class="mt-2 space-y-1">
                         <a href="{{ route('dashboard') }}" aria-label="Dashboard" title="Dashboard" aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}" :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''" class="group flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold {{ request()->routeIs('dashboard') ? 'bg-primary-container text-white' : 'text-white/75 hover:bg-white/10 hover:text-white' }} transition-colors">
                             <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -23,6 +24,7 @@
                             <span :class="sidebarCollapsed ? 'lg:sr-only' : ''">Dashboard</span>
                         </a>
                         </div></div>
+                        @endif
                         @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas', 'Control Stock']))
                         <div><p class="px-3 text-xs font-semibold uppercase tracking-widest text-white/60" :class="sidebarCollapsed ? 'lg:sr-only' : ''">Operación</p><div class="mt-2 space-y-1">
                         @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas']))
@@ -102,6 +104,7 @@
                     <span class="text-lg font-bold text-white">TiendaStock</span>
                 </div>
                 <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-6">
+                    @if(Auth::user()->isAdmin())
                     <div><p class="px-3 text-xs font-semibold uppercase tracking-widest text-white/60">Workspace</p><div class="mt-2 space-y-1">
                     <a href="{{ route('dashboard') }}" aria-label="Dashboard" aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}" class="group flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold {{ request()->routeIs('dashboard') ? 'bg-primary-container text-white' : 'text-white/75 hover:bg-white/10 hover:text-white' }} transition-colors">
                         <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -110,6 +113,7 @@
                         Dashboard
                     </a>
                     </div></div>
+                    @endif
                     @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas', 'Control Stock']))
                     <div><p class="px-3 text-xs font-semibold uppercase tracking-widest text-white/60">Operación</p><div class="mt-2 space-y-1">
                     @if(in_array(Auth::user()->role, ['ADMIN', 'Ventas']))

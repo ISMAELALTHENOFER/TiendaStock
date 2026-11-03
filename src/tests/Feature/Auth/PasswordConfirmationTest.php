@@ -41,4 +41,17 @@ class PasswordConfirmationTest extends TestCase
 
         $response->assertSessionHasErrors();
     }
+
+    public function test_confirmation_redirects_by_role_and_preserves_intended_url(): void
+    {
+        foreach (['ADMIN' => '/dashboard', 'Ventas' => '/ventas/pos', 'Control Stock' => '/productos', '' => '/profile', 'invalid' => '/profile'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->actingAs($user)->post('/confirm-password', ['password' => 'password'])->assertRedirect($destination);
+        }
+
+        $this->actingAs(User::factory()->ventas()->create())
+            ->withSession(['url.intended' => '/dashboard'])
+            ->post('/confirm-password', ['password' => 'password'])->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertForbidden();
+    }
 }

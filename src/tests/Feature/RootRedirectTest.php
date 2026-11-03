@@ -54,7 +54,7 @@ class RootRedirectTest extends TestCase
 
     public function test_authenticated_root_still_redirects_to_login_and_login_to_dashboard(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
         $this->get('/login')
             ->assertOk()
@@ -79,5 +79,21 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('class="login-form"', $content);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $stylesheet);
         $this->assertStringContainsString(':focus-visible', $stylesheet);
+    }
+
+    public function test_authenticated_login_redirects_by_role(): void
+    {
+        foreach (['ADMIN' => '/dashboard', 'Ventas' => '/ventas/pos', 'Control Stock' => '/productos', '' => '/profile', 'invalid' => '/profile'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->actingAs($user)->get('/login')->assertRedirect($destination);
+            $this->get($destination)->assertOk();
+        }
+    }
+
+    public function test_unverified_admin_is_still_required_to_verify_email(): void
+    {
+        $user = User::factory()->admin()->unverified()->create();
+        $this->actingAs($user)->get('/login')->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertRedirect(route('verification.notice'));
     }
 }

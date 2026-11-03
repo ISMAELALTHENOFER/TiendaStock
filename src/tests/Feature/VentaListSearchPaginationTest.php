@@ -18,7 +18,7 @@ class VentaListSearchPaginationTest extends TestCase
         $byCustomer = Venta::factory()->create(['cliente_nombre' => 'Customer Search', 'user_id' => $otherUser->id]);
         $byProcessor = Venta::factory()->create(['cliente_nombre' => 'Another Customer', 'user_id' => $salesUser->id]);
         $byId = Venta::factory()->create(['cliente_nombre' => 'Third Customer', 'user_id' => $otherUser->id]);
-        $this->actingAs($salesUser);
+        $this->actingAs(User::factory()->admin()->create());
 
         foreach ([
             'Customer Search' => $byCustomer->id,
@@ -36,7 +36,7 @@ class VentaListSearchPaginationTest extends TestCase
     public function test_sales_page_size_defaults_to_15_and_accepts_only_15_30_or_50(): void
     {
         $user = User::factory()->ventas()->create();
-        Venta::factory()->count(51)->create();
+        Venta::factory()->count(51)->create(['user_id' => $user->id]);
         $this->actingAs($user);
 
         foreach ([null => 15, '15' => 15, '30' => 30, '50' => 50, '100' => 15] as $perPage => $expected) {
@@ -50,7 +50,7 @@ class VentaListSearchPaginationTest extends TestCase
     public function test_sales_search_and_all_existing_filters_are_retained_in_pagination_urls(): void
     {
         $user = User::factory()->ventas()->create();
-        Venta::factory()->count(16)->create(['cliente_nombre' => 'Keep Me', 'estado' => 'completada']);
+        Venta::factory()->count(16)->create(['cliente_nombre' => 'Keep Me', 'estado' => 'completada', 'user_id' => $user->id]);
         $this->actingAs($user);
 
         $response = $this->get('/ventas?buscar=Keep%20Me&per_page=15&desde=2020-01-01&hasta=2030-01-01&estado=completada');

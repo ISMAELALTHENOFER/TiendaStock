@@ -24,40 +24,19 @@ class DashboardRoleVisibilityTest extends TestCase
         $response->assertSee('Nuevo Usuario');
     }
 
-    public function test_ventas_sees_only_dashboard(): void
+    public function test_non_admin_sidebar_hides_dashboard_in_blade_and_react(): void
     {
-        $user = User::factory()->ventas()->create();
+        foreach (['Ventas', 'Control Stock', null, 'invalid'] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]));
+            $html = view('layouts.sidebar')->render();
+            $this->assertStringNotContainsString('href="'.route('dashboard').'"', $html);
+            $this->assertStringNotContainsString('aria-label="Dashboard"', $html);
+            $this->assertStringContainsString('href="'.route('profile.edit').'"', $html);
+        }
 
-        $response = $this->actingAs($user)->get('/dashboard');
-
-        $response->assertSee('react-root')->assertSee('Nueva Venta');
-        $response->assertDontSee('Usuarios');
-        $response->assertDontSee('Nuevo Producto');
-        $response->assertDontSee('Nuevo Usuario');
-    }
-
-    public function test_control_stock_sees_productos_and_categorias_but_not_usuarios(): void
-    {
-        $user = User::factory()->controlStock()->create();
-
-        $response = $this->actingAs($user)->get('/dashboard');
-
-        $response->assertSee('react-root')->assertSee('Nuevo Producto');
-        $response->assertSee('Nuevo Producto');
-        $response->assertDontSee('Usuarios');
-        $response->assertDontSee('Nuevo Usuario');
-    }
-
-    public function test_user_without_role_sees_setup_fallback(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)->get('/dashboard');
-
-        $response->assertSee('react-root')->assertSee('Bienvenido');
-        $response->assertSee('Bienvenido');
-        $response->assertSee('configurada');
-        $response->assertDontSee('Nuevo Producto');
+        $sidebar = file_get_contents(resource_path('js/react/layout/Sidebar.jsx'));
+        $this->assertStringContainsString("icon: LayoutDashboard, roles: ['ADMIN']", $sidebar);
+        $this->assertStringContainsString("user.role === 'ADMIN' ? routes.dashboard : '/profile'", $sidebar);
     }
 
     public function test_blade_driver_restores_the_legacy_dashboard(): void
