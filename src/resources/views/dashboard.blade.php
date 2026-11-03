@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :metrics="compact('productosCount', 'categoriasCount', 'productosActivos', 'productosAgotados', 'productosBajoStock', 'valorTotal')">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -47,6 +47,7 @@
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Productos Activos</p>
                         <p class="text-3xl font-bold text-gray-900">{{ $productosActivos ?? 0 }}</p>
+                        <p class="mt-2 text-sm text-gray-600">{{ $productosAgotados }} agotados · {{ $productosBajoStock }} con bajo stock</p>
                     </div>
                     <div class="p-3 bg-sky-50 rounded-lg">
                         <svg class="h-8 w-8 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +61,7 @@
             <div class="bg-gradient-to-br from-brand-300 to-sky-300 rounded-xl shadow-md p-4 sm:p-6 text-white hover:shadow-lg transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-white/80 mb-1">Valor Total</p>
+                        <p class="text-sm font-medium text-white/80 mb-1">Valor del inventario activo</p>
                         <p class="text-3xl font-bold text-white">${{ number_format($valorTotal ?? 0, 2) }}</p>
                     </div>
                     <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">

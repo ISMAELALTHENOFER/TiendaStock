@@ -42,12 +42,7 @@
                 'username' => Auth::user()->username,
                 'role' => Auth::user()->role,
             ],
-            'metrics' => [
-                'productosCount' => $productosCount ?? 0,
-                'categoriasCount' => $categoriasCount ?? 0,
-                'productosActivos' => $productosActivos ?? 0,
-                'valorTotal' => $valorTotal ?? 0,
-            ],
+            'metrics' => $metrics ?? [],
             'flash' => collect(['success', 'error', 'warning', 'info'])
                 ->mapWithKeys(fn ($key) => [$key => session($key)])
                 ->filter()

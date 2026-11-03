@@ -4,24 +4,16 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\DashboardActivityController;
 use App\Http\Controllers\DashboardAnalyticsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SaleCartController;
 use App\Http\Controllers\VentaController;
-use App\Models\Categoria;
-use App\Models\Producto;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
-Route::get('/dashboard', function () {
-    return view('dashboard', [
-        'productosCount' => Producto::count(),
-        'categoriasCount' => Categoria::count(),
-        'productosActivos' => Producto::where('activo', true)->count(),
-        'valorTotal' => Producto::sum('precio_venta'),
-    ]);
-})->middleware(['auth', 'verified', 'role:ADMIN'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified', 'role:ADMIN'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
