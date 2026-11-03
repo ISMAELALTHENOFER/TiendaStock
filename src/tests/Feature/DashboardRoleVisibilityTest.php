@@ -10,6 +10,24 @@ class DashboardRoleVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_both_dashboard_drivers_show_accessible_category_comparison_bars(): void
+    {
+        $react = file_get_contents(resource_path('js/react/dashboard.jsx'));
+        $blade = file_get_contents(resource_path('views/dashboard.blade.php'));
+
+        $this->assertStringContainsString('<CategoryChart data={data.series.sales_by_category} />', $react);
+        $this->assertStringContainsString('category.count} unidades', $react);
+        $this->assertStringContainsString('Math.max(0, category.count) / max * 100', $react);
+        $this->assertStringContainsString('aria-hidden="true"', $react);
+        $this->assertStringContainsString('text-[12px]', $react);
+        $this->assertStringContainsString('minWidth: Math.max(data.length * 54, 320)', $react);
+        $this->assertStringContainsString('category.count} unidades', $blade);
+        $this->assertStringContainsString('Math.max(0, category.count) / categoryMax * 100', $blade);
+        $this->assertStringContainsString("track.setAttribute('aria-hidden', 'true')", $blade);
+        $this->assertStringContainsString('[overflow-wrap:anywhere]', $react);
+        $this->assertStringContainsString('[overflow-wrap:anywhere]', $blade);
+    }
+
     public function test_admin_sees_all_links(): void
     {
         $user = User::factory()->admin()->create();

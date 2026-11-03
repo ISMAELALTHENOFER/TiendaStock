@@ -154,5 +154,79 @@
         </div>
         @endif
 
+        <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6" aria-labelledby="analytics-title">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="analytics-title" class="text-lg font-bold">Análisis de ventas</h2>
+                <label class="flex items-center gap-2 text-sm font-semibold">Período
+                    <select id="analytics-period" class="form-control h-11">
+                        <option value="1">Hoy</option><option value="7" selected>Últimos 7 días</option><option value="30">Últimos 30 días</option>
+                    </select>
+                </label>
+            </div>
+            <div id="analytics-result" class="mt-4" aria-live="polite">Cargando datos...</div>
+            <noscript>Activa JavaScript para consultar el análisis de ventas.</noscript>
+        </section>
     </div>
+    @push('scripts')
+    <script>
+        (() => {
+            const period = document.getElementById('analytics-period');
+            const result = document.getElementById('analytics-result');
+            if (!period || !result) return;
+            const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            let request = 0;
+            const element = (tag, text) => { const node = document.createElement(tag); node.textContent = text; return node; };
+            async function load() {
+                const id = ++request;
+                result.replaceChildren(element('p', 'Cargando datos...'));
+                try {
+                    const response = await fetch(`{{ route('dashboard.analytics') }}?window=${period.value}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+                    if (!response.ok) throw new Error('Request failed');
+                    const data = await response.json();
+                    if (id !== request) return;
+                    const content = document.createDocumentFragment();
+                    content.append(element('h3', 'Ventas por día'));
+                    const sales = document.createElement('ul');
+                    const max = Math.max(1, ...data.series.sales_by_day.map((day) => Number(day.total)));
+                    data.series.sales_by_day.forEach((day) => {
+                        const item = document.createElement('li');
+                        item.append(element('span', `${day.date}: ${money.format(day.total)} · ${day.count} ventas `));
+                        const bar = document.createElement('meter');
+                        bar.min = 0; bar.max = max; bar.value = Math.max(0, day.total);
+                        bar.setAttribute('aria-label', `Total de ventas del ${day.date}`);
+                        item.append(bar); sales.append(item);
+                    });
+                    content.append(data.series.sales_by_day.length ? sales : element('p', 'No hay ventas para este período.'));
+                    content.append(element('h3', 'Unidades vendidas por categoría'));
+                    content.append(element('p', 'Según la categoría actual de cada producto.'));
+                    const categories = document.createElement('ul');
+                    categories.className = 'mt-4 space-y-4';
+                    const categoryMax = data.series.sales_by_category.reduce((highest, category) => Math.max(highest, category.count), 1);
+                    data.series.sales_by_category.forEach((category) => {
+                        const item = document.createElement('li');
+                        item.className = 'min-w-0';
+                        const label = element('div', `${category.category}: ${category.count} unidades`);
+                        label.className = '[overflow-wrap:anywhere]';
+                        const track = document.createElement('div');
+                        track.className = 'mt-1 h-3 w-full overflow-hidden rounded bg-surface-muted';
+                        track.setAttribute('aria-hidden', 'true');
+                        const bar = document.createElement('div');
+                        bar.className = 'h-full rounded bg-primary';
+                        bar.style.width = `${Math.max(0, category.count) / categoryMax * 100}%`;
+                        track.append(bar); item.append(label, track); categories.append(item);
+                    });
+                    content.append(data.series.sales_by_category.length ? categories : element('p', 'No hay unidades vendidas para este período.'));
+                    result.replaceChildren(content);
+                } catch (error) {
+                    if (id !== request) return;
+                    const retry = element('button', 'Reintentar');
+                    retry.type = 'button'; retry.className = 'mt-2 rounded border border-slate-400 px-4 py-2'; retry.addEventListener('click', load);
+                    result.replaceChildren(element('p', 'No se pudieron cargar los datos.'), retry);
+                }
+            }
+            period.addEventListener('change', load);
+            load();
+        })();
+    </script>
+    @endpush
 </x-app-layout>
