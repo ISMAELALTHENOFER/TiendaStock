@@ -153,42 +153,5 @@
         </div>
         @endif
 
-        <!-- Recent Activity -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
-            <div class="mb-6">
-                <h3 class="text-xl font-bold text-gray-900 flex items-center">
-                    <div class="w-1 h-6 bg-brand-300 rounded mr-3"></div>
-                    Actividad Reciente
-                </h3>
-            </div>
-            <div class="space-y-4">
-                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-brand-300">
-                    <div class="flex-shrink-0">
-                        <div class="h-10 w-10 bg-brand-300 rounded-full flex items-center justify-center">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900">Nuevo producto agregado</p>
-                        <p class="text-sm text-gray-500">Producto "Ejemplo" fue creado hace 2 horas</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-sky-400">
-                    <div class="flex-shrink-0">
-                        <div class="h-10 w-10 bg-sky-500 rounded-full flex items-center justify-center">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900">Categoría actualizada</p>
-                        <p class="text-sm text-gray-500">Categoría "Electrónicos" fue modificada</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </x-app-layout>

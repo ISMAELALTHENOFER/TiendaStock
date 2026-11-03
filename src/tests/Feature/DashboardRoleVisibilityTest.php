@@ -46,7 +46,9 @@ class DashboardRoleVisibilityTest extends TestCase
 
         $response = $this->actingAs($user)->get('/dashboard');
 
-        $response->assertDontSee('react-root')->assertSee('Actividad Reciente');
+        $response->assertDontSee('react-root')->assertDontSee('Actividad Reciente')
+            ->assertDontSee('Producto "Ejemplo"')->assertDontSee('Categoría "Electrónicos"')
+            ->assertSee('Total Productos')->assertSee('Acciones Rápidas')->assertSee('Nueva Venta (POS)');
     }
 
     public function test_dashboard_route_driver_restores_the_legacy_dashboard_without_global_rollback(): void
@@ -59,7 +61,8 @@ class DashboardRoleVisibilityTest extends TestCase
 
         $response = $this->actingAs($user)->get('/dashboard');
 
-        $response->assertDontSee('react-root')->assertSee('Actividad Reciente');
+        $response->assertDontSee('react-root')->assertDontSee('Actividad Reciente')
+            ->assertSee('Total Productos')->assertSee('Acciones Rápidas');
     }
 
     public function test_desktop_sidebar_is_an_independent_viewport_height_region(): void
