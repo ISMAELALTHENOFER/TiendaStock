@@ -66,4 +66,14 @@ class DatabaseIntegrityTest extends TestCase
             DB::purge('mysql_lock_test');
         }
     }
+
+    public function test_mysql_unicode_collation_matches_accents_and_case_in_product_duplicate_checks(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $category = Categoria::factory()->create();
+        Producto::factory()->create(['categoria_id' => $category->id, 'nombre' => 'Árbol Feliz']);
+
+        $this->actingAs($admin)->getJson(route('productos.check-duplicate', ['nombre' => 'árbol feliz']))
+            ->assertOk()->assertJson(['exists' => true, 'nombre' => 'Árbol Feliz']);
+    }
 }

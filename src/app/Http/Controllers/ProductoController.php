@@ -290,7 +290,7 @@ class ProductoController extends Controller
             'nombre' => ['required', 'string', 'min:2'],
         ]);
 
-        $producto = Producto::whereRaw('LOWER(nombre) = ?', [strtolower($validated['nombre'])])->first();
+        $producto = Producto::whereRaw('LOWER(nombre) = ?', [mb_strtolower($validated['nombre'], 'UTF-8')])->first();
 
         if ($producto) {
             return response()->json([
