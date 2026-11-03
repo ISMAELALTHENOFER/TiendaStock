@@ -141,6 +141,28 @@ class ProductoReactViewContractTest extends TestCase
         }
     }
 
+    public function test_layout_exposes_installable_pwa_metadata_using_existing_icons(): void
+    {
+        $layout = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+        $manifest = file_get_contents(public_path('manifest.webmanifest'));
+        $data = json_decode($manifest, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertStringContainsString('rel="manifest"', $layout);
+        $this->assertStringContainsString('name="theme-color" content="#006948"', $layout);
+        $this->assertStringContainsString('rel="apple-touch-icon"', $layout);
+        $this->assertSame('standalone', $data['display']);
+        $this->assertFileExists(public_path(ltrim($data['icons'][0]['src'], '/')));
+    }
+
+    public function test_react_page_modules_are_lazy_loaded_with_shared_loading_state(): void
+    {
+        $app = file_get_contents(base_path('resources/js/react/app.jsx'));
+
+        $this->assertStringContainsString('lazy(() => import(', $app);
+        $this->assertStringContainsString('<Suspense fallback={<LoadingState', $app);
+        $this->assertStringContainsString("JSON_HEX_TAG", file_get_contents(base_path('resources/views/react/app.blade.php')));
+    }
+
     public function test_react_product_form_preserves_money_inline_category_and_image_contracts(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));

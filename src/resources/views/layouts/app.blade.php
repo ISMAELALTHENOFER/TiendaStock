@@ -8,6 +8,9 @@
 
     <title>{{ config('app.name', 'TiendaStock') }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#006948">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-tiendastock.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

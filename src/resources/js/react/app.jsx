@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AppShell } from './layout/AppShell.jsx';
-import { Dashboard } from './dashboard.jsx';
 import { Toast } from './components/ui/Toast.jsx';
-import { SalesHistory, SalesPos, SaleShow } from './sales.jsx';
-import { ProductList, ProductForm } from './productos.jsx';
-import { CategoriaGrid } from './categorias.jsx';
-import { UserList, UserForm } from './users.jsx';
-import { ConfirmPassword, Login, Profile } from './auth.jsx';
+import { LoadingState } from './components/ui/LoadingState.jsx';
+
+const Dashboard = lazy(() => import('./dashboard.jsx').then((module) => ({ default: module.Dashboard })));
+const SalesHistory = lazy(() => import('./sales.jsx').then((module) => ({ default: module.SalesHistory })));
+const SalesPos = lazy(() => import('./sales.jsx').then((module) => ({ default: module.SalesPos })));
+const SaleShow = lazy(() => import('./sales.jsx').then((module) => ({ default: module.SaleShow })));
+const ProductList = lazy(() => import('./productos.jsx').then((module) => ({ default: module.ProductList })));
+const ProductForm = lazy(() => import('./productos.jsx').then((module) => ({ default: module.ProductForm })));
+const CategoriaGrid = lazy(() => import('./categorias.jsx').then((module) => ({ default: module.CategoriaGrid })));
+const UserList = lazy(() => import('./users.jsx').then((module) => ({ default: module.UserList })));
+const UserForm = lazy(() => import('./users.jsx').then((module) => ({ default: module.UserForm })));
+const ConfirmPassword = lazy(() => import('./auth.jsx').then((module) => ({ default: module.ConfirmPassword })));
+const Login = lazy(() => import('./auth.jsx').then((module) => ({ default: module.Login })));
+const Profile = lazy(() => import('./auth.jsx').then((module) => ({ default: module.Profile })));
 
 export default function App({ props }) {
     const [toastVisible, setToastVisible] = useState(true);
@@ -29,6 +37,7 @@ export default function App({ props }) {
         'admin.users.edit': <UserForm usuario={props.usuario} routes={props.routes} />,
     }[props.page] || <Dashboard user={props.user} metrics={props.metrics} categorias={props.categorias} routes={props.routes} />;
 
-    if (props.page === 'login' || props.page === 'password.confirm') return page;
-    return <><AppShell user={props.user} routes={props.routes} activePage={props.page}>{page}</AppShell><Toast message={toastVisible ? props.flash?.success || props.flash?.error || props.flash?.warning || props.flash?.info : null} type={flashType} onClose={() => setToastVisible(false)} /></>;
+    const content = <Suspense fallback={<LoadingState label="Cargando página…" />}>{page}</Suspense>;
+    if (props.page === 'login' || props.page === 'password.confirm') return content;
+    return <><AppShell user={props.user} routes={props.routes} activePage={props.page}>{content}</AppShell><Toast message={toastVisible ? props.flash?.success || props.flash?.error || props.flash?.warning || props.flash?.info : null} type={flashType} onClose={() => setToastVisible(false)} /></>;
 }
