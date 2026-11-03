@@ -240,7 +240,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
                         </div>
-                        <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} />
+                        {routes.canViewProductCost ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
                         <MoneyInput label="Precio de Venta" name="precio_venta" initial={producto?.precio_venta ?? 0} error={errors?.precio_venta?.[0]} />
                         <div>
                             <label htmlFor="talle-field" className="block text-sm font-medium text-ink">Talle</label>
@@ -527,9 +527,9 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                         <td className="px-4 py-3"><Badge tone="neutral">{producto.categoria?.nombre ?? '—'}</Badge></td>
                                         <td className="px-4 py-3 text-muted">{producto.talle || '—'}</td>
                                         <td className="px-4 py-3 text-muted">{producto.color || '—'}</td>
-                                        <td className="px-4 py-3 text-right">{formatMoney(producto.precio_compra)}</td>
+                                        {routes.canViewProductCost && <td className="px-4 py-3 text-right">{formatMoney(producto.precio_compra)}</td>}
                                         <td className="px-4 py-3 text-right">{formatMoney(producto.precio_venta)}</td>
-                                         <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>
+                                         {routes.canViewProductCost && <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>}
                                          <td className="px-4 py-3 text-right tabular-nums">
                                              <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
@@ -559,23 +559,23 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Talle</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{producto.talle || '—'}</dd>
-                                    </div>
-                                     <div className="data-card-field">
+                                     </div>
+                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Color</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{producto.color || '—'}</dd>
-                                    </div>
-                                     <div className="data-card-field">
+                                      </div>
+                                      {routes.canViewProductCost && <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">P. Compra</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{formatMoney(producto.precio_compra)}</dd>
-                                    </div>
+                                    </div>}
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">P. Venta</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{formatMoney(producto.precio_venta)}</dd>
                                     </div>
-                                     <div className="data-card-field">
-                                        <dt className="text-xs uppercase tracking-wide text-muted">Ganancia</dt>
-                                         <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
-                                    </div>
+                                      {routes.canViewProductCost && <div className="data-card-field">
+                                         <dt className="text-xs uppercase tracking-wide text-muted">Ganancia</dt>
+                                          <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
+                                     </div>}
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Stock</dt>
                                         <dd className="mt-0.5 font-medium text-ink">
@@ -652,11 +652,11 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                             ['Color', productoViendo.color || '—'],
                         ].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words font-medium text-ink">{value}</dd></div>)}
                     </dl>
-                    <dl className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <dl className={`grid grid-cols-1 divide-y divide-border border-y border-border ${routes.canViewProductCost ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-1'}`}>
                         {[
-                            ['Costo', productoViendo.precio_compra],
+                            ...(routes.canViewProductCost ? [['Costo', productoViendo.precio_compra]] : []),
                             ['Precio de venta', productoViendo.precio_venta],
-                            ['Ganancia por unidad', productoViendo.precio_venta - productoViendo.precio_compra],
+                            ...(routes.canViewProductCost ? [['Ganancia por unidad', productoViendo.precio_venta - productoViendo.precio_compra]] : []),
                         ].map(([label, value]) => <div key={label} className="min-w-0 py-3 sm:px-3 first:sm:pl-0 last:sm:pr-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words text-base font-bold tabular-nums text-ink">{formatMoney(value)}</dd></div>)}
                     </dl>
                     {productoViendo.descripcion && <section aria-label="Descripción del producto" className="space-y-1"><h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Descripción</h4><p className="whitespace-pre-line break-words text-sm leading-6 text-ink">{productoViendo.descripcion}</p></section>}

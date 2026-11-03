@@ -99,6 +99,9 @@ class CategoriaController extends Controller
         }
 
         $productos = $productosQuery->paginate($this->pageSize($request))->withQueryString();
+        if ($request->user()?->role !== 'ADMIN') {
+            $productos->getCollection()->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
+        }
 
         return view('categorias.show', compact('categoria', 'productos'));
     }

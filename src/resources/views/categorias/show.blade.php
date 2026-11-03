@@ -63,7 +63,7 @@
                                 <tr>
                                     <th scope="col" class="px-5 py-3">Nombre</th>
                                     <th scope="col" class="px-5 py-3">Stock</th>
-                                    <th scope="col" class="px-5 py-3">Precio de Compra</th>
+                                    @if (auth()->user()->role === 'ADMIN')<th scope="col" class="px-5 py-3">Precio de Compra</th>@endif
                                     <th scope="col" class="px-5 py-3">Precio de Venta</th>
                                     <th scope="col" class="px-5 py-3"><span class="sr-only">Opciones</span></th>
                                 </tr>
@@ -73,7 +73,7 @@
                                     <tr class="hover:bg-surface-muted">
                                         <td class="px-5 py-4 font-semibold text-ink">{{ $producto->nombre }}</td>
                                         <td class="px-5 py-4 text-muted">{{ $producto->cantidad }}</td>
-                                        <td class="px-5 py-4 text-muted">{{ formato_pesos($producto->precio_compra) }}</td>
+                                        @if (auth()->user()->role === 'ADMIN')<td class="px-5 py-4 text-muted">{{ formato_pesos($producto->precio_compra) }}</td>@endif
                                         <td class="px-5 py-4 text-muted">{{ formato_pesos($producto->precio_venta) }}</td>
                                         <td class="px-5 py-4 text-right"><a href="{{ route('productos.show', $producto) }}" class="inline-flex min-h-11 items-center rounded-control px-3 font-semibold text-primary hover:bg-surface-muted">Ver</a></td>
                                     </tr>
@@ -89,7 +89,7 @@
                                     <span class="shrink-0 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-semibold text-ink">{{ $producto->cantidad }} u.</span>
                                 </div>
                                 <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                    <div><dt class="text-xs text-muted">P. Compra</dt><dd class="mt-1 font-medium text-ink">{{ formato_pesos($producto->precio_compra) }}</dd></div>
+                                    @if (auth()->user()->role === 'ADMIN')<div><dt class="text-xs text-muted">P. Compra</dt><dd class="mt-1 font-medium text-ink">{{ formato_pesos($producto->precio_compra) }}</dd></div>@endif
                                     <div><dt class="text-xs text-muted">P. Venta</dt><dd class="mt-1 font-medium text-ink">{{ formato_pesos($producto->precio_venta) }}</dd></div>
                                 </dl>
                                 <a href="{{ route('productos.show', $producto) }}" class="mt-4 inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-surface-muted">Ver producto</a>

@@ -106,6 +106,7 @@
                         </div>
 
                         {{-- Costo (precio_compra) — masked ARS + hidden numeric --}}
+                        @if (auth()->user()->role === 'ADMIN')
                         <div x-data="moneyInput({{ old('precio_compra', 0) }})">
                             <label class="block text-sm font-bold text-gray-900 mb-3">
                                 Costo
@@ -118,6 +119,9 @@
                             <input type="hidden" name="precio_compra" :value="raw">
                             @error('precio_compra') <p class="text-red-500 text-sm font-medium mt-2">{{ $message }}</p> @enderror
                         </div>
+                        @else
+                            <input type="hidden" name="precio_compra" value="0">
+                        @endif
 
                         {{-- Precio de Venta — masked ARS + hidden numeric --}}
                         <div x-data="moneyInput({{ old('precio_venta', 0) }})">

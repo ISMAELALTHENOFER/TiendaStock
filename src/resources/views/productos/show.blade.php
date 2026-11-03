@@ -77,6 +77,7 @@
 
             <!-- Información de Precios -->
             <div class="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                @if (auth()->user()->role === 'ADMIN')
                 <!-- Costo (precio_compra) -->
                 <div class="surface-panel overflow-hidden">
                     <div class="bg-blue-50 px-6 py-6">
@@ -84,6 +85,7 @@
                         <p class="text-3xl font-bold text-blue-700 mt-2">{{ formato_pesos($producto->precio_compra) }}</p>
                     </div>
                 </div>
+                @endif
 
                 <!-- Precio de Venta -->
                 <div class="surface-panel overflow-hidden">
@@ -93,6 +95,7 @@
                     </div>
                 </div>
 
+                @if (auth()->user()->role === 'ADMIN')
                 <!-- Ganancia por Unidad -->
                 <div class="surface-panel overflow-hidden">
                     <div class="bg-green-50 px-6 py-6">
@@ -100,6 +103,7 @@
                         <p class="text-3xl font-bold text-green-700 mt-2">{{ formato_pesos($producto->ganancia) }}</p>
                     </div>
                 </div>
+                @endif
             </div>
 
             <!-- Descripción -->

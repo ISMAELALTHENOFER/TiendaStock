@@ -32,16 +32,18 @@ class InventoryReadAccessTest extends TestCase
         $this->assertDatabaseMissing('categorias', ['nombre' => 'Denied']);
     }
 
-    public function test_inventory_managers_keep_complete_catalog_and_modification_access(): void
+    public function test_cost_is_visible_only_to_admin_while_inventory_managers_keep_access(): void
     {
         $categoria = Categoria::factory()->create();
         Producto::factory()->create(['nombre' => 'Zapatillas', 'categoria_id' => $categoria->id, 'precio_compra' => 999]);
 
-        foreach ([User::factory()->admin()->create(), User::factory()->controlStock()->create()] as $manager) {
-            $this->actingAs($manager)->getJson(route('productos.data'))
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->getJson(route('productos.data'))
                 ->assertOk()->assertJsonPath('0.precio_compra', '999.00');
-            $this->get(route('categorias.index'))->assertOk();
-        }
+        $controlStock = User::factory()->controlStock()->create();
+        $this->actingAs($controlStock)->getJson(route('productos.data'))
+            ->assertOk()->assertJsonMissingPath('0.precio_compra')->assertJsonMissingPath('0.ganancia');
+        $this->get(route('categorias.index'))->assertOk();
     }
 
     public function test_guest_cannot_read_catalog_or_save(): void

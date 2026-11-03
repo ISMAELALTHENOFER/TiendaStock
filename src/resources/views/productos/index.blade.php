@@ -182,9 +182,9 @@
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Categoría</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Talle</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Color</th>
-                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Compra</th>
+                                    @if (auth()->user()->role === 'ADMIN')<th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Compra</th>@endif
                                     <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Venta</th>
-                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Ganancia</th>
+                                    @if (auth()->user()->role === 'ADMIN')<th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Ganancia</th>@endif
                                     <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
                                     <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
                                 </tr>
@@ -218,11 +218,12 @@
                                         </td>
                                         <td class="px-6 py-4 text-gray-600" x-text="producto.talle ?? '—'"></td>
                                         <td class="px-6 py-4 text-gray-600" x-text="producto.color ?? '—'"></td>
-                                        <td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_compra)"></td>
+                                        @if (auth()->user()->role === 'ADMIN')<td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_compra)"></td>@endif
                                         <td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_venta)"></td>
-                                        <td class="px-6 py-4 text-right">
+                                        @if (auth()->user()->role === 'ADMIN')<td class="px-6 py-4 text-right">
                                             <span class="text-green-600 font-bold" x-text="formatCurrency(calcularGanancia(producto))"></span>
                                         </td>
+                                        @endif
                                         <td class="px-6 py-4 text-center">
                                             <span
                                                 class="inline-block px-3 py-1 rounded-full text-xs font-bold"
@@ -336,18 +337,18 @@
                                         <span class="text-gray-500 text-xs">Color</span>
                                         <p class="font-medium text-gray-900" x-text="producto.color ?? '—'"></p>
                                     </div>
-                                    <div>
+                                    @if (auth()->user()->role === 'ADMIN')<div>
                                         <span class="text-gray-500 text-xs">P. Compra</span>
                                         <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_compra)"></p>
-                                    </div>
+                                    </div>@endif
                                     <div>
                                         <span class="text-gray-500 text-xs">P. Venta</span>
                                         <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_venta)"></p>
                                     </div>
-                                    <div>
+                                    @if (auth()->user()->role === 'ADMIN')<div>
                                         <span class="text-gray-500 text-xs">Ganancia</span>
                                         <p class="font-bold text-green-600" x-text="formatCurrency(calcularGanancia(producto))"></p>
-                                    </div>
+                                    </div>@endif
                                     <div class="text-right">
                                         <span class="text-gray-500 text-xs">Stock</span>
                                         <p>

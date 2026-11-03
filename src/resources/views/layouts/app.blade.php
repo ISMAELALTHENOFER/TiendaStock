@@ -49,6 +49,7 @@
                 ->filter()
                 ->all(),
             'routes' => [
+                'canViewProductCost' => Auth::user()->role === 'ADMIN',
                 'dashboard' => route('dashboard'),
                 'ventas' => route('ventas.index'),
                 'ventasPos' => route('ventas.pos'),

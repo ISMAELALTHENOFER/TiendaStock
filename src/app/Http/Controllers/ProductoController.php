@@ -57,6 +57,9 @@ class ProductoController extends Controller
         }
 
         $productos = $query->get();
+        if ($request->user()?->role !== 'ADMIN') {
+            $productos->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
+        }
 
         return response()->json($productos)
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -72,6 +75,9 @@ class ProductoController extends Controller
     public function store(StoreProductoRequest $request)
     {
         $data = $request->validated();
+        if ($request->user()?->role !== 'ADMIN') {
+            $data['precio_compra'] = 0;
+        }
 
         $newImage = $request->hasFile('imagen') ? $request->file('imagen')->store('productos', 'public') : null;
         if ($request->hasFile('imagen') && ! $newImage) {
@@ -106,11 +112,17 @@ class ProductoController extends Controller
 
     public function show(Producto $producto)
     {
+        if (request()->user()?->role !== 'ADMIN') {
+            $producto->makeHidden(['precio_compra', 'ganancia']);
+        }
         return view('productos.show', compact('producto'));
     }
 
     public function edit(Producto $producto)
     {
+        if (request()->user()?->role !== 'ADMIN') {
+            $producto->makeHidden(['precio_compra', 'ganancia']);
+        }
         $categorias = Categoria::orderBy('nombre')->get();
 
         return view('productos.edit', compact('producto', 'categorias'));
@@ -119,6 +131,9 @@ class ProductoController extends Controller
     public function update(UpdateProductoRequest $request, Producto $producto)
     {
         $data = $request->validated();
+        if ($request->user()?->role !== 'ADMIN') {
+            unset($data['precio_compra']);
+        }
         $stockOriginal = (int) $data['stock_original'];
         unset($data['stock_original']);
 
