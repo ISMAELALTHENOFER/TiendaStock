@@ -34,9 +34,11 @@
             && ($routeDriver ?? 'react') === 'react';
     @endphp
 
-    @if ($useReact && in_array($routeName, ['dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'categorias.create', 'categorias.edit', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
+    @if ($useReact && in_array($routeName, ['profile.edit', 'dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'categorias.create', 'categorias.edit', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
         @include('react.app', ['props' => [
             'page' => $routeName,
+            'status' => session('status'),
+            'userProfile' => Auth::user()->only(['name', 'username', 'email']),
             'user' => [
                 'name' => Auth::user()->name,
                 'username' => Auth::user()->username,
@@ -49,6 +51,8 @@
                 ->filter()
                 ->all(),
             'routes' => [
+                'profile' => route('profile.update'),
+                'passwordUpdate' => route('password.update'),
                 'currentUserId' => Auth::id(),
                 'canViewProductCost' => Auth::user()->role === 'ADMIN',
                 'dashboard' => route('dashboard'),
@@ -75,6 +79,8 @@
             'usuario' => $usuario?->toArray(),
             'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos']),
             'errors' => $errors->getBag('default')->toArray(),
+            'passwordErrors' => $errors->getBag('updatePassword')->toArray(),
+            'old' => old(),
         ]])
     @else
     <div x-data="{ sidebarOpen: false, sidebarCollapsed: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-canvas lg:h-dvh lg:overflow-hidden">
@@ -102,7 +108,7 @@
 
     @stack('scripts')
 
-    @if (! $useReact)
+    @if (! $useReact || $routeName === 'profile.edit')
         <x-confirm-dialog />
         <x-flash-toast />
     @endif

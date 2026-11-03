@@ -21,6 +21,9 @@
 
 <body class="font-sans text-gray-900 antialiased">
     <div class="min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 {{ isset($brand) ? 'login-page' : 'bg-stone-50' }}" style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));">
+        @if (request()->routeIs('login') && config('frontend.driver', 'blade') === 'react' && config('frontend.routes.login', 'react') === 'react')
+            {{ $slot }}
+        @else
         <div class="w-full max-w-md {{ isset($brand) ? 'login-frame' : '' }}">
             @if ($showLogo && ! isset($brand))
                 <div class="flex justify-center mb-6">
@@ -46,6 +49,7 @@
                 @endif
             </div>
         </div>
+        @endif
     </div>
 </body>
 

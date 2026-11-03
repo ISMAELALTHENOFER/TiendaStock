@@ -3,7 +3,11 @@
     data-props="{{ json_encode($props, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}"
 >
     <noscript>
-        @if (($props['page'] ?? null) === 'ventas.index')
+        @if (($props['page'] ?? null) === 'login')
+            Iniciar sesión en TiendaStock Usuario Contraseña Recordarme
+        @elseif (($props['page'] ?? null) === 'profile.edit')
+            Mi perfil Información del perfil Cambiar contraseña
+        @elseif (($props['page'] ?? null) === 'ventas.index')
             @if (empty($props['sales']['data'] ?? []))
                 No hay ventas registradas.
             @else

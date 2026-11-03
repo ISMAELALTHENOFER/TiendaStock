@@ -13,6 +13,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
+        config(['frontend.driver' => 'blade']);
         $user = User::factory()->create();
 
         $response = $this
@@ -79,6 +80,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_forms_fill_the_available_content_width_without_changing_actions(): void
     {
+        config(['frontend.driver' => 'blade']);
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get('/profile');
