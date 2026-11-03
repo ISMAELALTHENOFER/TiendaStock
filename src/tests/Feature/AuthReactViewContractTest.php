@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,14 +46,16 @@ class AuthReactViewContractTest extends TestCase
         $this->post('/login', [])->assertSessionHasErrors(['username', 'password']);
         $user = User::factory()->create();
         $this->actingAs($user)->patch('/profile', [])->assertSessionHasErrors(['name', 'username', 'email']);
-        $this->actingAs($user)->put('/password', [])->assertSessionHasErrors(['current_password', 'password']);
+        $this->actingAs($user)->put('/password', [])->assertSessionHasErrorsIn('updatePassword', ['current_password', 'password']);
     }
 
     public function test_confirm_password_uses_react_and_keeps_route_specific_blade_fallback(): void
     {
         $user = User::factory()->create();
-        $this->actingAs($user)->get('/confirm-password')
-            ->assertOk()->assertSee('id="react-root"', false)->assertSee(route('password.confirm'));
+        $response = $this->actingAs($user)->get('/confirm-password');
+        $response->assertOk()->assertSee('id="react-root"', false);
+        $props = $this->reactProps($response->getContent());
+        $this->assertSame(route('password.confirm'), $props['routes']['passwordConfirm']);
 
         config(['frontend.routes.password.confirm' => 'blade']);
         $this->assertSame('blade', config('frontend.routes.password.confirm'));
@@ -76,13 +80,29 @@ class AuthReactViewContractTest extends TestCase
     public function test_auth_react_hosts_receive_laravel_generated_action_urls_and_root_still_redirects_to_login(): void
     {
         $this->get('/')->assertRedirect('/login');
-        $this->get('/login')->assertSee(route('login'));
-        $this->actingAs(User::factory()->create())->get('/profile')
-            ->assertSee(route('profile.update'))->assertSee(route('password.update'));
+        $login = $this->get('/login');
+        $this->assertSame(route('login'), $this->reactProps($login->getContent())['routes']['login']);
+        $profile = $this->actingAs(User::factory()->create())->get('/profile');
+        $profileProps = $this->reactProps($profile->getContent());
+        $this->assertSame(route('profile.update'), $profileProps['routes']['profile']);
+        $this->assertSame(route('password.update'), $profileProps['routes']['passwordUpdate']);
 
         $hosts = file_get_contents(resource_path('views/layouts/app.blade.php')) . file_get_contents(resource_path('views/auth/login.blade.php')) . file_get_contents(resource_path('views/auth/confirm-password.blade.php'));
         foreach (["'login' => route('login')", "'profile' => route('profile.update')", "'passwordUpdate' => route('password.update')", "'passwordConfirm' => route('password.confirm')"] as $contract) {
             $this->assertStringContainsString($contract, $hosts);
         }
+    }
+
+    private function reactProps(string $html): array
+    {
+        $document = new DOMDocument;
+        $previousErrorMode = libxml_use_internal_errors(true);
+        $document->loadHTML($html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousErrorMode);
+        $node = (new DOMXPath($document))->query('//*[@id="react-root"]')->item(0);
+        $this->assertNotNull($node);
+
+        return json_decode($node->getAttribute('data-props'), true, flags: JSON_THROW_ON_ERROR);
     }
 }

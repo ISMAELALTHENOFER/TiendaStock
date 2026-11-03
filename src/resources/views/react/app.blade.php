@@ -7,6 +7,8 @@
             Iniciar sesión en TiendaStock Usuario Contraseña Recordarme
         @elseif (($props['page'] ?? null) === 'profile.edit')
             Mi perfil Información del perfil Cambiar contraseña
+        @elseif (($props['page'] ?? null) === 'password.confirm')
+            Confirma tu contraseña Contraseña Confirmar
         @elseif (($props['page'] ?? null) === 'ventas.index')
             @if (empty($props['sales']['data'] ?? []))
                 No hay ventas registradas.
