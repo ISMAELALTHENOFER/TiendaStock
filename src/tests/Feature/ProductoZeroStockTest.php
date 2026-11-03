@@ -181,7 +181,13 @@ class ProductoZeroStockTest extends TestCase
             'activo' => true,
         ]);
 
-        $response = $this->actingAs($ventas)->post('/ventas', [
+        $cart = $this->actingAs($ventas)->postJson('/ventas/cart', [
+            'producto_id' => $producto->id,
+            'precio_venta' => '25.00',
+        ])->assertOk()->json('id');
+
+        $response = $this->post('/ventas', [
+            'cart_id' => $cart,
             'items' => [
                 ['producto_id' => $producto->id, 'cantidad' => 3],
             ],
@@ -207,11 +213,18 @@ class ProductoZeroStockTest extends TestCase
         $producto = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
             'precio_venta' => 25.00,
-            'cantidad' => 0,
-            'activo' => true, // saving event forces false on create
+            'cantidad' => 1,
+            'activo' => true,
         ]);
 
-        $response = $this->actingAs($ventas)->postJson('/ventas', [
+        $cart = $this->actingAs($ventas)->postJson('/ventas/cart', [
+            'producto_id' => $producto->id,
+            'precio_venta' => '25.00',
+        ])->assertOk()->json('id');
+        $producto->update(['cantidad' => 0]);
+
+        $response = $this->postJson('/ventas', [
+            'cart_id' => $cart,
             'items' => [
                 ['producto_id' => $producto->id, 'cantidad' => 1],
             ],

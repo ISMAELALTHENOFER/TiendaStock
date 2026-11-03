@@ -22,6 +22,13 @@ class VentaPosTest extends TestCase
 
     private Producto $producto;
 
+    private function quote(): int
+    {
+        return $this->actingAs($this->userVentas)->postJson('/ventas/cart', [
+            'producto_id' => $this->producto->id, 'precio_venta' => $this->producto->precio_venta,
+        ])->assertOk()->json('id');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -110,9 +117,24 @@ class VentaPosTest extends TestCase
 
     // ─── Create Sale ───────────────────────────────────────────
 
+    public function test_sale_total_cannot_be_reduced_by_a_manipulated_request(): void
+    {
+        $this->actingAs($this->userVentas)->post('/ventas', [
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 1]],
+            'subtotal' => 1,
+            'total' => 1,
+            'pago_con' => 25,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
+        ]);
+
+        $this->assertDatabaseMissing('ventas', ['user_id' => $this->userVentas->id, 'total' => 1]);
+    }
+
     public function test_can_create_complete_sale(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 3],
             ],
@@ -165,6 +187,7 @@ class VentaPosTest extends TestCase
     public function test_can_create_sale_with_uber_tipo_entrega(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 1],
             ],
@@ -231,6 +254,7 @@ class VentaPosTest extends TestCase
     public function test_insufficient_stock_returns_validation_error(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 999],
             ],
@@ -250,6 +274,7 @@ class VentaPosTest extends TestCase
     public function test_pago_con_less_than_total_returns_validation_error(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 1],
             ],
@@ -267,7 +292,8 @@ class VentaPosTest extends TestCase
 
     public function test_transactional_stock_failure_redirects_to_pos_and_rolls_back(): void
     {
-        $response = $this->actingAs($this->userVentas)->post('/ventas', [
+        $response = $this->actingAs($this->userVentas)->from(route('ventas.pos'))->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 6],
                 ['producto_id' => $this->producto->id, 'cantidad' => 6],
@@ -280,7 +306,7 @@ class VentaPosTest extends TestCase
         ]);
 
         $response->assertRedirect(route('ventas.pos'));
-        $response->assertSessionHas('error', 'Stock insuficiente para Remera Test. Disponible: 4, solicitado: 6');
+        $response->assertSessionHasErrors('items.1.cantidad');
         $this->assertDatabaseCount('ventas', 0);
         $this->assertDatabaseCount('venta_items', 0);
         $this->assertSame(10, $this->producto->fresh()->cantidad);
@@ -291,6 +317,7 @@ class VentaPosTest extends TestCase
         // When FormRequest validation fails (insufficient stock via withValidator),
         // NO venta or venta_items records should be created
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 999],
             ],
@@ -312,6 +339,7 @@ class VentaPosTest extends TestCase
     {
         // When a sale succeeds, ALL records (venta + items + stock decrement) must exist
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 2],
                 ['producto_id' => $this->producto->id, 'cantidad' => 3],
@@ -336,6 +364,7 @@ class VentaPosTest extends TestCase
     {
         // Pre-create a completed sale via the controller (not factory)
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 4],
             ],
@@ -366,6 +395,7 @@ class VentaPosTest extends TestCase
     {
         // Create the venta
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 2],
             ],

@@ -6,8 +6,10 @@ use App\Http\Requests\StoreVentaRequest;
 use App\Models\Producto;
 use App\Models\Venta;
 use App\Services\ActivityRecorder;
+use App\Services\SaleCartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class VentaController extends Controller
 {
@@ -70,59 +72,82 @@ class VentaController extends Controller
     {
         $validated = $request->validated();
 
-        try {
-            $venta = DB::transaction(function () use ($validated) {
-                $venta = Venta::create([
-                    'user_id' => auth()->id(),
-                    'cliente_nombre' => $validated['cliente_nombre'] ?? null,
-                    'subtotal' => $validated['subtotal'],
-                    'descuento' => $validated['descuento'] ?? 0,
-                    'impuesto' => $validated['impuesto'] ?? 0,
-                    'total' => $validated['total'],
-                    'pago_con' => $validated['pago_con'],
-                    'cambio' => $validated['pago_con'] - $validated['total'],
-                    'metodo_pago' => $validated['metodo_pago'],
-                    'tipo_entrega' => $validated['tipo_entrega'],
-                    'estado' => 'completada',
-                ]);
+        $venta = DB::transaction(function () use ($validated, $request) {
+            $cart = DB::table('sale_carts')->where('id', $validated['cart_id'])
+                ->where('user_id', $request->user()->id)->whereNull('consumed_at')->lockForUpdate()->first();
+            if (! $cart) {
+                throw ValidationException::withMessages(['cart_id' => 'El carrito ya no está disponible.']);
+            }
 
-                foreach ($validated['items'] as $item) {
-                    $producto = Producto::where('id', $item['producto_id'])
-                        ->lockForUpdate()
-                        ->firstOrFail();
-
-                    if ($item['cantidad'] > $producto->cantidad) {
-                        throw new \RuntimeException(
-                            "Stock insuficiente para {$producto->nombre}. ".
-                            "Disponible: {$producto->cantidad}, solicitado: {$item['cantidad']}"
-                        );
-                    }
-
-                    $venta->items()->create([
-                        'producto_id' => $producto->id,
-                        'cantidad' => $item['cantidad'],
-                        'precio_unitario' => $producto->precio_venta,
-                        'subtotal' => $item['cantidad'] * $producto->precio_venta,
-                    ]);
-
-                    // Asignar y save() (no decrement()) para disparar el
-                    // evento 'saving' del modelo Producto, que fuerza activo=false
-                    // cuando la cantidad llega a 0. La transacción + lockForUpdate
-                    // garantizan atomicidad equivalente al decrement().
-                    $producto->cantidad -= $item['cantidad'];
-                    $producto->save();
+            $prices = DB::table('sale_cart_items')->where('sale_cart_id', $cart->id)->get()->keyBy('producto_id');
+            $ids = collect($validated['items'])->pluck('producto_id')->unique()->sort()->values();
+            $products = Producto::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $quantities = [];
+            $subtotal = 0;
+            foreach ($validated['items'] as $index => $item) {
+                $id = $item['producto_id'];
+                $product = $products->get($id);
+                $price = $prices->get($id);
+                if (! $product || ! $price || ! $product->activo) {
+                    throw ValidationException::withMessages(["items.$index.producto_id" => 'El producto no está disponible en el carrito.']);
                 }
+                $quantities[$id] = ($quantities[$id] ?? 0) + $item['cantidad'];
+                if ($quantities[$id] > $product->cantidad) {
+                    throw ValidationException::withMessages(["items.$index.cantidad" => "Stock insuficiente para {$product->nombre}. Disponible: {$product->cantidad}."]);
+                }
+                if ($price->price_cents > intdiv(9999999999 - $subtotal, $item['cantidad'])) {
+                    throw ValidationException::withMessages(['items' => 'El importe de la venta supera el máximo permitido.']);
+                }
+                $subtotal += $price->price_cents * $item['cantidad'];
+            }
+            $discount = SaleCartService::cents((string) ($validated['descuento'] ?? '0'));
+            $paid = SaleCartService::cents((string) $validated['pago_con']);
+            $total = $subtotal - $discount;
+            if ($discount * 2 > $subtotal || $total <= 0) {
+                throw ValidationException::withMessages(['descuento' => 'El descuento no puede superar el 50 % del subtotal.']);
+            }
+            if ($paid < $total) {
+                throw ValidationException::withMessages(['pago_con' => 'El monto recibido debe ser mayor o igual al total de la venta.']);
+            }
+            $venta = Venta::create([
+                'user_id' => $request->user()->id,
+                'cliente_nombre' => $validated['cliente_nombre'] ?? null,
+                'subtotal' => SaleCartService::amount($subtotal),
+                'descuento' => SaleCartService::amount($discount),
+                'impuesto' => '0.00',
+                'total' => SaleCartService::amount($total),
+                'pago_con' => SaleCartService::amount($paid),
+                'cambio' => SaleCartService::amount($paid - $total),
+                'metodo_pago' => $validated['metodo_pago'],
+                'tipo_entrega' => $validated['tipo_entrega'],
+                'estado' => 'completada',
+            ]);
+            foreach ($validated['items'] as $item) {
+                $price = $prices->get($item['producto_id'])->price_cents;
+                $venta->items()->create([
+                    'producto_id' => $item['producto_id'],
+                    'cantidad' => $item['cantidad'],
+                    'precio_unitario' => SaleCartService::amount($price),
+                    'subtotal' => SaleCartService::amount($price * $item['cantidad']),
+                ]);
+            }
+            foreach ($quantities as $id => $quantity) {
+                $product = $products->get($id);
+                $product->cantidad -= $quantity;
+                $product->save();
+            }
+            DB::table('sale_carts')->where('id', $cart->id)->update(['consumed_at' => now(), 'updated_at' => now()]);
 
-                return $venta;
-            });
-        } catch (\RuntimeException $e) {
-            return redirect()->route('ventas.pos')
-                ->with('error', $e->getMessage());
-        }
+            return $venta;
+        });
 
         ActivityRecorder::recordAfterCommit(
             $request->user(), 'sale.created', 'Sale created', "Sale #{$venta->id} was created.", $venta
         );
+
+        if ($request->expectsJson()) {
+            return response()->json(['redirect' => route('ventas.show', $venta)]);
+        }
 
         return redirect()->route('ventas.show', $venta)
             ->with('success', "Venta #{$venta->id} registrada correctamente.");

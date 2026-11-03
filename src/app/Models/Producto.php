@@ -31,6 +31,8 @@ class Producto extends Model
     {
         return [
             'activo' => 'boolean',
+            'precio_compra' => 'decimal:2',
+            'precio_venta' => 'decimal:2',
         ];
     }
 

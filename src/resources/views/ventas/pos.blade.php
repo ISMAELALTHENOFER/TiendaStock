@@ -77,7 +77,7 @@
                                             </template>
                                         </p>
                                     </div>
-                                    <button @click="addToCart(product)"
+                                    <button @click="addToCart(product)" :disabled="adding || submitting"
                                         class="ml-3 flex-shrink-0 bg-brand-600 hover:bg-brand-700 text-white px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-200">
                                         + Agregar
                                     </button>
@@ -129,22 +129,22 @@
                                     </div>
                                     <div class="flex min-w-0 flex-wrap items-center gap-2">
                                         <button @click="decreaseQty(index)"
-                                            :disabled="item.cantidad <= 1"
+                                            :disabled="adding || submitting || item.cantidad <= 1"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-colors"
                                             :class="item.cantidad <= 1 ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'">−</button>
-                                        <input type="number" x-model="item.cantidad"
+                                        <input type="number" x-model="item.cantidad" :disabled="adding || submitting"
                                             @input.debounce="updateCart"
                                             min="1" :max="item.stock_disponible"
                                             class="w-16 h-10 text-center border-2 border-slate-200 rounded-lg text-sm font-semibold">
                                         <button @click="increaseQty(index)"
-                                            :disabled="item.cantidad >= item.stock_disponible"
+                                            :disabled="adding || submitting || item.cantidad >= item.stock_disponible"
                                             class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-colors"
                                             :class="item.cantidad >= item.stock_disponible ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'">+</button>
                                     </div>
                                     <div class="ml-auto min-w-[80px] text-right">
                                         <p class="font-bold text-gray-900">$<span x-text="formatCurrency(item.cantidad * item.precio_venta)"></span></p>
                                     </div>
-                                    <button @click="removeFromCart(index)"
+                                    <button @click="removeFromCart(index)" :disabled="adding || submitting"
                                         aria-label="Quitar producto"
                                         class="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors p-3 rounded-lg"
                                         title="Quitar producto">
@@ -242,7 +242,7 @@
                                     class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-400 text-white py-3 rounded-lg font-bold text-lg transition-all duration-200"
                                     x-text="submitting ? 'Procesando...' : 'Cobrar'">
                                 </button>
-                                <button @click="clearCart"
+                                <button @click="clearCart" :disabled="adding || submitting"
                                     x-show="cart.length > 0"
                                     class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-all duration-200">
                                     Vaciar carrito
@@ -264,6 +264,8 @@ document.addEventListener('alpine:init', () => {
         searchResults: [],
         searching: false,
         cart: [],
+        cartId: null,
+        adding: false,
         metodoPago: 'efectivo',
         tipoEntrega: '',
         pagoCon: 0,
@@ -294,7 +296,7 @@ document.addEventListener('alpine:init', () => {
                 && this.total > 0
                 && (this.tipoEntrega === 'local' || this.tipoEntrega === 'uber')
                 && parseFloat(this.pagoCon || 0) >= this.total
-                && !this.submitting;
+                && !this.submitting && !this.adding;
         },
 
         async searchProducts() {
@@ -315,7 +317,21 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        addToCart(product) {
+        async addToCart(product) {
+            if (this.adding || this.submitting) return;
+            this.adding = true;
+            try {
+                const response = await fetch('/ventas/cart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify({ cart_id: this.cartId, producto_id: product.id, precio_venta: this.cart.find(item => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.errors ? Object.values(data.errors).flat().join('\n') : 'No se pudo agregar el producto.');
+                    return;
+                }
+                this.cartId = data.id;
             const existing = this.cart.find(item => item.producto_id === product.id);
 
             if (existing) {
@@ -326,10 +342,15 @@ document.addEventListener('alpine:init', () => {
                 this.cart.push({
                     producto_id: product.id,
                     nombre: product.nombre,
-                    precio_venta: parseFloat(product.precio_venta),
+                    precio_venta: parseFloat(data.precio_venta),
                     cantidad: 1,
                     stock_disponible: product.cantidad,
                 });
+            }
+            } catch (error) {
+                alert('No se pudo agregar el producto. Intenta nuevamente.');
+            } finally {
+                this.adding = false;
             }
         },
 
@@ -354,26 +375,60 @@ document.addEventListener('alpine:init', () => {
         },
 
         async removeFromCart(index) {
+            if (this.adding || this.submitting) return;
             const item = this.cart[index];
-            const confirmed = await confirmDialogShow(
-                'Quitar producto',
-                '¿Eliminar "' + item.nombre + '" del carrito?',
-                'Sí, quitar',
-                'bg-red-600 hover:bg-red-700'
-            );
-            if (!confirmed) return;
-            this.cart.splice(index, 1);
-            if (this.cart.length === 0) {
-                this.pagoCon = 0;
-                this.descuento = 0;
+            this.adding = true;
+            try {
+                const confirmed = await confirmDialogShow(
+                    'Quitar producto',
+                    '¿Eliminar "' + item.nombre + '" del carrito?',
+                    'Sí, quitar',
+                    'bg-red-600 hover:bg-red-700'
+                );
+                if (!confirmed) return;
+                if (!await this.removeQuote(item.producto_id)) return;
+                this.cart.splice(index, 1);
+                if (this.cart.length === 0) {
+                    this.cartId = null;
+                    this.pagoCon = 0;
+                    this.descuento = 0;
+                }
+            } finally {
+                this.adding = false;
             }
         },
 
-        clearCart() {
-            if (this.cart.length === 0) return;
-            this.cart = [];
-            this.pagoCon = 0;
-            this.descuento = 0;
+        async clearCart() {
+            if (this.cart.length === 0 || this.adding || this.submitting) return;
+            this.adding = true;
+            try {
+                if (!await this.removeQuote()) return;
+                this.cart = [];
+                this.cartId = null;
+                this.pagoCon = 0;
+                this.descuento = 0;
+            } finally {
+                this.adding = false;
+            }
+        },
+
+        async removeQuote(productId = null) {
+            try {
+                const suffix = productId === null ? '' : `/${productId}`;
+                const response = await fetch(`/ventas/cart/${this.cartId}/items${suffix}`, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    alert(data.errors ? Object.values(data.errors).flat().join('\n') : (data.message || 'No se pudo actualizar el carrito.'));
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                alert('No se pudo actualizar el carrito. Intenta nuevamente.');
+                return false;
+            }
         },
 
         updateCart() {
@@ -391,6 +446,7 @@ document.addEventListener('alpine:init', () => {
             this.submitting = true;
 
             const payload = {
+                cart_id: this.cartId,
                 items: this.cart.map(item => ({
                     producto_id: item.producto_id,
                     cantidad: item.cantidad,
@@ -421,6 +477,8 @@ document.addEventListener('alpine:init', () => {
                     const data = await response.json();
                     if (data.errors) {
                         alert(Object.values(data.errors).flat().join('\n'));
+                    } else if (data.redirect) {
+                        window.location.href = data.redirect;
                     } else {
                         window.location.reload();
                     }

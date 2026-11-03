@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Venta;
 use App\Models\VentaItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -72,6 +73,27 @@ class VentaFoundationTest extends TestCase
 
         $foreignKeys = Schema::getForeignKeys('venta_items');
         $this->assertCount(2, $foreignKeys, 'venta_items table should have 2 foreign keys.');
+    }
+
+    public function test_sale_history_prevents_deleting_referenced_user_and_product(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $product = Producto::factory()->create();
+        $sale = Venta::factory()->create(['user_id' => $user->id]);
+        $item = VentaItem::factory()->create(['venta_id' => $sale->id, 'producto_id' => $product->id]);
+
+        foreach ([$user, $product] as $parent) {
+            try {
+                $parent->delete();
+                $this->fail('Deleting a referenced parent must fail.');
+            } catch (QueryException $exception) {
+                $this->assertNotEmpty($exception->getMessage());
+            }
+            $this->assertDatabaseHas('users', ['id' => $user->id]);
+            $this->assertDatabaseHas('productos', ['id' => $product->id]);
+            $this->assertDatabaseHas('ventas', ['id' => $sale->id]);
+            $this->assertDatabaseHas('venta_items', ['id' => $item->id]);
+        }
     }
 
     // ──────────────────────────────────────────────
@@ -393,18 +415,15 @@ class VentaFoundationTest extends TestCase
     public function test_store_venta_request_validates_pago_con_gte_total(): void
     {
         $user = User::factory()->ventas()->create();
-        $routeUrl = '/_test/ventas/validate-pago-gte';
-
-        Route::post($routeUrl, function (StoreVentaRequest $request) {
-            return response()->json(['ok' => true]);
-        })->middleware('web');
 
         $producto = Producto::factory()->create([
             'precio_venta' => 100.00,
             'cantidad' => 10,
         ]);
 
-        $response = $this->actingAs($user)->postJson($routeUrl, [
+        $cart = $this->actingAs($user)->postJson('/ventas/cart', ['producto_id' => $producto->id, 'precio_venta' => $producto->precio_venta])->json('id');
+        $response = $this->actingAs($user)->postJson('/ventas', [
+            'cart_id' => $cart,
             'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
             'subtotal' => 100,
             'total' => 100,
@@ -420,18 +439,15 @@ class VentaFoundationTest extends TestCase
     public function test_store_venta_request_validates_stock_sufficiency(): void
     {
         $user = User::factory()->ventas()->create();
-        $routeUrl = '/_test/ventas/validate-stock';
-
-        Route::post($routeUrl, function (StoreVentaRequest $request) {
-            return response()->json(['ok' => true]);
-        })->middleware('web');
 
         $producto = Producto::factory()->create([
             'precio_venta' => 100.00,
             'cantidad' => 2,
         ]);
 
-        $response = $this->actingAs($user)->postJson($routeUrl, [
+        $cart = $this->actingAs($user)->postJson('/ventas/cart', ['producto_id' => $producto->id, 'precio_venta' => $producto->precio_venta])->json('id');
+        $response = $this->actingAs($user)->postJson('/ventas', [
+            'cart_id' => $cart,
             'items' => [['producto_id' => $producto->id, 'cantidad' => 5]],
             'subtotal' => 500,
             'total' => 500,
@@ -459,6 +475,7 @@ class VentaFoundationTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->postJson($routeUrl, [
+            'cart_id' => 1,
             'items' => [['producto_id' => $producto->id, 'cantidad' => 2]],
             'subtotal' => 100,
             'total' => 100,
@@ -544,6 +561,7 @@ class VentaFoundationTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->postJson($routeUrl, [
+            'cart_id' => 1,
             'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
             'subtotal' => 50,
             'total' => 50,

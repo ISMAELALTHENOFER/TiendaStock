@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardActivityController;
 use App\Http\Controllers\DashboardAnalyticsController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SaleCartController;
 use App\Http\Controllers\VentaController;
 use App\Models\Categoria;
 use App\Models\Producto;
@@ -58,6 +59,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:ADMIN,Ventas')->group(function () {
         Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
         Route::get('/ventas/pos', [VentaController::class, 'create'])->name('ventas.pos');
+        Route::post('/ventas/cart', [SaleCartController::class, 'store'])->name('ventas.cart');
+        Route::delete('/ventas/cart/{cartId}/items/{productId?}', [SaleCartController::class, 'destroy'])
+            ->whereNumber('cartId')->whereNumber('productId')->name('ventas.cart.items.destroy');
         Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
         Route::get('/ventas/{venta}', [VentaController::class, 'show'])->name('ventas.show');
         Route::post('/ventas/{venta}/cancel', [VentaController::class, 'cancel'])->name('ventas.cancel');

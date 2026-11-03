@@ -115,6 +115,7 @@ async function postSale(payload, onError) {
     if (response.redirected) { window.location.assign(response.url); return true; }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) { onError(data.errors || { form: [data.message || 'No se pudo registrar la venta.'] }); return false; }
+    if (data.redirect) { window.location.assign(data.redirect); return true; }
     window.location.reload();
     return true;
 }
@@ -126,6 +127,9 @@ export function SalesPos({ routes, initialErrors = {} }) {
     const searchInput = useRef(null);
     const [searchError, setSearchError] = useState(false);
     const [cart, setCart] = useState([]);
+    const [cartId, setCartId] = useState(null);
+    const [adding, setAdding] = useState(false);
+    const cartBusy = useRef(false);
     const [delivery, setDelivery] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
     const [paid, setPaid] = useState('');
@@ -154,15 +158,43 @@ export function SalesPos({ routes, initialErrors = {} }) {
             if (request === searchRequest.current) setSearching(false);
         }
     };
-    const add = (product) => setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: product.precio_venta, cantidad: 1, stock: product.cantidad }]);
+    const add = async (product) => {
+        if (cartBusy.current) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch('/ventas/cart', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ cart_id: cartId, producto_id: product.id, precio_venta: cart.find((item) => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }) });
+            const data = await response.json();
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo agregar el producto.'] }); return; }
+            setCartId(data.id);
+            setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: data.precio_venta, cantidad: 1, stock: product.cantidad }]);
+        } catch { setErrors({ form: ['No se pudo agregar el producto. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
+    };
+    const remove = async (productId = null) => {
+        if (cartBusy.current || !cartId) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch(`/ventas/cart/${cartId}/items${productId === null ? '' : `/${productId}`}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
+            const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
+            setCart(remaining);
+            if (!remaining.length) { setCartId(null); setPaid(''); setDiscount(''); }
+        } catch { setErrors({ form: ['No se pudo actualizar el carrito. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
+    };
     const submit = async () => {
-        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting) return;
+        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || cartBusy.current) return;
+        cartBusy.current = true;
         setSubmitting(true); setErrors({});
         try {
-            await postSale({ items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), subtotal, descuento: parseMoney(discount), impuesto: 0, total, pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
+            await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
         } catch {
             setErrors({ form: ['No se pudo registrar la venta. Reintente.'] });
         } finally {
+            cartBusy.current = false;
             setSubmitting(false);
         }
     };
@@ -189,11 +221,11 @@ export function SalesPos({ routes, initialErrors = {} }) {
                 <Card className="min-w-0 space-y-4 p-4 sm:p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
                     {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2" role="region" aria-label="Artículos del carrito" tabIndex={0}>{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
-                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" disabled={adding || submitting} onClick={() => remove(item.producto_id)} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
                         <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
-                            <button type="button" disabled={item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
-                            <Input type="number" min="1" max={item.stock} step="1" value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
-                            <button type="button" disabled={item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
+                            <button type="button" disabled={adding || submitting || item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
+                            <Input type="number" min="1" max={item.stock} step="1" disabled={adding || submitting} value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                            <button type="button" disabled={adding || submitting || item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
                         </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
                     </div>)}</div>}
                 </Card>
@@ -209,7 +241,7 @@ export function SalesPos({ routes, initialErrors = {} }) {
                         </div>
                         <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
                             <div><p className="text-xs font-semibold uppercase text-muted">Precio unitario</p><p className="text-lg font-bold tabular-nums text-ink">{formatMoney(product.precio_venta)}</p></div>
-                            <Button type="button" disabled={available <= 0} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
+                            <Button type="button" disabled={available <= 0 || adding || submitting} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
                         </div>
                     </Card>;
                 })}</div>}
@@ -228,7 +260,7 @@ export function SalesPos({ routes, initialErrors = {} }) {
                     </fieldset>
                 </div>
                 <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
-                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" onClick={() => { setCart([]); setPaid(''); setDiscount(''); }} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
+                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting || adding} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => remove()} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
             </Card>
         </div>
     </div>;

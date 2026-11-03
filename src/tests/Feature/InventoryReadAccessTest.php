@@ -39,7 +39,7 @@ class InventoryReadAccessTest extends TestCase
 
         foreach ([User::factory()->admin()->create(), User::factory()->controlStock()->create()] as $manager) {
             $this->actingAs($manager)->getJson(route('productos.data'))
-                ->assertOk()->assertJsonPath('0.precio_compra', 999);
+                ->assertOk()->assertJsonPath('0.precio_compra', '999.00');
             $this->get(route('categorias.index'))->assertOk();
         }
     }
