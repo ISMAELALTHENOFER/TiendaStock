@@ -32,27 +32,25 @@
                     return true;
                 }
             }"
-            @submit.prevent="validar()">
+            @submit="if (!validar()) $event.preventDefault()">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 items-end">
                     <div>
                         <label for="sales-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
                         <input id="sales-search" type="search" name="buscar" value="{{ request('buscar') }}"
                             placeholder="Venta, cliente o usuario"
-                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-gray-700 bg-white">
+                            class="w-full px-4 py-3 md:py-2 text-base sm:text-sm border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 text-gray-700 bg-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
-                        <input type="text" id="filtro-desde" name="desde" value="{{ request('desde') }}"
-                            x-model="desde"
-                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
-                            placeholder="Seleccionar fecha">
+                        <label for="filtro-desde" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                        <input type="date" id="filtro-desde" name="desde" value="{{ request('desde') }}"
+                            x-model="desde" x-bind:max="hasta || null"
+                            class="w-full px-4 py-3 md:py-2 text-base sm:text-sm border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
-                        <input type="text" id="filtro-hasta" name="hasta" value="{{ request('hasta') }}"
-                            x-model="hasta"
-                            class="w-full px-4 py-3 md:py-2 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white cursor-pointer"
-                            placeholder="Seleccionar fecha">
+                        <label for="filtro-hasta" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                        <input type="date" id="filtro-hasta" name="hasta" value="{{ request('hasta') }}"
+                            x-model="hasta" x-bind:min="desde || null"
+                            class="w-full px-4 py-3 md:py-2 text-base sm:text-sm border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-300 focus:border-brand-300 transition-all text-gray-700 bg-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
@@ -230,41 +228,3 @@
         </div>
     </div>
 </x-app-layout>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const desdeEl = document.getElementById('filtro-desde');
-    const hastaEl = document.getElementById('filtro-hasta');
-
-    if (!desdeEl || !hastaEl || typeof flatpickr === 'undefined') return;
-
-    fpConfig = {
-        locale: 'es',
-        dateFormat: 'Y-m-d',
-        allowInput: false,
-        disableMobile: true,
-    };
-
-    const fpDesde = flatpickr(desdeEl, {
-        ...fpConfig,
-        onChange: function(selectedDates, dateStr) {
-            fpHasta.set('minDate', dateStr);
-        },
-    });
-
-    const fpHasta = flatpickr(hastaEl, {
-        ...fpConfig,
-        onChange: function(selectedDates, dateStr) {
-            fpDesde.set('maxDate', dateStr);
-        },
-    });
-
-    // Set initial min/max if values exist
-    @if(request('desde'))
-        fpHasta.set('minDate', '{{ request('desde') }}');
-    @endif
-    @if(request('hasta'))
-        fpDesde.set('maxDate', '{{ request('hasta') }}');
-    @endif
-});
-</script>

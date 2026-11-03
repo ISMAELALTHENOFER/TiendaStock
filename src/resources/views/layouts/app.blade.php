@@ -1,3 +1,9 @@
+@php
+    $routeName = request()->route()?->getName();
+    $routeDriver = config("frontend.routes.{$routeName}");
+    $useReact = config('frontend.driver', 'blade') === 'react'
+        && ($routeDriver ?? 'react') === 'react';
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -12,15 +18,12 @@
     <meta name="theme-color" content="#006948">
     <link rel="apple-touch-icon" href="{{ asset('images/logo-tiendastock.png') }}">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|plus-jakarta-sans:600,700&display=swap" rel="stylesheet" />
-
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/css/app.css')
+    @if (! $useReact)
+        @vite('resources/js/app.js')
+    @endif
 
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <style>
         body {
             padding-top: env(safe-area-inset-top);
@@ -30,13 +33,6 @@
 </head>
 
     <body class="font-sans antialiased bg-canvas">
-    @php
-        $routeName = request()->route()?->getName();
-        $routeDriver = config("frontend.routes.{$routeName}");
-        $useReact = config('frontend.driver', 'blade') === 'react'
-            && ($routeDriver ?? 'react') === 'react';
-    @endphp
-
     @if ($useReact && in_array($routeName, ['profile.edit', 'dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'categorias.index', 'categorias.create', 'categorias.edit', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
         @include('react.app', ['props' => [
             'page' => $routeName,
@@ -116,9 +112,6 @@
         <x-flash-toast />
     @endif
 
-    <!-- Flatpickr -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
 </body>
 
 </html>

@@ -1,4 +1,9 @@
 @props(['showLogo' => true])
+@php
+    $reactAuth = request()->routeIs('login')
+        ? config('frontend.driver', 'blade') === 'react' && config('frontend.routes.login', 'react') === 'react'
+        : request()->routeIs('password.confirm') && config('frontend.driver', 'blade') === 'react' && config('frontend.routes.password.confirm', 'react') === 'react';
+@endphp
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -11,17 +16,16 @@
     <title>{{ config('app.name', 'TiendaStock') }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
-
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/css/app.css')
+    @if (! $reactAuth)
+        @vite('resources/js/app.js')
+    @endif
 </head>
 
 <body class="font-sans text-gray-900 antialiased">
     <div class="min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 {{ isset($brand) ? 'login-page' : 'bg-stone-50' }}" style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));">
-        @if (request()->routeIs('login') && config('frontend.driver', 'blade') === 'react' && config('frontend.routes.login', 'react') === 'react')
+        @if ($reactAuth)
             {{ $slot }}
         @else
         <div class="w-full max-w-md {{ isset($brand) ? 'login-frame' : '' }}">
