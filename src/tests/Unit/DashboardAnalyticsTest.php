@@ -44,6 +44,20 @@ class DashboardAnalyticsTest extends TestCase
         $this->assertSame([['date' => '2008-10-19', 'total' => 50.0, 'count' => 2], ['date' => '2008-10-20', 'total' => 40.0, 'count' => 1]], $result['series']['sales_by_day']);
     }
 
+    public function test_dashboard_uses_business_timezone_while_timestamps_remain_utc(): void
+    {
+        $this->travelTo(\Carbon\Carbon::parse('2026-11-03 01:00:00', 'UTC'));
+        $sale = Venta::factory()->create(['created_at' => '2026-11-03 00:30:00', 'total' => 25]);
+
+        $result = app(DashboardAnalytics::class)->forWindow(1);
+
+        $this->assertSame('UTC', config('app.timezone'));
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.business_timezone'));
+        $this->assertSame('2026-11-02', $result['series']['sales_by_day'][0]['date']);
+        $this->assertSame(1, $result['summary']['sales_today']['count']);
+        $this->assertSame('2026-11-03 00:30:00', $sale->getRawOriginal('created_at'));
+    }
+
     public function test_category_uses_current_product_category(): void
     {
         $old = Categoria::factory()->create(['nombre' => 'Anterior']);

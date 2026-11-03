@@ -11,7 +11,8 @@ class DashboardAnalytics
 {
     public function forWindow(int $days): array
     {
-        $localToday = CarbonImmutable::now('America/Argentina/Buenos_Aires')->startOfDay();
+        $businessTimezone = config('app.business_timezone');
+        $localToday = CarbonImmutable::now($businessTimezone)->startOfDay();
         $localFrom = $localToday->subDays($days - 1)->startOfDay();
         $from = $localFrom->utc();
         $to = $localToday->addDay()->startOfDay()->utc();
@@ -26,7 +27,7 @@ class DashboardAnalytics
             ->where('created_at', '<', $to)
             ->select(['created_at', 'total'])->cursor();
         foreach ($sales as $sale) {
-            $date = CarbonImmutable::parse($sale->created_at, 'UTC')->setTimezone('America/Argentina/Buenos_Aires')->toDateString();
+            $date = CarbonImmutable::parse($sale->created_at, 'UTC')->setTimezone($businessTimezone)->toDateString();
             $salesByDay[$date] ??= ['date' => $date, 'total' => 0.0, 'count' => 0];
             $salesByDay[$date]['total'] += (float) $sale->total;
             $salesByDay[$date]['count']++;
