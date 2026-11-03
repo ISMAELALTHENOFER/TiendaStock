@@ -13,9 +13,8 @@ import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 import { stockTone } from './lib/stockTone.js';
 import { isValidDateRange } from './lib/dateRange.js';
+import { formatMoney } from './lib/formatMoney.js';
 
-const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-const formatMoney = (value) => money.format(Number(value || 0));
 const maskMoney = (value) => {
     const digits = String(value).replace(/\D/g, '');
     return digits ? (Number(digits) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';

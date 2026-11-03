@@ -1,6 +1,5 @@
 import { Pagination } from './components/ui/Pagination.jsx';
-
-const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value) || 0);
+import { formatMoney as money } from './lib/formatMoney.js';
 
 function PageHeader({ title, subtitle, edit, back }) {
     return <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

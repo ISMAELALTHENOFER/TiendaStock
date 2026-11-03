@@ -145,14 +145,14 @@ class ProductoMoneyFormatTest extends TestCase
         $ventas = User::factory()->ventas()->create();
 
         $response = $this->actingAs($ventas)->get(route('ventas.pos'));
-        $content = $response->getContent();
+        $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
         $response->assertOk();
         // React owns the migrated POS route; both amount fields remain decimal
-        // inputs and the shared ARS formatter is implemented in sales.jsx.
-        $this->assertStringContainsString('inputMode="decimal"', file_get_contents(base_path('resources/js/react/sales.jsx')));
-        $this->assertStringContainsString('value={paid}', file_get_contents(base_path('resources/js/react/sales.jsx')));
-        $this->assertStringContainsString('value={discount}', file_get_contents(base_path('resources/js/react/sales.jsx')));
-        $this->assertStringContainsString("currency: 'ARS'", file_get_contents(base_path('resources/js/react/sales.jsx')));
+        // inputs and the common formatter is shared across the React pages.
+        $this->assertStringContainsString('inputMode="decimal"', $source);
+        $this->assertStringContainsString('value={paid}', $source);
+        $this->assertStringContainsString('value={discount}', $source);
+        $this->assertStringContainsString("from './lib/formatMoney.js'", $source);
     }
 }

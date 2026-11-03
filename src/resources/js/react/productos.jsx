@@ -15,12 +15,7 @@ import { productMoneyInput } from './lib/productMoneyInput.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { stockTone } from './lib/stockTone.js';
-
-const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-
-export function formatMoney(value) {
-    return formatter.format(value);
-}
+import { formatMoney } from './lib/formatMoney.js';
 
 /**
  * Money input with the same live mask semantics as the legacy Alpine
