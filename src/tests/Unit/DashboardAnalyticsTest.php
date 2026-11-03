@@ -96,9 +96,9 @@ class DashboardAnalyticsTest extends TestCase
     public function test_returns_real_sales_summaries_top_products_and_stock_alerts(): void
     {
         $categoria = Categoria::factory()->create();
-        $lowStock = Producto::factory()->create(['categoria_id' => $categoria->id, 'nombre' => 'Body T2', 'cantidad' => 2]);
+        $lowStock = Producto::factory()->create(['categoria_id' => $categoria->id, 'nombre' => 'Body T1', 'cantidad' => 1]);
         Producto::factory()->create(['categoria_id' => $categoria->id, 'nombre' => 'Calza T10', 'cantidad' => 0]);
-        Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 6]);
+        Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 2]);
         $venta = Venta::factory()->create(['created_at' => now(), 'total' => 120]);
         VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $lowStock->id, 'cantidad' => 3, 'subtotal' => 120]);
 
@@ -106,9 +106,10 @@ class DashboardAnalyticsTest extends TestCase
 
         $this->assertSame(['total' => 120.0, 'count' => 1], $result['summary']['sales_today']);
         $this->assertSame(['total' => 120.0, 'count' => 1], $result['summary']['sales_month']);
-        $this->assertSame('Body T2', $result['top_products'][0]['name']);
+        $this->assertSame('Body T1', $result['top_products'][0]['name']);
         $this->assertSame(3, $result['top_products'][0]['count']);
         $this->assertSame('out_of_stock', $result['low_stock'][0]['status']);
         $this->assertSame('low_stock', $result['low_stock'][1]['status']);
+        $this->assertCount(2, $result['low_stock']);
     }
 }

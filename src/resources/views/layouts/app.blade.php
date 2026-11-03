@@ -43,6 +43,7 @@
                 'role' => Auth::user()->role,
             ],
             'metrics' => $metrics ?? [],
+            'lowStockThreshold' => config('inventory.low_stock_threshold', 1),
             'flash' => collect(['success', 'error', 'warning', 'info'])
                 ->mapWithKeys(fn ($key) => [$key => session($key)])
                 ->filter()

@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardAnalytics
 {
-    private const LOW_STOCK_THRESHOLD = 5;
-
     public function forWindow(int $days): array
     {
         $localToday = CarbonImmutable::now('America/Argentina/Buenos_Aires')->startOfDay();
@@ -19,6 +17,7 @@ class DashboardAnalytics
         $to = $localToday->addDay()->startOfDay()->utc();
         $today = $localToday->utc();
         $monthStart = $localToday->startOfMonth()->startOfDay()->utc();
+        $lowStockThreshold = (int) config('inventory.low_stock_threshold', 1);
 
         $salesByDay = [];
         $sales = DB::table('ventas')
@@ -72,7 +71,7 @@ class DashboardAnalytics
             ])->values()->all();
 
         $lowStock = Producto::query()
-            ->where('cantidad', '<=', self::LOW_STOCK_THRESHOLD)
+            ->where('cantidad', '<=', $lowStockThreshold)
             ->orderBy('cantidad')
             ->orderBy('nombre')
             ->limit(8)

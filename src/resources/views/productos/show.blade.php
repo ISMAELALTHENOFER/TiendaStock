@@ -43,8 +43,8 @@
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Stock Actual</dt>
                         <dd>
                             <span class="inline-block px-4 py-2 rounded-full text-sm font-bold
-                                {{ $producto->cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
-                                {{ $producto->cantidad }} unidades
+                                {{ $producto->cantidad === 0 ? 'bg-red-100 text-red-700' : ($producto->cantidad <= config('inventory.low_stock_threshold', 1) ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700') }}">
+                                {{ $producto->cantidad === 0 ? 'Agotado' : ($producto->cantidad <= config('inventory.low_stock_threshold', 1) ? 'Bajo · '.$producto->cantidad : $producto->cantidad) }} unidades
                             </span>
                         </dd>
                     </div>

@@ -71,8 +71,8 @@
                                         <p class="font-semibold text-gray-900 truncate" x-text="product.nombre"></p>
                                         <p class="text-sm text-gray-500">
                                             $<span x-text="formatCurrency(product.precio_venta)"></span>
-                                            | Stock: <span x-text="product.cantidad" :class="product.cantidad <= 5 ? 'text-red-600 font-bold' : ''"></span>
-                                            <template x-if="product.cantidad <= 5">
+                                            | Stock: <span x-text="product.cantidad === 0 ? 'Agotado' : product.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'Bajo · ' + product.cantidad : product.cantidad" :class="product.cantidad === 0 ? 'text-red-600 font-bold' : product.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'text-amber-700 font-bold' : ''"></span>
+                                            <template x-if="product.cantidad > 0 && product.cantidad <= {{ config('inventory.low_stock_threshold', 1) }}">
                                                 <span class="text-red-500">⚠</span>
                                             </template>
                                         </p>

@@ -226,7 +226,8 @@
                                         <td class="px-6 py-4 text-center">
                                             <span
                                                 class="inline-block px-3 py-1 rounded-full text-xs font-bold"
-                                                :class="producto.cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                :class="producto.cantidad === 0 ? 'bg-red-100 text-red-700' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'"
+                                                :aria-label="producto.cantidad === 0 ? 'Agotado' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'Bajo stock' : 'Stock normal'"
                                                 x-text="producto.cantidad"
                                             ></span>
                                         </td>
@@ -351,7 +352,8 @@
                                         <span class="text-gray-500 text-xs">Stock</span>
                                         <p>
                                             <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold"
-                                                :class="producto.cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                :class="producto.cantidad === 0 ? 'bg-red-100 text-red-700' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'"
+                                                :aria-label="producto.cantidad === 0 ? 'Agotado' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'Bajo stock' : 'Stock normal'"
                                                 x-text="producto.cantidad"></span>
                                         </p>
                                     </div>

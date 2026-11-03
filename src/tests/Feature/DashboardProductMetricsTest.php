@@ -18,6 +18,7 @@ class DashboardProductMetricsTest extends TestCase
         $metrics = ['productosActivos' => 3, 'productosAgotados' => 2];
 
         $this->assertSame($metrics, (new AppLayout(metrics: $metrics))->data()['metrics']);
+        $this->assertSame(1, config('inventory.low_stock_threshold'));
     }
 
     public function test_react_receives_all_real_product_metrics_even_above_the_alert_list_limit(): void

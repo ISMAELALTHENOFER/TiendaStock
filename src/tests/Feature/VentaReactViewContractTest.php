@@ -125,6 +125,7 @@ class VentaReactViewContractTest extends TestCase
             'Resultados mostrados:',
             'Limpiar búsqueda',
             'const available = product.cantidad - inCart',
+            'stockTone(available, lowStockThreshold)',
             'sm:grid-cols-2',
             'xl:sticky',
             'space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2',

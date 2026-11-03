@@ -14,6 +14,7 @@ import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
+import { stockTone } from './lib/stockTone.js';
 
 const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
@@ -332,7 +333,7 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
  * included when "Ver inactivos" is on. Activation/deactivation stays
  * server-driven via hidden native forms confirmed with the shared dialog.
  */
-export function ProductList({ categorias, routes }) {
+export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [verInactivos, setVerInactivos] = useState(false);
     const [busqueda, setBusqueda] = useState('');
     const [filtroCategoria, setFiltroCategoria] = useState('');
@@ -530,7 +531,7 @@ export function ProductList({ categorias, routes }) {
                                         <td className="px-4 py-3 text-right">{formatMoney(producto.precio_venta)}</td>
                                          <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>
                                          <td className="px-4 py-3 text-right tabular-nums">
-                                             <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
+                                             <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
                                           <td className="px-4 py-3">{acciones(producto, routes, setToggle, setProductoEditando, setProductoViendo)}</td>
                                     </tr>
@@ -551,7 +552,7 @@ export function ProductList({ categorias, routes }) {
                                         <p className="mt-0.5 text-xs text-muted">{producto.categoria?.nombre}</p>
                                     </div>
                                     <div className="ml-auto shrink-0">
-                                         <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
+                                         <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                     </div>
                                 </div>
                                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
@@ -578,7 +579,7 @@ export function ProductList({ categorias, routes }) {
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Stock</dt>
                                         <dd className="mt-0.5 font-medium text-ink">
-                                             {producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}
+                                             {producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}
                                             {!producto.activo && <Badge tone="neutral" className="ml-2">Inactivo</Badge>}
                                         </dd>
                                     </div>
@@ -641,8 +642,8 @@ export function ProductList({ categorias, routes }) {
                             <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
                         </div>
-                        <Badge tone={productoViendo.cantidad === 0 ? 'danger' : productoViendo.cantidad <= 5 ? 'warning' : 'success'}>
-                            {productoViendo.cantidad} {productoViendo.cantidad === 1 ? 'unidad' : 'unidades'}
+                         <Badge tone={stockTone(productoViendo.cantidad, lowStockThreshold)}>
+                             {productoViendo.cantidad === 0 ? 'Sin stock' : productoViendo.cantidad <= lowStockThreshold ? `${productoViendo.cantidad} · Bajo` : productoViendo.cantidad} {productoViendo.cantidad === 1 ? 'unidad' : 'unidades'}
                         </Badge>
                     </div>
                     <dl className="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">

@@ -10,9 +10,9 @@ export default function App({ props }) {
     const flashType = props.flash?.success ? 'success' : props.flash?.error ? 'error' : props.flash?.warning ? 'warning' : 'info';
     const page = {
         'ventas.index': <SalesHistory sales={props.sales} query={props.query} routes={props.routes} />,
-        'ventas.pos': <SalesPos routes={props.routes} initialErrors={props.errors} />,
+        'ventas.pos': <SalesPos routes={props.routes} initialErrors={props.errors} lowStockThreshold={props.lowStockThreshold} />,
         'ventas.show': <SaleShow sale={props.sale} routes={props.routes} />,
-        'productos.index': <ProductList categorias={props.categorias} routes={props.routes} />,
+        'productos.index': <ProductList categorias={props.categorias} routes={props.routes} lowStockThreshold={props.lowStockThreshold} />,
         'productos.create': <ProductForm categorias={props.categorias} routes={props.routes} />,
         'productos.edit': <ProductForm producto={props.producto} categorias={props.categorias} routes={props.routes} />,
         'categorias.index': <CategoriaGrid categorias={props.categorias} routes={props.routes} />,

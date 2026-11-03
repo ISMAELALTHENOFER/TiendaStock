@@ -96,7 +96,7 @@ class ProductoReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        foreach (['pageSize, setPageSize] = useState(15)', 'currentPage={paginaSegura}', 'onPageChange={setPaginaActual}', 'cantidad <= 5', 'danger'] as $contract) {
+        foreach (['pageSize, setPageSize] = useState(15)', 'currentPage={paginaSegura}', 'onPageChange={setPaginaActual}', 'stockTone(producto.cantidad, lowStockThreshold)', 'danger'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
 

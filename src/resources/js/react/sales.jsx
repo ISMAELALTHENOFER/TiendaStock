@@ -10,6 +10,7 @@ import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
+import { stockTone } from './lib/stockTone.js';
 
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const formatMoney = (value) => money.format(Number(value || 0));
@@ -120,7 +121,7 @@ async function postSale(payload, onError) {
     return true;
 }
 
-export function SalesPos({ routes, initialErrors = {} }) {
+export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) {
     const [search, setSearch] = useState('');
     const [results, setResults] = useState([]);
     const searchRequest = useRef(0);
@@ -237,7 +238,7 @@ export function SalesPos({ routes, initialErrors = {} }) {
                     return <Card key={product.id} className="flex min-w-0 flex-col justify-between gap-4 p-4 sm:p-4">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-ink">{product.nombre}</h3><p className="mt-1 text-xs text-muted">{product.categoria?.nombre}{product.color ? ` · ${product.color}` : ''}{product.talle ? ` · ${product.talle}` : ''}</p></div>
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${available === 0 ? 'bg-red-50 text-red-800' : available <= 6 ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-primary-700'}`}><Package size={14} aria-hidden="true" />{available} un.</span>
+                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${stockTone(available, lowStockThreshold) === 'danger' ? 'bg-red-50 text-red-800' : stockTone(available, lowStockThreshold) === 'warning' ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-primary-700'}`}><Package size={14} aria-hidden="true" />{available === 0 ? 'Agotado' : available <= lowStockThreshold ? `${available} · Bajo` : `${available} un.`}</span>
                         </div>
                         <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
                             <div><p className="text-xs font-semibold uppercase text-muted">Precio unitario</p><p className="text-lg font-bold tabular-nums text-ink">{formatMoney(product.precio_venta)}</p></div>
