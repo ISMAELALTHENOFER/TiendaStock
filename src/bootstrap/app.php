@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_PROTO | Request::HEADER_X_FORWARDED_HOST,
+        );
         $middleware->appendToGroup('web', EnsureActiveUser::class);
         $middleware->redirectUsersTo(fn (Request $request) => $request->user()->defaultDestination());
         $middleware->alias([

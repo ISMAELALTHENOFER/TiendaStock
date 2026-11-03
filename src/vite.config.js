@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     const hmrPort = Number.parseInt(env.VITE_HMR_PORT || String(devPort), 10);
     const hmrHost = env.VITE_HMR_HOST || undefined;
     const configuredHost = env.VITE_DEV_HOST;
-    const devHost = configuredHost === 'true' ? true : configuredHost || true;
+    const devHost = configuredHost === 'true' ? true : configuredHost || 'localhost';
 
     return {
         plugins: [
