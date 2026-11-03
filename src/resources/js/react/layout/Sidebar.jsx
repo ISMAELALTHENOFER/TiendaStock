@@ -2,8 +2,8 @@ import { Boxes, ChevronLeft, ChevronRight, FolderKanban, LayoutDashboard, Settin
 import { Button } from '../components/ui/Button.jsx';
 
 const groups = [
-    { label: 'Workspace', items: [{ key: 'dashboard', activePages: ['dashboard'], label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] }] },
-    { label: 'Operación', items: [{ key: 'ventas', activePages: ['ventas.index', 'ventas.pos', 'ventas.show'], label: 'Ventas', icon: ShoppingCart, roles: ['ADMIN', 'Ventas'] }, { key: 'productos', activePages: ['productos.index', 'productos.create', 'productos.edit'], label: 'Productos', icon: Boxes, roles: ['ADMIN', 'Control Stock'] }, { key: 'categorias', activePages: ['categorias.index', 'categorias.create'], label: 'Categorías', icon: FolderKanban, roles: ['ADMIN', 'Control Stock'] }] },
+    { label: 'Espacio de trabajo', items: [{ key: 'dashboard', activePages: ['dashboard'], label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN'] }] },
+    { label: 'Operación', items: [{ key: 'ventas', activePages: ['ventas.index', 'ventas.pos', 'ventas.show'], label: 'Ventas', icon: ShoppingCart, roles: ['ADMIN', 'Ventas'] }, { key: 'productos', activePages: ['productos.index', 'productos.create', 'productos.edit'], label: 'Productos', icon: Boxes, roles: ['ADMIN', 'Control Stock'] }, { key: 'categorias', activePages: ['categorias.index', 'categorias.create', 'categorias.edit'], label: 'Categorías', icon: FolderKanban, roles: ['ADMIN', 'Control Stock'] }] },
     { label: 'Administración', items: [{ key: 'users', activePages: ['admin.users.index', 'admin.users.create', 'admin.users.edit'], label: 'Usuarios', icon: Users, roles: ['ADMIN'] }] },
 ];
 

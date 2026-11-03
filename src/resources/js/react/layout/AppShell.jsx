@@ -4,10 +4,15 @@ import { Sidebar } from './Sidebar.jsx';
 
 export function AppShell({ user, routes, activePage, children }) {
     const [open, setOpen] = useState(false);
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(() => {
+        try { return window.localStorage.getItem('tiendastock.sidebar.collapsed') === 'true'; } catch { return false; }
+    });
     const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 63.999rem)').matches);
     const previousFocus = useRef(null);
     const drawerRef = useRef(null);
+    useEffect(() => {
+        try { window.localStorage.setItem('tiendastock.sidebar.collapsed', String(collapsed)); } catch { /* Storage may be unavailable. */ }
+    }, [collapsed]);
     useEffect(() => {
         const media = window.matchMedia('(max-width: 63.999rem)');
         const update = () => setIsMobile(media.matches);

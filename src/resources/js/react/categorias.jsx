@@ -41,7 +41,7 @@ function CategoryForm({ categoria, routes, onClose }) {
     return (
         <Modal open title={isEdit ? 'Editar Categoría' : 'Nueva Categoría'} onClose={onClose} size="product">
             <form onSubmit={submit} className="p-4 sm:p-7">
-                <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualizá los datos de esta categoría.' : 'Añadí una clasificación para organizar tu inventario.'}</p>
+                <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualiza los datos de esta categoría.' : 'Añade una clasificación para organizar tu inventario.'}</p>
                 {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 p-3 text-sm text-red-700">{error('_general')}</p>}
                 <div className="space-y-5">
                     <div>
@@ -104,7 +104,7 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
         <div className="py-4 sm:py-8">
             <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="page-title">Categorías de Productos</h2>
+                    <h1 className="page-title">Categorías de Productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todas tus categorías de productos</p>
                 </div>
                 <Button type="button" onClick={() => setModalCategoria(true)}>＋ <span>Nueva Categoría</span></Button>

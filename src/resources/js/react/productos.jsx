@@ -66,10 +66,16 @@ function MoneyInput({ label, name, initial = 0, error }) {
  */
 function ProductImage({ value, error }) {
     const [preview, setPreview] = useState(value || '');
+    const previewUrl = useRef(null);
+    useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
 
     const handleChange = (event) => {
         const file = event.target.files?.[0];
-        if (file) setPreview(URL.createObjectURL(file));
+        if (file) {
+            if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+            previewUrl.current = URL.createObjectURL(file);
+            setPreview(previewUrl.current);
+        }
     };
 
     return (
@@ -88,8 +94,8 @@ function ProductImage({ value, error }) {
             {error && <p id="imagen-error" className="mt-1 text-sm text-red-600">{error}</p>}
             {preview && (
                 <div className="mt-3 flex items-center gap-3">
-                    <img src={preview} alt="Vista previa" className="h-20 w-20 rounded-lg border border-border object-cover" />
-                    {value && <p className="text-xs text-muted">Imagen actual. Si no elegís un archivo nuevo, se conserva.</p>}
+                    <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
+                    {value && <p className="text-xs text-muted">Imagen actual. Si no eliges un archivo nuevo, se conserva.</p>}
                 </div>
             )}
         </div>
@@ -102,9 +108,11 @@ function ProductImage({ value, error }) {
  * then posts to productos.update. Error responses (422 JSON) keep the
  * typed state and render inline field errors instead of redirecting back.
  */
-export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved }) {
+export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved, onCategoryCreated }) {
     const isEdit = Boolean(producto);
     const [errors, setErrors] = useState({});
+    const [categoryOptions, setCategoryOptions] = useState(categorias);
+    const [categoryId, setCategoryId] = useState(String(producto?.categoria_id ?? ''));
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [inlineOpen, setInlineOpen] = useState(false);
@@ -135,14 +143,9 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         setInlineError('');
         try {
             const categoria = await api.post('/categorias/inline', { nombre: inlineNombre.trim() });
-            const select = formRef.current?.querySelector('[name="categoria_id"]');
-            if (select) {
-                const option = document.createElement('option');
-                option.value = String(categoria.id);
-                option.selected = true;
-                option.textContent = categoria.nombre;
-                select.appendChild(option);
-            }
+            setCategoryOptions((current) => [...current, categoria]);
+            setCategoryId(String(categoria.id));
+            onCategoryCreated?.(categoria);
             setInlineOpen(false);
             setInlineNombre('');
         } catch (err) {
@@ -172,7 +175,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             window.location.assign(body.redirect);
         } catch (error) {
             setSubmitting(false);
-            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar el producto. Reintentá.'] });
+            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar el producto. Intenta nuevamente.'] });
         }
     };
 
@@ -205,7 +208,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     </div>
                 ) : (
                     <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                        <h3 className="text-lg font-bold text-white">Información del Producto</h3>
+                        <h1 className="text-lg font-bold text-white">Información del Producto</h1>
                         <p className="mt-1 text-sm text-white/80">Ingresa todos los detalles del producto</p>
                     </div>
                 )}
@@ -226,9 +229,9 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600">*</span></label>
                         <div className="mt-1 flex flex-wrap gap-2">
-                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? ''} className="min-w-0 flex-1 basis-40">
-                                <option value="">Seleccioná una categoría</option>
-                                {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+                            <Select id="categoria-field" name="categoria_id" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="min-w-0 flex-1 basis-40">
+                                <option value="">Selecciona una categoría</option>
+                                {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                             </Select>
                             <Button type="button" variant="secondary" title="Crear categoría nueva" aria-label="Crear categoría nueva" onClick={() => setInlineOpen(true)}>+ Nueva</Button>
                         </div>
@@ -287,7 +290,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             <ConfirmDialog
                 open={Boolean(duplicado)}
                 title="Producto existente"
-                message={`Ya existe un producto llamado «${duplicado?.nombre}». ¿Querés editarlo?`}
+                message={`Ya existe un producto llamado «${duplicado?.nombre}». ¿Quieres editarlo?`}
                 confirmLabel="Sí, editar"
                 onConfirm={() => window.location.assign(`${routes.productos}/${duplicado.id}/edit`)}
                 onClose={() => setDuplicado(null)}
@@ -320,7 +323,7 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
             {producto.activo ? (
                 <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
-                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-600 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
+                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
             )}
         </div>
     );
@@ -351,6 +354,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [activating, setActivating] = useState(false);
     const activationDialog = useRef(null);
     const [crearAbierto, setCrearAbierto] = useState(false);
+    const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [productoEditando, setProductoEditando] = useState(null);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
@@ -439,7 +443,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="page-title">Inventario de Productos</h2>
+                    <h1 className="page-title">Inventario de Productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todos tus productos en un solo lugar</p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -466,7 +470,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-[2]">
                     <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => cambiarFiltro(setFiltroCategoria)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todas las categorías</option>
-                        {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+                        {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                     </Select></label>
                     <label className="text-xs font-semibold text-muted">Talle<Select aria-label="Filtrar por talle" value={filtroTalle} onChange={(event) => cambiarFiltro(setFiltroTalle)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todos los talles</option>
@@ -483,7 +487,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             {cargando ? (
                 <LoadingState label="Cargando catálogo..." />
             ) : error ? (
-                <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisá tu conexión e intentá nuevamente." onRetry={() => cargar()} />
+                <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisa tu conexión e intenta nuevamente." onRetry={() => cargar()} />
             ) : total === 0 ? (
                 <EmptyState
                     title="No se encontraron productos"
@@ -512,7 +516,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <tr key={producto.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                                         <td className="px-4 py-3">
                                             {producto.imagen
-                                                ? <img src={producto.imagen} alt={producto.nombre} className="h-12 w-12 rounded-lg object-cover" />
+                                                ? <img src={producto.imagen} alt={producto.nombre} width="48" height="48" loading="lazy" className="h-12 w-12 rounded-lg object-cover" />
                                                 : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                         </td>
                                         <td className="px-4 py-3 font-semibold text-ink">
@@ -540,7 +544,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                             <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
-                                        ? <img src={producto.imagen} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
+                                        ? <img src={producto.imagen} alt={producto.nombre} width="56" height="56" loading="lazy" className="h-14 w-14 rounded-lg object-cover" />
                                         : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                     <div className="min-w-0">
                                         <p className="font-bold text-ink">{producto.nombre}</p>
@@ -632,7 +636,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" loading="lazy" className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
@@ -663,6 +667,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                     key={productoEditando?.id ?? 'new-product'}
                     routes={routes}
                     categorias={categorias}
+                    onCategoryCreated={(categoria) => setCategoryOptions((current) => [...current, categoria])}
                     producto={productoEditando}
                     modal
                     onClose={() => { setCrearAbierto(false); setProductoEditando(null); }}

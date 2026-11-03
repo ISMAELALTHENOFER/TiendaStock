@@ -8,9 +8,11 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
+import { Dropdown } from './components/ui/Dropdown.jsx';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 import { stockTone } from './lib/stockTone.js';
+import { isValidDateRange } from './lib/dateRange.js';
 
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const formatMoney = (value) => money.format(Number(value || 0));
@@ -27,12 +29,12 @@ const deliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : 
 const detailDeliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : sale.tipo_entrega === 'uber' ? 'Envío por Uber' : '—';
 const paymentLabel = (method) => method ? method.charAt(0).toUpperCase() + method.slice(1) : '—';
 
-function CancelForm({ sale, compact = false }) {
+function CancelForm({ sale, routes, compact = false }) {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const formRef = useRef(null);
     if (sale.estado !== 'completada') return null;
     return <>
-        <form ref={formRef} action={`/ventas/${sale.id}/cancel`} method="post">
+        <form ref={formRef} action={`${routes.ventas}/${sale.id}/cancel`} method="post">
             <input type="hidden" name="_token" value={csrf()} />
             <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className={compact ? 'block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50' : 'min-h-11 rounded-control px-4 text-sm font-semibold text-red-700 hover:bg-red-50'}>Cancelar venta #{sale.id}</button>
         </form>
@@ -48,13 +50,10 @@ function CancelForm({ sale, compact = false }) {
     </>;
 }
 
-function SaleActions({ sale }) {
+function SaleActions({ sale, routes }) {
     return <div className="flex items-center justify-start gap-2">
-        <a href={`/ventas/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
-        {sale.estado === 'completada' && <details className="relative">
-            <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-control text-lg text-muted hover:bg-surface-muted" aria-label={`Acciones de venta #${sale.id}`} title={`Acciones de venta #${sale.id}`}>⋮</summary>
-            <div className="absolute right-0 z-10 mt-1 min-w-44 rounded-card border border-border bg-surface p-2 shadow-subtle"><CancelForm sale={sale} compact /></div>
-        </details>}
+        <a href={`${routes.ventas}/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
+        {sale.estado === 'completada' && <Dropdown portal ariaLabel={`Acciones de venta #${sale.id}`} label="⋮"><CancelForm sale={sale} routes={routes} compact /></Dropdown>}
     </div>;
 }
 
@@ -76,11 +75,14 @@ export function SalesHistory({ sales, query = {}, routes }) {
         params.set('per_page', String(pageSize));
         return `${routes.ventas}?${params}`;
     };
+    const [dateError, setDateError] = useState('');
     const submit = (event) => {
-        event.preventDefault();
-        if (filters.desde && filters.hasta && filters.desde > filters.hasta) {
-            window.alert('La fecha Desde debe ser menor o igual a Hasta.');
+        if (!isValidDateRange(filters.desde, filters.hasta)) {
+            event.preventDefault();
+            setDateError('La fecha Desde debe ser anterior o igual a Hasta.');
+            return;
         }
+        setDateError('');
     };
     return <div className="space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -96,23 +98,24 @@ export function SalesHistory({ sales, query = {}, routes }) {
                 <input type="hidden" name="per_page" value={pageSize} />
                 <Button type="submit">Filtrar</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted">Limpiar</a>
             </form>
+            {dateError && <p className="mt-3 text-sm text-red-700" role="alert">{dateError}</p>}
         </Card>
         {liveSearch.searching && <p role="status" className="text-sm text-muted">Buscando ventas…</p>}
         {liveSearch.searchError && <p role="alert" className="text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
         {data.length === 0 ? <Card className="py-12 text-center"><p className="text-lg font-semibold text-ink">No hay ventas registradas.</p><p className="mt-1 text-sm text-muted">Las ventas realizadas aparecerán aquí.</p><a href={routes.ventasPos} className="mt-6 inline-flex min-h-11 items-center rounded-control bg-primary px-5 text-sm font-semibold text-white">Realizar primera venta</a></Card> : <>
             <div className="hidden overflow-x-auto rounded-card border border-border bg-surface shadow-subtle md:block">
-                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Items', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
-                     <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items?.length || 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} /></td></tr>)}</tbody>
+                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Artículos', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
+                      <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items?.length || 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} routes={routes} /></td></tr>)}</tbody>
                 </table>
             </div>
-             <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Items</dt><dd>{sale.items?.length || 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesado por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} /></Card>)}</div>
+              <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Artículos</dt><dd>{sale.items?.length || 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesada por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} routes={routes} /></Card>)}</div>
         </>}
         <Pagination currentPage={page?.current_page || 1} lastPage={page?.last_page || 1} pageSize={pageSize} ariaLabel="Paginación de ventas" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} ventas`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const params = new URLSearchParams(window.location.search); params.set('per_page', String(size)); params.set('page', '1'); window.location.assign(`${routes.ventas}?${params}`); }} />
     </div>;
 }
 
-async function postSale(payload, onError) {
-    const response = await fetch('/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify(payload) });
+async function postSale(payload, routes, onError) {
+    const response = await fetch(routes.ventas, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify(payload) });
     if (response.redirected) { window.location.assign(response.url); return true; }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) { onError(data.errors || { form: [data.message || 'No se pudo registrar la venta.'] }); return false; }
@@ -175,7 +178,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
         cartBusy.current = true;
         setAdding(true); setErrors({});
         try {
-            const response = await fetch('/ventas/cart', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ cart_id: cartId, producto_id: product.id, precio_venta: cart.find((item) => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }) });
+            const response = await fetch(`${routes.ventas}/cart`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ cart_id: cartId, producto_id: product.id, precio_venta: cart.find((item) => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }) });
             const data = await response.json();
             if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo agregar el producto.'] }); return; }
             setCartId(data.id);
@@ -188,7 +191,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
         cartBusy.current = true;
         setAdding(true); setErrors({});
         try {
-            const response = await fetch(`/ventas/cart/${cartId}/items${productId === null ? '' : `/${productId}`}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
+            const response = await fetch(`${routes.ventas}/cart/${cartId}/items${productId === null ? '' : `/${productId}`}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
             const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
@@ -202,7 +205,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
         cartBusy.current = true;
         setSubmitting(true); setErrors({});
         try {
-            await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
+            await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, routes, setErrors);
         } catch {
             setErrors({ form: ['No se pudo registrar la venta. Reintente.'] });
         } finally {

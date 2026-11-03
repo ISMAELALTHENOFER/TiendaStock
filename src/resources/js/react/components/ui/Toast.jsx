@@ -1,4 +1,11 @@
+import { useEffect } from 'react';
+
 export function Toast({ type = 'info', message, onClose }) {
+    useEffect(() => {
+        if (!message || !onClose) return undefined;
+        const timeout = window.setTimeout(onClose, 5000);
+        return () => window.clearTimeout(timeout);
+    }, [message, onClose]);
     if (!message) return null;
 
     const variants = {
@@ -21,5 +28,5 @@ export function Toast({ type = 'info', message, onClose }) {
     };
     const variant = variants[type] ?? variants.info;
 
-    return <div className={`fixed inset-x-4 top-4 z-[100] flex max-w-sm items-center gap-3 rounded-card border p-4 shadow-subtle sm:left-auto ${variant.classes}`} role={type === 'error' ? 'alert' : 'status'} aria-live={type === 'error' ? 'assertive' : 'polite'}>{variant.icon}<span className="min-w-0 flex-1 text-sm">{message}</span><button className="min-h-11 min-w-11" onClick={onClose} aria-label="Close notification">×</button></div>;
+    return <div className={`fixed inset-x-4 top-4 z-[100] flex max-w-sm items-center gap-3 rounded-card border p-4 shadow-subtle sm:left-auto ${variant.classes}`} role={type === 'error' ? 'alert' : 'status'} aria-live={type === 'error' ? 'assertive' : 'polite'}>{variant.icon}<span className="min-w-0 flex-1 text-sm">{message}</span><button className="min-h-11 min-w-11" onClick={onClose} aria-label="Cerrar notificación">×</button></div>;
 }

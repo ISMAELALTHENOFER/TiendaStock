@@ -46,7 +46,7 @@ export function UserList({ users, routes }) {
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="page-title">Usuarios del Sistema</h2>
+                    <h1 className="page-title">Usuarios del Sistema</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todos los usuarios de la plataforma</p>
                 </div>
                 <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo Usuario</a>

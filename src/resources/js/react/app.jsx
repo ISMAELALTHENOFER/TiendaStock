@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AppShell } from './layout/AppShell.jsx';
 import { Dashboard } from './dashboard.jsx';
 import { Toast } from './components/ui/Toast.jsx';
@@ -7,6 +8,7 @@ import { CategoriaGrid } from './categorias.jsx';
 import { UserList, UserForm } from './users.jsx';
 
 export default function App({ props }) {
+    const [toastVisible, setToastVisible] = useState(true);
     const flashType = props.flash?.success ? 'success' : props.flash?.error ? 'error' : props.flash?.warning ? 'warning' : 'info';
     const page = {
         'ventas.index': <SalesHistory sales={props.sales} query={props.query} routes={props.routes} />,
@@ -23,5 +25,5 @@ export default function App({ props }) {
         'admin.users.edit': <UserForm usuario={props.usuario} routes={props.routes} />,
     }[props.page] || <Dashboard user={props.user} metrics={props.metrics} categorias={props.categorias} routes={props.routes} />;
 
-    return <><AppShell user={props.user} routes={props.routes} activePage={props.page}>{page}</AppShell><Toast message={props.flash?.success || props.flash?.error || props.flash?.warning || props.flash?.info} type={flashType} /></>;
+    return <><AppShell user={props.user} routes={props.routes} activePage={props.page}>{page}</AppShell><Toast message={toastVisible ? props.flash?.success || props.flash?.error || props.flash?.warning || props.flash?.info : null} type={flashType} onClose={() => setToastVisible(false)} /></>;
 }

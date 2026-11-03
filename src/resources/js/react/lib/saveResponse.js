@@ -7,7 +7,7 @@ export async function saveResponse(response) {
     if (!response.ok || body?.saved !== true || !body?.redirect) {
         const error = new Error([401, 419].includes(response.status)
             ? 'Tu sesión venció. Volvé a iniciar sesión antes de guardar.'
-            : 'No se pudo guardar. Revisá los datos e intentá nuevamente.');
+            : 'No se pudo guardar. Revisa los datos e intenta nuevamente.');
         error.errors = response.status === 422 && body?.errors && Object.keys(body.errors).length
             ? body.errors : null;
         throw error;
