@@ -170,20 +170,31 @@ class VentaController extends Controller
      */
     public function cancel(Venta $venta)
     {
-        if ($venta->isAnulada()) {
-            return redirect()->back()
-                ->with('error', 'Esta venta ya fue anulada anteriormente.');
-        }
+        $error = DB::transaction(function () use ($venta) {
+            $venta = Venta::whereKey($venta->id)->lockForUpdate()->firstOrFail();
+            $user = auth()->user();
+            abort_unless($user->isAdmin() || ($user->isVentas() && $venta->user_id === $user->id), 403);
 
-        DB::transaction(function () use ($venta) {
-            foreach ($venta->items as $item) {
-                Producto::where('id', $item->producto_id)
-                    ->lockForUpdate()
-                    ->increment('cantidad', $item->cantidad);
+            if (! $venta->isCompletada()) {
+                return $venta->isAnulada()
+                    ? 'Esta venta ya fue anulada anteriormente.'
+                    : 'Solo se pueden anular ventas completadas.';
+            }
+
+            $items = $venta->items()->get()->groupBy('producto_id')->sortKeys();
+            foreach ($items as $productId => $productItems) {
+                $product = Producto::whereKey($productId)->lockForUpdate()->firstOrFail();
+                $product->cantidad += $productItems->sum('cantidad');
+                $product->activo = true;
+                $product->save();
             }
 
             $venta->update(['estado' => 'anulada']);
         });
+
+        if ($error) {
+            return redirect()->back()->with('error', $error);
+        }
 
         ActivityRecorder::recordAfterCommit(
             auth()->user(), 'sale.cancelled', 'Sale cancelled', "Sale #{$venta->id} was cancelled.", $venta

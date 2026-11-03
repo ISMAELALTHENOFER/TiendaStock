@@ -537,15 +537,64 @@ class VentaPosTest extends TestCase
         $venta = Venta::factory()->anulada()->create([
             'user_id' => $this->userVentas->id,
         ]);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
 
         $response = $this->actingAs($this->userVentas)->post("/ventas/{$venta->id}/cancel");
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
 
-        // Stock should NOT have changed (no items in this venta)
-        $this->producto->refresh();
-        $this->assertEquals(10, $this->producto->cantidad);
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'anulada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
+    }
+
+    public function test_admin_can_cancel_another_sellers_sale_and_reactivate_products_once(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
+        $other = Producto::factory()->create(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0]);
+        $first = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $other->id, 'cantidad' => 2]);
+        $second = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 1]);
+
+        $this->actingAs($this->userAdmin)->post("/ventas/{$venta->id}/cancel")
+            ->assertRedirect(route('ventas.index'))->assertSessionHas('success');
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'anulada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $first->id, 'cantidad' => 2]);
+        $this->assertDatabaseHas('venta_items', ['id' => $second->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $other->id, 'cantidad' => 2, 'activo' => true]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 4, 'activo' => true]);
+
+        $this->post("/ventas/{$venta->id}/cancel")->assertSessionHas('error');
+        $this->assertDatabaseHas('productos', ['id' => $other->id, 'cantidad' => 2, 'activo' => true]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 4, 'activo' => true]);
+    }
+
+    public function test_other_seller_cannot_cancel_sale_or_change_stock(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
+
+        $this->actingAs(User::factory()->ventas()->create())->post("/ventas/{$venta->id}/cancel")->assertForbidden();
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'completada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
+    }
+
+    public function test_sale_in_other_state_cannot_be_cancelled(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'pendiente']);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
+
+        $this->actingAs($this->userVentas)->from('/ventas')->post("/ventas/{$venta->id}/cancel")
+            ->assertRedirect('/ventas')->assertSessionHas('error');
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'pendiente']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
     }
 
     // ─── Role Authorization ────────────────────────────────────
