@@ -19,8 +19,14 @@ class VentaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Venta::with('user', 'items')
+        $query = Venta::with('user')
             ->orderBy('created_at', 'desc');
+
+        if ($request->expectsJson()) {
+            $query->with('items');
+        } else {
+            $query->withCount('items');
+        }
 
         if (! $request->user()->isAdmin()) {
             $query->where('user_id', $request->user()->id);

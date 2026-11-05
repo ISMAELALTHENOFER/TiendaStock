@@ -100,7 +100,7 @@
                             <tr class="hover:bg-sky-50/50 transition-colors duration-200">
                                 <td class="px-6 py-4 font-bold text-gray-900">{{ $venta->id }}</td>
                                 <td class="px-6 py-4 text-gray-600">{{ $venta->created_at->format('d/m/Y H:i') }}</td>
-                                <td class="px-6 py-4 text-center text-gray-600">{{ $venta->items->count() }}</td>
+                                <td class="px-6 py-4 text-center text-gray-600">{{ $venta->items_count }}</td>
                                 <td class="px-6 py-4 text-right font-semibold text-gray-900">{{ formato_pesos($venta->total) }}</td>
                                 <td class="px-6 py-4 text-center">
                                     @if($venta->isLocal())
@@ -183,7 +183,7 @@
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="text-sm">
-                            <span class="text-gray-500">{{ $venta->items->count() }} items</span>
+                            <span class="text-gray-500">{{ $venta->items_count }} items</span>
                             <span class="mx-2 text-gray-300">|</span>
                             @if($venta->isLocal())
                                 <span class="text-sky-700 font-medium">En el local</span>
