@@ -24,7 +24,7 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
 
-        $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page'])", $source);
+        $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos'])", $source);
     }
 
     public function test_sales_index_can_roll_back_to_the_legacy_blade_surface(): void
@@ -51,7 +51,7 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
-        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'productos/search', '/ventas', 'no-print'] as $contract) {
+        foreach (['SalesHistory', 'SalesPos', 'SaleShow', 'desde', 'hasta', 'estado', 'routes.productosSearch', 'routes.ventas', 'no-print'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -60,13 +60,13 @@ class VentaReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
-        foreach (['Items', 'Total', 'Entrega', 'Procesado por', 'Completada', 'Anulada', 'Cancelar', 'overflow-x-auto'] as $contract) {
+        foreach (['Artículos', 'items_count', 'Total', 'Entrega', 'Procesado por', 'Completada', 'Anulada', 'Cancelar', 'overflow-x-auto'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
 
         $this->assertStringContainsString('ConfirmDialog', $source, 'Sale cancellation must use the shared styled dialog.');
         $this->assertStringNotContainsString('window.confirm', $source, 'The native sale cancellation prompt must be gone.');
-        $this->assertStringContainsString('action={`/ventas/${sale.id}/cancel`}', $source);
+        $this->assertStringContainsString('routes.ventas}/${sale.id}/cancel', $source);
         $this->assertStringContainsString('Cancelar venta #${sale.id}', $source);
         $this->assertStringContainsString('className="flex items-center justify-start gap-2"', $source);
     }
@@ -78,7 +78,7 @@ class VentaReactViewContractTest extends TestCase
         foreach ([
             "['#', 'text-left']",
             "['Fecha', 'text-left']",
-            "['Items', 'text-right']",
+            "['Artículos', 'text-right']",
             "['Total', 'text-right']",
             "['Entrega', 'text-left']",
             "['Procesado por', 'text-left']",
@@ -107,7 +107,7 @@ class VentaReactViewContractTest extends TestCase
             'Procesado por:',
             'Estado:',
             'ANULADA',
-            'Gracias por su compra',
+            'Gracias por tu compra',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
@@ -121,10 +121,11 @@ class VentaReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/sales.jsx'));
 
         foreach ([
-            '/productos/search?q=',
+            '`${routes.productosSearch}?q=${encodeURIComponent(query)}`',
             'Resultados mostrados:',
             'Limpiar búsqueda',
             'const available = product.cantidad - inCart',
+            'stockTone(available, lowStockThreshold)',
             'sm:grid-cols-2',
             'xl:sticky',
             'space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2',
@@ -169,6 +170,19 @@ class VentaReactViewContractTest extends TestCase
         }
 
         $this->assertSame(2, substr_count($source, 'paidCents < totalCents'));
+    }
+
+    public function test_pos_search_debounces_and_aborts_stale_requests_in_both_hosts(): void
+    {
+        $react = file_get_contents(resource_path('js/react/sales.jsx'));
+        $blade = file_get_contents(resource_path('views/ventas/pos.blade.php'));
+
+        $this->assertStringContainsString('signal: controller.signal', $react);
+        $this->assertStringContainsString('window.setTimeout(async () =>', $react);
+        $this->assertStringContainsString('}, 250);', $react);
+        $this->assertStringContainsString('this.searchController?.abort()', $blade);
+        $this->assertStringContainsString('}, 250);', $blade);
+        $this->assertStringContainsString('request === this.searchRequest', $blade);
     }
 
     public function test_pos_delivery_and_payment_use_accessible_choice_tiles(): void

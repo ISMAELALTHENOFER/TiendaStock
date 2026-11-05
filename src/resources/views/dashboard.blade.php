@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :metrics="compact('productosCount', 'categoriasCount', 'productosActivos', 'productosAgotados', 'productosBajoStock', 'valorTotal')" :categorias="$categorias">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -47,6 +47,7 @@
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Productos Activos</p>
                         <p class="text-3xl font-bold text-gray-900">{{ $productosActivos ?? 0 }}</p>
+                        <p class="mt-2 text-sm text-gray-600">{{ $productosAgotados }} agotados · {{ $productosBajoStock }} con bajo stock</p>
                     </div>
                     <div class="p-3 bg-sky-50 rounded-lg">
                         <svg class="h-8 w-8 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +61,7 @@
             <div class="bg-gradient-to-br from-brand-300 to-sky-300 rounded-xl shadow-md p-4 sm:p-6 text-white hover:shadow-lg transition-all duration-300">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-white/80 mb-1">Valor Total</p>
+                        <p class="text-sm font-medium text-white/80 mb-1">Valor del inventario activo</p>
                         <p class="text-3xl font-bold text-white">${{ number_format($valorTotal ?? 0, 2) }}</p>
                     </div>
                     <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -153,42 +154,79 @@
         </div>
         @endif
 
-        <!-- Recent Activity -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
-            <div class="mb-6">
-                <h3 class="text-xl font-bold text-gray-900 flex items-center">
-                    <div class="w-1 h-6 bg-brand-300 rounded mr-3"></div>
-                    Actividad Reciente
-                </h3>
+        <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6" aria-labelledby="analytics-title">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="analytics-title" class="text-lg font-bold">Análisis de ventas</h2>
+                <label class="flex items-center gap-2 text-sm font-semibold">Período
+                    <select id="analytics-period" class="form-control h-11">
+                        <option value="1">Hoy</option><option value="7" selected>Últimos 7 días</option><option value="30">Últimos 30 días</option>
+                    </select>
+                </label>
             </div>
-            <div class="space-y-4">
-                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-brand-300">
-                    <div class="flex-shrink-0">
-                        <div class="h-10 w-10 bg-brand-300 rounded-full flex items-center justify-center">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900">Nuevo producto agregado</p>
-                        <p class="text-sm text-gray-500">Producto "Ejemplo" fue creado hace 2 horas</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 p-4 bg-sky-50/30 rounded-lg border-l-4 border-sky-400">
-                    <div class="flex-shrink-0">
-                        <div class="h-10 w-10 bg-sky-500 rounded-full flex items-center justify-center">
-                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-900">Categoría actualizada</p>
-                        <p class="text-sm text-gray-500">Categoría "Electrónicos" fue modificada</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <div id="analytics-result" class="mt-4" aria-live="polite">Cargando datos...</div>
+            <noscript>Activa JavaScript para consultar el análisis de ventas.</noscript>
+        </section>
     </div>
+    @push('scripts')
+    <script>
+        (() => {
+            const period = document.getElementById('analytics-period');
+            const result = document.getElementById('analytics-result');
+            if (!period || !result) return;
+            const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+            let request = 0;
+            const element = (tag, text) => { const node = document.createElement(tag); node.textContent = text; return node; };
+            async function load() {
+                const id = ++request;
+                result.replaceChildren(element('p', 'Cargando datos...'));
+                try {
+                    const response = await fetch(`{{ route('dashboard.analytics') }}?window=${period.value}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+                    if (!response.ok) throw new Error('Request failed');
+                    const data = await response.json();
+                    if (id !== request) return;
+                    const content = document.createDocumentFragment();
+                    content.append(element('h3', 'Ventas por día'));
+                    const sales = document.createElement('ul');
+                    const max = Math.max(1, ...data.series.sales_by_day.map((day) => Number(day.total)));
+                    data.series.sales_by_day.forEach((day) => {
+                        const item = document.createElement('li');
+                        item.append(element('span', `${day.date}: ${money.format(day.total)} · ${day.count} ventas `));
+                        const bar = document.createElement('meter');
+                        bar.min = 0; bar.max = max; bar.value = Math.max(0, day.total);
+                        bar.setAttribute('aria-label', `Total de ventas del ${day.date}`);
+                        item.append(bar); sales.append(item);
+                    });
+                    content.append(data.series.sales_by_day.length ? sales : element('p', 'No hay ventas para este período.'));
+                    content.append(element('h3', 'Unidades vendidas por categoría'));
+                    content.append(element('p', 'Según la categoría actual de cada producto.'));
+                    const categories = document.createElement('ul');
+                    categories.className = 'mt-4 space-y-4';
+                    const categoryMax = data.series.sales_by_category.reduce((highest, category) => Math.max(highest, category.count), 1);
+                    data.series.sales_by_category.forEach((category) => {
+                        const item = document.createElement('li');
+                        item.className = 'min-w-0';
+                        const label = element('div', `${category.category}: ${category.count} unidades`);
+                        label.className = '[overflow-wrap:anywhere]';
+                        const track = document.createElement('div');
+                        track.className = 'mt-1 h-3 w-full overflow-hidden rounded bg-surface-muted';
+                        track.setAttribute('aria-hidden', 'true');
+                        const bar = document.createElement('div');
+                        bar.className = 'h-full rounded bg-primary';
+                        bar.style.width = `${Math.max(0, category.count) / categoryMax * 100}%`;
+                        track.append(bar); item.append(label, track); categories.append(item);
+                    });
+                    content.append(data.series.sales_by_category.length ? categories : element('p', 'No hay unidades vendidas para este período.'));
+                    result.replaceChildren(content);
+                } catch (error) {
+                    if (id !== request) return;
+                    const retry = element('button', 'Reintentar');
+                    retry.type = 'button'; retry.className = 'mt-2 rounded border border-slate-400 px-4 py-2'; retry.addEventListener('click', load);
+                    result.replaceChildren(element('p', 'No se pudieron cargar los datos.'), retry);
+                }
+            }
+            period.addEventListener('change', load);
+            load();
+        })();
+    </script>
+    @endpush
 </x-app-layout>

@@ -4,38 +4,44 @@ namespace App\Services;
 
 use App\Models\Producto;
 use App\Models\Venta;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 class DashboardAnalytics
 {
-    private const LOW_STOCK_THRESHOLD = 5;
-
     public function forWindow(int $days): array
     {
-        $to = now()->endOfDay();
-        $from = now()->subDays($days - 1)->startOfDay();
-        $today = now()->startOfDay();
-        $monthStart = now()->startOfMonth();
+        $businessTimezone = config('app.business_timezone');
+        $localToday = CarbonImmutable::now($businessTimezone)->startOfDay();
+        $localFrom = $localToday->subDays($days - 1)->startOfDay();
+        $from = $localFrom->utc();
+        $to = $localToday->addDay()->startOfDay()->utc();
+        $today = $localToday->utc();
+        $monthStart = $localToday->startOfMonth()->startOfDay()->utc();
+        $lowStockThreshold = (int) config('inventory.low_stock_threshold', 1);
 
-        $salesByDay = Venta::query()
+        $salesByDay = [];
+        $sales = DB::table('ventas')
             ->where('estado', 'completada')
-            ->whereBetween('created_at', [$from, $to])
-            ->selectRaw('DATE(created_at) as date, SUM(total) as total, COUNT(*) as count')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->map(fn ($row): array => [
-                'date' => $row->date,
-                'total' => (float) $row->total,
-                'count' => (int) $row->count,
-            ])->values()->all();
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<', $to)
+            ->select(['created_at', 'total'])->cursor();
+        foreach ($sales as $sale) {
+            $date = CarbonImmutable::parse($sale->created_at, 'UTC')->setTimezone($businessTimezone)->toDateString();
+            $salesByDay[$date] ??= ['date' => $date, 'total' => 0.0, 'count' => 0];
+            $salesByDay[$date]['total'] += (float) $sale->total;
+            $salesByDay[$date]['count']++;
+        }
+        ksort($salesByDay);
+        $salesByDay = array_values($salesByDay);
 
         $salesByCategory = DB::table('venta_items')
             ->join('ventas', 'ventas.id', '=', 'venta_items.venta_id')
             ->join('productos', 'productos.id', '=', 'venta_items.producto_id')
             ->join('categorias', 'categorias.id', '=', 'productos.categoria_id')
             ->where('ventas.estado', 'completada')
-            ->whereBetween('ventas.created_at', [$from, $to])
+            ->where('ventas.created_at', '>=', $from)
+            ->where('ventas.created_at', '<', $to)
             ->selectRaw('categorias.nombre as category, SUM(venta_items.subtotal) as total, SUM(venta_items.cantidad) as count')
             ->groupBy('categorias.id', 'categorias.nombre')
             ->orderBy('categorias.nombre')
@@ -50,7 +56,8 @@ class DashboardAnalytics
             ->join('ventas', 'ventas.id', '=', 'venta_items.venta_id')
             ->join('productos', 'productos.id', '=', 'venta_items.producto_id')
             ->where('ventas.estado', 'completada')
-            ->whereBetween('ventas.created_at', [$from, $to])
+            ->where('ventas.created_at', '>=', $from)
+            ->where('ventas.created_at', '<', $to)
             ->selectRaw('productos.id, productos.nombre, SUM(venta_items.cantidad) as count, SUM(venta_items.subtotal) as total')
             ->groupBy('productos.id', 'productos.nombre')
             ->orderByDesc('count')
@@ -65,7 +72,7 @@ class DashboardAnalytics
             ])->values()->all();
 
         $lowStock = Producto::query()
-            ->where('cantidad', '<=', self::LOW_STOCK_THRESHOLD)
+            ->where('cantidad', '<=', $lowStockThreshold)
             ->orderBy('cantidad')
             ->orderBy('nombre')
             ->limit(8)
@@ -79,7 +86,8 @@ class DashboardAnalytics
 
         $salesSummary = fn ($start) => Venta::query()
             ->where('estado', 'completada')
-            ->whereBetween('created_at', [$start, $to])
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $to)
             ->selectRaw('COALESCE(SUM(total), 0) as total, COUNT(*) as count')
             ->first();
 
@@ -89,8 +97,8 @@ class DashboardAnalytics
         return [
             'window' => [
                 'days' => $days,
-                'from' => $from->toDateString(),
-                'to' => $to->toDateString(),
+                'from' => $localFrom->toDateString(),
+                'to' => $localToday->toDateString(),
             ],
             'series' => [
                 'sales_by_day' => $salesByDay,

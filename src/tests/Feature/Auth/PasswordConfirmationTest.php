@@ -10,6 +10,12 @@ class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['frontend.driver' => 'blade']);
+    }
+
     public function test_confirm_password_screen_can_be_rendered(): void
     {
         $user = User::factory()->create();
@@ -40,5 +46,18 @@ class PasswordConfirmationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors();
+    }
+
+    public function test_confirmation_redirects_by_role_and_preserves_intended_url(): void
+    {
+        foreach (['ADMIN' => '/dashboard', 'Ventas' => '/ventas/pos', 'Control Stock' => '/productos', '' => '/profile', 'invalid' => '/profile'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->actingAs($user)->post('/confirm-password', ['password' => 'password'])->assertRedirect($destination);
+        }
+
+        $this->actingAs(User::factory()->ventas()->create())
+            ->withSession(['url.intended' => '/dashboard'])
+            ->post('/confirm-password', ['password' => 'password'])->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertForbidden();
     }
 }

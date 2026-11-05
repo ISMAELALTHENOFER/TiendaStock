@@ -1,0 +1,22 @@
+{
+    "name": "TiendaStock",
+    "short_name": "TiendaStock",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f8f9ff",
+    "theme_color": "#006948",
+    "icons": [
+        {
+            "src": "/images/logo-tiendastock.png",
+            "sizes": "1536x1536",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/tiendastock-mark.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}

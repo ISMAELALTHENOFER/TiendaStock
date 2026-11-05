@@ -28,7 +28,12 @@ class ActivityMutationRecordingTest extends TestCase
         $user = User::factory()->ventas()->create();
         $producto = Producto::factory()->create(['cantidad' => 3, 'precio_venta' => 20]);
 
+        $cart = $this->actingAs($user)->postJson('/ventas/cart', [
+            'producto_id' => $producto->id, 'precio_venta' => $producto->precio_venta,
+        ])->assertOk()->json('id');
+
         $this->actingAs($user)->post('/ventas', [
+            'cart_id' => $cart,
             'items' => [['producto_id' => $producto->id, 'cantidad' => 1]],
             'subtotal' => 20, 'total' => 20, 'pago_con' => 20,
             'metodo_pago' => 'efectivo', 'tipo_entrega' => 'local',
@@ -198,6 +203,7 @@ class ActivityMutationRecordingTest extends TestCase
 
         try {
             $this->actingAs($admin)->put("/productos/{$producto->id}", [
+                'stock_original' => $producto->cantidad,
                 'nombre' => 'Changed Product', 'categoria_id' => $categoria->id,
                 'precio_compra' => 11, 'precio_venta' => 21, 'cantidad' => 5,
             ]);

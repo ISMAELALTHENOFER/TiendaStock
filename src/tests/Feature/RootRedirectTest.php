@@ -10,6 +10,12 @@ class RootRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['frontend.routes.login' => 'blade']);
+    }
+
     public function test_public_root_redirects_to_login(): void
     {
         $response = $this->get('/');
@@ -27,14 +33,6 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('action="'.route('login').'"', $content);
     }
 
-    public function test_login_links_to_password_recovery(): void
-    {
-        $content = $this->get('/login')->getContent();
-
-        $this->assertStringContainsString('href="'.route('password.request').'"', $content);
-        $this->assertStringContainsString('¿Olvidaste tu contraseña?', $content);
-    }
-
     public function test_login_explains_its_purpose(): void
     {
         $content = $this->get('/login')->getContent();
@@ -42,7 +40,7 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('Ingresa a TiendaStock para gestionar tu negocio.', $content);
     }
 
-    public function test_logout_and_profile_deletion_redirect_through_root_to_login(): void
+    public function test_logout_redirects_through_root_to_login(): void
     {
         $logoutUser = User::factory()->create();
         $logoutResponse = $this->actingAs($logoutUser)->post('/logout');
@@ -50,18 +48,11 @@ class RootRedirectTest extends TestCase
         $logoutResponse->assertRedirect('/');
         $this->get('/')->assertRedirect('/login');
 
-        $deletionUser = User::factory()->create();
-        $deletionResponse = $this->actingAs($deletionUser)->delete('/profile', [
-            'password' => 'password',
-        ]);
-
-        $deletionResponse->assertRedirect('/');
-        $this->get('/')->assertRedirect('/login');
     }
 
     public function test_authenticated_root_still_redirects_to_login_and_login_to_dashboard(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
         $this->get('/login')
             ->assertOk()
@@ -86,5 +77,21 @@ class RootRedirectTest extends TestCase
         $this->assertStringContainsString('class="login-form"', $content);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $stylesheet);
         $this->assertStringContainsString(':focus-visible', $stylesheet);
+    }
+
+    public function test_authenticated_login_redirects_by_role(): void
+    {
+        foreach (['ADMIN' => '/dashboard', 'Ventas' => '/ventas/pos', 'Control Stock' => '/productos', '' => '/profile', 'invalid' => '/profile'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->actingAs($user)->get('/login')->assertRedirect($destination);
+            $this->get($destination)->assertOk();
+        }
+    }
+
+    public function test_removed_email_recovery_and_verification_routes_are_not_found(): void
+    {
+        foreach (['/forgot-password', '/reset-password/test-token', '/verify-email', '/email/verification-notification'] as $path) {
+            $this->get($path)->assertNotFound();
+        }
     }
 }

@@ -10,6 +10,17 @@ class DashboardAnalyticsEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_each_dashboard_period_is_available_to_admin_only(): void
+    {
+        $admin = User::factory()->admin()->create();
+        foreach ([1, 7, 30] as $days) {
+            $this->actingAs($admin)->getJson("/dashboard/analytics?window={$days}")
+                ->assertOk()->assertJsonPath('window.days', $days);
+        }
+        $this->actingAs(User::factory()->create(['role' => 'Ventas']))
+            ->getJson('/dashboard/analytics?window=1')->assertForbidden();
+    }
+
     public function test_verified_user_receives_the_default_thirty_day_contract(): void
     {
         $user = User::factory()->admin()->create();

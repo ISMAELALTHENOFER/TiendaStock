@@ -1,3 +1,15 @@
+@if (config('frontend.driver', 'blade') === 'react' && config('frontend.routes.login', 'react') === 'react')
+    <x-guest-layout :show-logo="false">
+    @include('react.app', ['props' => [
+        'page' => 'login',
+        'routes' => ['login' => route('login')],
+        'errors' => $errors->getBag('default')->toArray(),
+        'authError' => $errors->first('username') === __('auth.failed') ? __('auth.failed') : null,
+        'old' => ['username' => old('username')],
+        'status' => session('status'),
+    ]])
+    </x-guest-layout>
+@else
 <x-guest-layout :show-logo="false">
     <x-slot:brand>
         <div class="login-brand" aria-label="TiendaStock">
@@ -59,9 +71,6 @@
                 <span class="ml-2 text-sm text-gray-600 select-none">Recordarme</span>
             </label>
 
-            @if (Route::has('password.request'))
-                <a class="login-recovery-link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
-            @endif
         </div>
 
         <button type="submit" class="login-submit" x-bind:disabled="submitting" x-bind:aria-busy="submitting.toString()">
@@ -71,3 +80,4 @@
         </button>
     </form>
 </x-guest-layout>
+@endif

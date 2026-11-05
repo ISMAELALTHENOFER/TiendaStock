@@ -1,3 +1,12 @@
+@if (config('frontend.driver', 'blade') === 'react' && config('frontend.routes.password.confirm', 'react') === 'react')
+    <x-guest-layout>
+        @include('react.app', ['props' => [
+            'page' => 'password.confirm',
+            'routes' => ['passwordConfirm' => route('password.confirm')],
+            'errors' => $errors->getBag('default')->toArray(),
+        ]])
+    </x-guest-layout>
+@else
 <x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
         {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
@@ -25,3 +34,4 @@
         </div>
     </form>
 </x-guest-layout>
+@endif

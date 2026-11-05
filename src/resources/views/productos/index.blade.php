@@ -38,8 +38,29 @@
             </div>
             @endif
 
+            @if(session('error'))
+                <div role="alert" class="mb-6 rounded-lg bg-red-50 p-4 text-red-700">{{ session('error') }}</div>
+            @endif
+
             {{-- Buscador client-side: el input vive fuera del x-for para no perder foco al re-renderizar filas --}}
             <div x-data="productSearch({{ Js::from($categorias) }})" x-init="cargarProductos()" class="space-y-6">
+
+                <dialog x-ref="activationDialog" aria-labelledby="activation-title" class="w-[calc(100%-2rem)] max-w-md rounded-xl p-5 shadow-lg backdrop:bg-black/50">
+                    <form :action="`/productos/${activationId}/activate`" method="POST" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="activation_id" :value="activationId">
+                        <h2 id="activation-title" class="text-lg font-bold">Activar producto</h2>
+                        <p>Ingresa el stock y confirma la activación.</p>
+                        <label for="activation-stock" class="block font-medium">Stock</label>
+                        <input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required autofocus value="{{ old('cantidad') }}" @if($errors->has('cantidad')) aria-invalid="true" aria-describedby="activation-error" @endif class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                        @error('cantidad') <p id="activation-error" role="alert" class="text-sm text-red-700">{{ $message }}</p> @enderror
+                        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <button type="button" @click="$refs.activationDialog.close()" class="min-h-11 rounded-lg border px-4">Cancelar</button>
+                            <button type="submit" class="min-h-11 rounded-lg bg-green-700 px-4 font-semibold text-white">Sí, activar</button>
+                        </div>
+                    </form>
+                </dialog>
 
                 {{-- Estado de carga: el input SIGUE habilitado (nunca se deshabilita) --}}
                 <div x-show="cargando" x-cloak class="bg-white rounded-xl shadow-sm border border-sky-100 p-8 text-center text-gray-400">
@@ -130,7 +151,7 @@
                             de <strong x-text="totalFiltrados"></strong> producto(s)
                         </div>
                         <label class="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600">Por página
-                            <select x-model.number="POR_PAGINA" @change="paginaActual = 1" aria-label="Productos por página" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-gray-700 focus:ring-2 focus:ring-brand-300">
+                            <select x-model.number="POR_PAGINA" @change="paginaActual = 1; cargarProductos()" aria-label="Productos por página" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-gray-700 focus:ring-2 focus:ring-brand-300">
                                 <option value="15">15</option><option value="30">30</option><option value="50">50</option>
                             </select>
                         </label>
@@ -161,9 +182,9 @@
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Categoría</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Talle</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Color</th>
-                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Compra</th>
+                                    @if (auth()->user()->role === 'ADMIN')<th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Compra</th>@endif
                                     <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">P. Venta</th>
-                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Ganancia</th>
+                                    @if (auth()->user()->role === 'ADMIN')<th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Ganancia</th>@endif
                                     <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Stock</th>
                                     <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
                                 </tr>
@@ -173,7 +194,7 @@
                                     <tr class="hover:bg-sky-50/50 transition-colors duration-200">
                                         <td class="px-6 py-4">
                                             <template x-if="producto.imagen">
-                                                <img :src="'/storage/' + producto.imagen"
+                                                <img :src="producto.imagen"
                                                     :alt="producto.nombre"
                                                     class="h-12 w-12 object-cover rounded-lg border border-slate-200">
                                             </template>
@@ -197,15 +218,17 @@
                                         </td>
                                         <td class="px-6 py-4 text-gray-600" x-text="producto.talle ?? '—'"></td>
                                         <td class="px-6 py-4 text-gray-600" x-text="producto.color ?? '—'"></td>
-                                        <td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_compra)"></td>
+                                        @if (auth()->user()->role === 'ADMIN')<td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_compra)"></td>@endif
                                         <td class="px-6 py-4 text-right text-gray-600 font-medium" x-text="formatCurrency(producto.precio_venta)"></td>
-                                        <td class="px-6 py-4 text-right">
+                                        @if (auth()->user()->role === 'ADMIN')<td class="px-6 py-4 text-right">
                                             <span class="text-green-600 font-bold" x-text="formatCurrency(calcularGanancia(producto))"></span>
                                         </td>
+                                        @endif
                                         <td class="px-6 py-4 text-center">
                                             <span
                                                 class="inline-block px-3 py-1 rounded-full text-xs font-bold"
-                                                :class="producto.cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                :class="producto.cantidad === 0 ? 'bg-red-100 text-red-700' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'"
+                                                :aria-label="producto.cantidad === 0 ? 'Agotado' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'Bajo stock' : 'Stock normal'"
                                                 x-text="producto.cantidad"
                                             ></span>
                                         </td>
@@ -237,12 +260,13 @@
                                                     >
                                                         <input type="hidden" name="_token" :value="csrfToken">
                                                         <input type="hidden" name="_method" value="DELETE">
+                                                        <input type="hidden" name="stock_original" :value="producto.cantidad">
                                                         <button type="button"
                                                             title="Desactivar"
                                                             class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition-colors duration-200"
                                                             @click="confirmDialogShow(
                                                                 'Desactivar producto',
-                                                                'El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.',
+                                                                'El stock pasará a cero y no se registrará una venta.',
                                                                 'Sí, desactivar',
                                                                 'bg-red-600 hover:bg-red-700'
                                                             ).then(r => r && document.getElementById('disable-form-' + producto.id).submit())">
@@ -266,12 +290,7 @@
                                                         <button type="button"
                                                             title="Activar"
                                                             class="text-green-600 hover:text-green-800 hover:bg-green-50 p-2 rounded-lg transition-colors duration-200"
-                                                            @click="confirmDialogShow(
-                                                                'Activar producto',
-                                                                '¿Activar el producto para que vuelva a estar disponible?',
-                                                                'Sí, activar',
-                                                                'bg-green-600 hover:bg-green-700'
-                                                            ).then(r => r && document.getElementById('activate-form-' + producto.id).submit())">
+                                                            @click="activationId = producto.id; $refs.activationDialog.showModal()">
                                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                             </svg>
@@ -293,7 +312,7 @@
                             <div class="bg-white rounded-xl border border-sky-100 p-4 space-y-3 shadow-sm">
                                 <div class="flex items-start gap-3">
                                     <template x-if="producto.imagen">
-                                        <img :src="'/storage/' + producto.imagen" :alt="producto.nombre" class="h-14 w-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">
+                                        <img :src="producto.imagen" :alt="producto.nombre" class="h-14 w-14 object-cover rounded-lg border border-slate-200 flex-shrink-0">
                                     </template>
                                     <template x-if="!producto.imagen">
                                         <span class="inline-flex h-14 w-14 rounded-lg bg-slate-100 items-center justify-center text-slate-300 flex-shrink-0">
@@ -318,23 +337,24 @@
                                         <span class="text-gray-500 text-xs">Color</span>
                                         <p class="font-medium text-gray-900" x-text="producto.color ?? '—'"></p>
                                     </div>
-                                    <div>
+                                    @if (auth()->user()->role === 'ADMIN')<div>
                                         <span class="text-gray-500 text-xs">P. Compra</span>
                                         <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_compra)"></p>
-                                    </div>
+                                    </div>@endif
                                     <div>
                                         <span class="text-gray-500 text-xs">P. Venta</span>
                                         <p class="font-medium text-gray-900" x-text="formatCurrency(producto.precio_venta)"></p>
                                     </div>
-                                    <div>
+                                    @if (auth()->user()->role === 'ADMIN')<div>
                                         <span class="text-gray-500 text-xs">Ganancia</span>
                                         <p class="font-bold text-green-600" x-text="formatCurrency(calcularGanancia(producto))"></p>
-                                    </div>
+                                    </div>@endif
                                     <div class="text-right">
                                         <span class="text-gray-500 text-xs">Stock</span>
                                         <p>
                                             <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold"
-                                                :class="producto.cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                                                :class="producto.cantidad === 0 ? 'bg-red-100 text-red-700' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700'"
+                                                :aria-label="producto.cantidad === 0 ? 'Agotado' : producto.cantidad <= {{ config('inventory.low_stock_threshold', 1) }} ? 'Bajo stock' : 'Stock normal'"
                                                 x-text="producto.cantidad"></span>
                                         </p>
                                     </div>
@@ -347,14 +367,15 @@
                                         <form :id="`card-disable-form-${producto.id}`" :action="`/productos/${producto.id}`" method="POST" style="display:contents">
                                             <input type="hidden" name="_token" :value="csrfToken">
                                             <input type="hidden" name="_method" value="DELETE">
-                                            <button type="button" @click="confirmDialogShow('Desactivar producto','El producto se desactivará, no se borrará. Podrás reactivar si vuelve a tener stock.','Sí, desactivar','bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('card-disable-form-' + producto.id).submit())" class="flex-1 text-center text-red-600 hover:text-red-800 hover:bg-red-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Desactivar</button>
+                                            <input type="hidden" name="stock_original" :value="producto.cantidad">
+                                            <button type="button" @click="confirmDialogShow('Desactivar producto','El stock pasará a cero y no se registrará una venta.','Sí, desactivar','bg-red-600 hover:bg-red-700').then(r => r && document.getElementById('card-disable-form-' + producto.id).submit())" class="flex-1 text-center text-red-600 hover:text-red-800 hover:bg-red-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Desactivar</button>
                                         </form>
                                     </template>
                                     <template x-if="!producto.activo">
                                         <form :id="`card-activate-form-${producto.id}`" :action="`/productos/${producto.id}/activate`" method="POST" style="display:contents">
                                             <input type="hidden" name="_token" :value="csrfToken">
                                             <input type="hidden" name="_method" value="PATCH">
-                                            <button type="button" @click="confirmDialogShow('Activar producto','¿Activar el producto para que vuelva a estar disponible?','Sí, activar','bg-green-600 hover:bg-green-700').then(r => r && document.getElementById('card-activate-form-' + producto.id).submit())" class="flex-1 text-center text-green-600 hover:text-green-800 hover:bg-green-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Activar</button>
+                                            <button type="button" @click="activationId = producto.id; $refs.activationDialog.showModal()" class="flex-1 text-center text-green-600 hover:text-green-800 hover:bg-green-50 font-semibold py-2.5 px-3 rounded-lg text-sm transition-colors">Activar</button>
                                         </form>
                                     </template>
                                 </div>
@@ -422,10 +443,11 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('productSearch', (categorias) => ({
-        // Tamaño de página. El catálogo entero vive en memoria; solo se
-        // renderizan 15 filas por vez para no saturar el DOM.
-        POR_PAGINA: 15,
+    Alpine.data('productSearch', (categorias) => {
+        const params = new URLSearchParams(window.location.search);
+        return ({
+        // El servidor filtra y pagina el catálogo; el navegador solo conserva la página actual.
+        POR_PAGINA: [15, 30, 50].includes(Number(params.get('per_page'))) ? Number(params.get('per_page')) : 15,
 
         // Catálogo vacío hasta que cargue vía fetch; el buscador ya es usable
         // (los filtros no dependen del catálogo, solo filtran 0 filas).
@@ -435,18 +457,28 @@ document.addEventListener('alpine:init', () => {
         // Estado de carga: el input NUNCA se deshabilita por esto.
         cargando: false,
         errorCarga: false,
+        talles: [],
+        colores: [],
 
         // Estado de filtros: el input principal nunca se deshabilita ni se recrea.
-        busqueda: '',
-        filtroCategoria: '',
-        filtroTalle: '',
-        filtroColor: '',
+        busqueda: params.get('buscar') || '',
+        filtroCategoria: params.get('categoria_id') || '',
+        filtroTalle: params.get('talle') || '',
+        filtroColor: params.get('color') || '',
 
         // Toggle administrativo: incluir productos desactivados en el fetch.
-        verInactivos: false,
+        verInactivos: params.get('inactivos') === '1',
+        activationId: {{ Js::from(old('activation_id')) }},
 
         // Página actual del paginado cliente. Se resetea a 1 al cambiar filtros.
-        paginaActual: 1,
+        paginaActual: Math.max(1, Number(params.get('page')) || 1),
+        totalFiltrados: 0,
+        totalPaginas: 1,
+        rangoInicio: 0,
+        rangoFin: 0,
+        searchTimer: null,
+        searchController: null,
+        searchRequest: 0,
 
         // Token CSRF leído una sola vez del meta (no se hardcodea).
         csrfToken: document.querySelector('meta[name="csrf-token"]')?.content ?? '',
@@ -454,12 +486,14 @@ document.addEventListener('alpine:init', () => {
         // Cuando un filtro cambia, ver la página 2 de resultados viejos no tiene
         // sentido. Los watchers resetean a la primera página.
         init() {
-            this.$watch('busqueda', () => { this.paginaActual = 1; });
-            this.$watch('filtroCategoria', () => { this.paginaActual = 1; });
-            this.$watch('filtroTalle', () => { this.paginaActual = 1; });
-            this.$watch('filtroColor', () => { this.paginaActual = 1; });
-            // Re-fetch del catálogo al toggle: la visibilidad de inactivos cambia el conjunto.
-            this.$watch('verInactivos', () => { this.cargarProductos(); });
+            @if($errors->has('cantidad') && old('activation_id'))
+                this.$nextTick(() => this.$refs.activationDialog.showModal());
+            @endif
+            this.$watch('busqueda', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroCategoria', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroTalle', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('filtroColor', () => { this.paginaActual = 1; this.cargarProductos(); });
+            this.$watch('verInactivos', () => { this.paginaActual = 1; this.cargarProductos(); });
         },
 
         /**
@@ -467,39 +501,50 @@ document.addEventListener('alpine:init', () => {
          * buscador usable y ofrece reintentar, sin bloquear la UI.
          */
         async cargarProductos() {
-            this.cargando = true;
+            clearTimeout(this.searchTimer);
+            this.searchController?.abort();
+            const request = ++this.searchRequest;
+            const controller = new AbortController();
+            this.searchController = controller;
             this.errorCarga = false;
-            try {
-                const url = new URL('{{ route('productos.data') }}', window.location.origin);
-                if (this.verInactivos) {
-                    url.searchParams.set('inactivos', '1');
+            const url = new URL('{{ route('productos.data') }}', window.location.origin);
+            url.searchParams.set('page', String(this.paginaActual));
+            url.searchParams.set('per_page', String(this.POR_PAGINA));
+            if (this.verInactivos) url.searchParams.set('inactivos', '1');
+            if (this.busqueda.trim().length >= 2) url.searchParams.set('buscar', this.busqueda.trim());
+            if (this.filtroCategoria) url.searchParams.set('categoria_id', this.filtroCategoria);
+            if (this.filtroTalle.trim()) url.searchParams.set('talle', this.filtroTalle.trim());
+            if (this.filtroColor.trim()) url.searchParams.set('color', this.filtroColor.trim());
+            this.searchTimer = setTimeout(async () => {
+                this.cargando = true;
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store',
+                        signal: controller.signal,
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const page = await response.json();
+                    if (request !== this.searchRequest) return;
+                    this.productos = page.data;
+                    this.totalFiltrados = page.total;
+                    this.totalPaginas = Math.max(1, page.last_page);
+                    this.paginaActual = page.current_page;
+                    this.rangoInicio = page.from || 0;
+                    this.rangoFin = page.to || 0;
+                    this.talles = page.filters.talles;
+                    this.colores = page.filters.colores;
+                } catch (error) {
+                    if (error.name !== 'AbortError' && request === this.searchRequest) {
+                        console.error('Error al cargar el catálogo:', error);
+                        this.errorCarga = true;
+                        this.productos = [];
+                        this.totalFiltrados = 0;
+                    }
+                } finally {
+                    if (request === this.searchRequest) this.cargando = false;
                 }
-                const response = await fetch(url.toString(), {
-                    headers: { 'Accept': 'application/json' },
-                    // El catálogo muta con cada edit/activate/destroy; nunca
-                    // servir una versión cacheada por el navegador. El backend
-                    // ya envía Cache-Control: no-store, pero `cache: 'no-store'
-                    // refuerza la intención desde el cliente y evita heurísticas
-                    // de caché en navegadores antiguos o proxies.
-                    cache: 'no-store',
-                });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                this.productos = await response.json();
-                this.paginaActual = 1;
-            } catch (e) {
-                console.error('Error al cargar el catálogo:', e);
-                this.errorCarga = true;
-                this.productos = [];
-            } finally {
-                this.cargando = false;
-            }
-        },
-
-        /** Coincidencia OR en los 4 campos de texto, case-insensitive. Soporta null. */
-        coincideTexto(valor, termino) {
-            if (!termino) return true;
-            const haystack = (valor ?? '').toString().toLowerCase();
-            return haystack.includes(termino);
+            }, this.busqueda ? 250 : 0);
         },
 
         get hayFiltrosActivos() {
@@ -509,86 +554,25 @@ document.addEventListener('alpine:init', () => {
                 || this.filtroColor.trim() !== '';
         },
 
-        /**
-         * Aplica AND entre filtros activos. La caja de texto busca OR entre
-         * nombre / categoria.nombre / talle / color. Los demás filtros acotan
-         * su campo correspondiente. Dispara desde dos caracteres.
-         */
-        get filtrados() {
-            const termino = this.busqueda.trim().toLowerCase();
-            const talle = this.filtroTalle.trim().toLowerCase();
-            const color = this.filtroColor.trim().toLowerCase();
-            const categoriaId = this.filtroCategoria;
-
-            return this.productos.filter((producto) => {
-                // Filtro por categoría exacta (id).
-                if (categoriaId !== '' && String(producto.categoria_id) !== String(categoriaId)) {
-                    return false;
-                }
-
-                // Filtro por talle: solo dentro del campo talle.
-                if (talle && !this.coincideTexto(producto.talle, talle)) {
-                    return false;
-                }
-
-                // Filtro por color: solo dentro del campo color.
-                if (color && !this.coincideTexto(producto.color, color)) {
-                    return false;
-                }
-
-                // Caja de texto principal: OR entre los 4 campos.
-                if (termino.length >= 2) {
-                    const enNombre = this.coincideTexto(producto.nombre, termino);
-                    const enCategoria = this.coincideTexto(producto.categoria?.nombre, termino);
-                    const enTalle = this.coincideTexto(producto.talle, termino);
-                    const enColor = this.coincideTexto(producto.color, termino);
-                    if (!(enNombre || enCategoria || enTalle || enColor)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-        },
-
-        get totalFiltrados() {
-            return this.filtrados.length;
-        },
-
-        // --- Paginación client-side sobre el resultado filtrado ---
-
-        get totalPaginas() {
-            return Math.max(1, Math.ceil(this.totalFiltrados / this.POR_PAGINA));
-        },
-
-        /** Slice del resultado filtrado correspondiente a la página actual. */
+        // El servidor entrega productos filtrados y paginados.
+        /** Server already returns only the requested page. */
+        get filtrados() { return this.productos; },
         get productosPagina() {
-            const inicio = (this.paginaActual - 1) * this.POR_PAGINA;
-            return this.filtrados.slice(inicio, inicio + this.POR_PAGINA);
-        },
-
-        /** Índice (1-based) del primer producto visible en la página actual. */
-        get rangoInicio() {
-            if (this.totalFiltrados === 0) return 0;
-            return (this.paginaActual - 1) * this.POR_PAGINA + 1;
-        },
-
-        /** Índice (1-based) del último producto visible en la página actual. */
-        get rangoFin() {
-            return Math.min(this.paginaActual * this.POR_PAGINA, this.totalFiltrados);
+            return this.productos;
         },
 
         irAPagina(n) {
             const destino = Math.max(1, Math.min(n, this.totalPaginas));
             this.paginaActual = destino;
+            this.cargarProductos();
         },
 
         paginaAnterior() {
-            if (this.paginaActual > 1) this.paginaActual--;
+            if (this.paginaActual > 1) { this.paginaActual--; this.cargarProductos(); }
         },
 
         paginaSiguiente() {
-            if (this.paginaActual < this.totalPaginas) this.paginaActual++;
+            if (this.paginaActual < this.totalPaginas) { this.paginaActual++; this.cargarProductos(); }
         },
 
         limpiar() {
@@ -612,6 +596,6 @@ document.addEventListener('alpine:init', () => {
                 maximumFractionDigits: 2,
             });
         },
-    }));
+    });
 });
 </script>

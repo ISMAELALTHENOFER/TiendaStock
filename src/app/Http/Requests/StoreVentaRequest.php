@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Producto;
 use App\Models\Venta;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -16,16 +15,14 @@ class StoreVentaRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'cart_id' => 'required|integer',
             'items' => 'required|array|min:1',
-            'items.*.producto_id' => 'required|integer|exists:productos,id',
-            'items.*.cantidad' => 'required|integer|min:1',
+            'items.*.producto_id' => 'required|integer',
+            'items.*.cantidad' => 'required|integer|min:1|max:2147483647',
 
             'cliente_nombre' => 'nullable|string|max:255',
-            'subtotal' => 'required|numeric|min:0',
-            'descuento' => 'nullable|numeric|min:0',
-            'impuesto' => 'nullable|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'pago_con' => 'required|numeric|min:0',
+            'descuento' => ['nullable', 'regex:/^\d{1,8}(?:\.\d{1,2})?$/'],
+            'pago_con' => ['required', 'regex:/^\d{1,8}(?:\.\d{1,2})?$/'],
             'metodo_pago' => 'required|string|in:efectivo,tarjeta,transferencia',
             'tipo_entrega' => ['required', 'string', 'in:'.implode(',', Venta::TIPOS_ENTREGA)],
         ];
@@ -34,6 +31,10 @@ class StoreVentaRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'cart_id.required' => 'Agrega los productos al carrito antes de registrar la venta.',
+            'cart_id.integer' => 'El carrito no es válido.',
+            'descuento.regex' => 'Ingresa un descuento válido con hasta dos decimales.',
+            'pago_con.regex' => 'Ingresa un monto válido con hasta dos decimales.',
             'items.required' => 'Debe agregar al menos un producto al carrito.',
             'items.min' => 'Debe agregar al menos un producto al carrito.',
             'items.*.producto_id.required' => 'Cada ítem debe tener un producto.',
@@ -51,33 +52,4 @@ class StoreVentaRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            $data = $this->validated();
-
-            // Validar que pago_con >= total
-            if (isset($data['pago_con'], $data['total'])) {
-                if ((float) $data['pago_con'] < (float) $data['total']) {
-                    $validator->errors()->add(
-                        'pago_con',
-                        'El monto recibido debe ser mayor o igual al total de la venta.'
-                    );
-                }
-            }
-
-            // Validar stock suficiente para cada item (primera línea de defensa)
-            if (isset($data['items'])) {
-                foreach ($data['items'] as $index => $item) {
-                    $producto = Producto::find($item['producto_id']);
-                    if ($producto && $item['cantidad'] > $producto->cantidad) {
-                        $validator->errors()->add(
-                            "items.{$index}.cantidad",
-                            "Stock insuficiente para {$producto->nombre}. Disponible: {$producto->cantidad}"
-                        );
-                    }
-                }
-            }
-        });
-    }
 }

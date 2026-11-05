@@ -12,6 +12,12 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['frontend.driver' => 'blade']);
+    }
+
     public function test_login_screen_can_be_rendered(): void
     {
         $response = $this->get('/login');
@@ -50,7 +56,26 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('profile.edit', absolute: false));
+    }
+
+    public function test_login_defaults_follow_the_user_role(): void
+    {
+        foreach (['ADMIN' => 'dashboard', 'Ventas' => 'ventas.pos', 'Control Stock' => 'productos.index', '' => 'profile.edit', 'invalid' => 'profile.edit'] as $role => $destination) {
+            $user = User::factory()->create(['role' => $role ?: null]);
+            $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+                ->assertRedirect(route($destination, absolute: false));
+            $this->post('/logout');
+        }
+    }
+
+    public function test_intended_dashboard_redirect_remains_subject_to_role_authorization(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $this->get('/dashboard')->assertRedirect('/login');
+        $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+            ->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertForbidden();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -78,6 +103,36 @@ class AuthenticationTest extends TestCase
         $this->assertSame(0, $xpath->query('//*[@id="username-error" or @id="password-error"]')->length);
 
         $this->assertSame(1, substr_count($response->getContent(), __('auth.failed')));
+    }
+
+    public function test_inactive_account_is_reported_only_after_valid_password(): void
+    {
+        $user = User::factory()->create(['activo' => false]);
+
+        $this->post('/login', ['username' => $user->username, 'password' => 'wrong-password'])
+            ->assertSessionHasErrors(['username' => __('auth.failed')]);
+        $this->post('/login', ['username' => 'missing-user', 'password' => 'password'])
+            ->assertSessionHasErrors(['username' => __('auth.failed')]);
+        $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+            ->assertSessionHasErrors(['username' => 'Esta cuenta está desactivada.']);
+        $this->assertGuest();
+    }
+
+    public function test_inactive_authenticated_user_is_logged_out_on_next_non_logout_request(): void
+    {
+        $user = User::factory()->ventas()->create();
+        $this->actingAs($user);
+        $user->update(['activo' => false]);
+
+        $this->get('/profile')->assertRedirect('/login');
+        $this->assertGuest();
+    }
+
+    public function test_inactive_authenticated_user_can_still_explicitly_logout(): void
+    {
+        $user = User::factory()->create(['activo' => false]);
+        $this->actingAs($user)->post('/logout')->assertRedirect('/');
+        $this->assertGuest();
     }
 
     public function test_missing_credentials_keep_field_errors_without_authentication_alert(): void

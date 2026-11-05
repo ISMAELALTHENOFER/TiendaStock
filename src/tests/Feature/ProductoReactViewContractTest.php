@@ -75,12 +75,35 @@ class ProductoReactViewContractTest extends TestCase
         $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Editar Producto');
     }
 
+    public function test_product_detail_uses_react_by_default_and_keeps_blade_fallback_and_admin_cost_visibility(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->create(['role' => 'Control Stock']);
+        $categoria = Categoria::factory()->create();
+        $producto = Producto::factory()->create(['categoria_id' => $categoria->id, 'precio_compra' => 20, 'precio_venta' => 40, 'imagen' => 'database/test']);
+
+        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $response->assertOk()->assertSee('id="react-root"', false);
+        $this->assertSame('productos.show', $props['page'] ?? null);
+        $this->assertSame(true, $props['routes']['canViewProductCost'] ?? null);
+        $this->assertStringStartsWith(route('productos.imagen', $producto), $props['routes']['productoImage'] ?? '');
+
+        $this->actingAs($staff)->get(route('productos.show', $producto))
+            ->assertOk()->assertSee('id="react-root"', false)
+            ->assertDontSee('"precio_compra"', false);
+        config(['frontend.routes.productos.show' => 'blade']);
+        $this->actingAs($admin)->get(route('productos.show', $producto))
+            ->assertOk()->assertDontSee('id="react-root"', false)->assertSee('Detalles del producto');
+    }
+
     public function test_react_product_index_preserves_catalog_search_and_filters(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
         foreach ([
-            '/productos/data',
+            'routes.productosData',
             'inactivos',
             'Buscar por nombre, categoría, talle o color',
             'Limpiar filtros',
@@ -92,11 +115,11 @@ class ProductoReactViewContractTest extends TestCase
         }
     }
 
-    public function test_react_product_index_preserves_fifteen_row_pagination_and_low_stock_badge(): void
+    public function test_react_product_index_uses_server_pagination_and_shared_stock_threshold(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        foreach (['pageSize, setPageSize] = useState(15)', 'currentPage={paginaSegura}', 'onPageChange={setPaginaActual}', 'cantidad <= 5', 'danger'] as $contract) {
+        foreach (['pageSize, setPageSize] = useState([15, 30, 50].includes', 'page: String(paginaActual)', 'catalogo?.data', 'onPageChange={setPaginaActual}', 'stockTone(producto.cantidad, lowStockThreshold)', 'danger'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
 
@@ -108,7 +131,7 @@ class ProductoReactViewContractTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/views/productos/index.blade.php'));
 
-        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'POR_PAGINA: 15', 'paginaSiguiente()'] as $contract) {
+        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'per_page', 'paginaSiguiente()'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -141,14 +164,36 @@ class ProductoReactViewContractTest extends TestCase
         }
     }
 
+    public function test_layout_exposes_installable_pwa_metadata_using_existing_icons(): void
+    {
+        $layout = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+        $manifest = file_get_contents(public_path('manifest.webmanifest'));
+        $data = json_decode($manifest, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertStringContainsString('rel="manifest"', $layout);
+        $this->assertStringContainsString('name="theme-color" content="#006948"', $layout);
+        $this->assertStringContainsString('rel="apple-touch-icon"', $layout);
+        $this->assertSame('standalone', $data['display']);
+        $this->assertFileExists(public_path(ltrim($data['icons'][0]['src'], '/')));
+    }
+
+    public function test_react_page_modules_are_lazy_loaded_with_shared_loading_state(): void
+    {
+        $app = file_get_contents(base_path('resources/js/react/app.jsx'));
+
+        $this->assertStringContainsString('lazy(() => import(', $app);
+        $this->assertStringContainsString('<Suspense fallback={<LoadingState', $app);
+        $this->assertStringContainsString("JSON_HEX_TAG", file_get_contents(base_path('resources/views/react/app.blade.php')));
+    }
+
     public function test_react_product_form_preserves_money_inline_category_and_image_contracts(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
         $money = file_get_contents(base_path('resources/js/react/lib/productMoneyInput.js'));
 
         foreach ([
-            '/categorias/inline',
-            '/productos/check-duplicate',
+            'routes.categoriasInline',
+            'routes.productoDuplicateCheck',
             'multipart/form-data',
             'ProductImage',
             'Vista previa',
@@ -160,7 +205,8 @@ class ProductoReactViewContractTest extends TestCase
             'error={errors?.imagen?.[0]}',
             'role="alert"',
             'saveResponse(response)',
-            'defaultValue={producto?.categoria_id ?? \'\'}',
+            'value={categoryId}',
+            'onChange={(event) => setCategoryId(event.target.value)}',
             'const closeInline = useCallback(() => setInlineOpen(false), []);',
             'onClose={closeInline}',
         ] as $contract) {

@@ -80,10 +80,10 @@ class UserReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/users.jsx'));
 
         foreach ([
-            'Usuarios del Sistema',
+            'Usuarios del sistema',
             'Nombre',
             'Usuario',
-            'Email',
+            'Correo electrónico',
             'Rol',
             'Acciones',
             'Administrador',
@@ -91,6 +91,10 @@ class UserReactViewContractTest extends TestCase
             'Control Stock',
             'Sin rol',
             'Editar',
+            'Ver inactivos',
+            'Activo',
+            'Inactivo',
+            'ConfirmDialog',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
@@ -119,9 +123,9 @@ class UserReactViewContractTest extends TestCase
             'Mostrando',
             'usuarios',
             'No hay usuarios en el sistema',
-            'Crea tu primer usuario para comenzar',
-            'Nuevo Usuario',
-            'Crear Primer Usuario',
+            'Crea tu primer usuario para empezar.',
+            'Nuevo usuario',
+            'Crear primer usuario',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
@@ -143,15 +147,15 @@ class UserReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/users.jsx'));
 
         foreach ([
-            'Información del Usuario',
-            'Completa los detalles para crear un nuevo usuario',
+            'Información del usuario',
+            'Completa los datos para crear un usuario.',
             'Nombre completo',
             'Nombre de usuario',
             'Correo electrónico',
             'Contraseña',
             'Confirmar contraseña',
             'Rol de usuario',
-            'Crear Usuario',
+            'Crear usuario',
             'Cancelar',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
@@ -163,10 +167,10 @@ class UserReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/js/react/users.jsx'));
 
         foreach ([
-            'Modificar Usuario',
-            'Actualiza los detalles del usuario',
+            'Modificar usuario',
+            'Actualiza los datos del usuario.',
             'dejar en blanco para mantener la actual',
-            'Actualizar Usuario',
+            'Actualizar usuario',
             '_method',
             'PUT',
         ] as $contract) {

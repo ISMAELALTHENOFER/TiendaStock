@@ -32,7 +32,7 @@ class ProductoSoftDisableTest extends TestCase
             'activo' => true,
         ]);
 
-        $response = $this->actingAs($this->admin)->delete(route('productos.destroy', $producto));
+        $response = $this->actingAs($this->admin)->delete(route('productos.destroy', $producto), ['stock_original' => $producto->cantidad]);
 
         $response->assertRedirect(route('productos.index'));
         $response->assertSessionHas('success', 'Producto desactivado correctamente.');
@@ -41,6 +41,7 @@ class ProductoSoftDisableTest extends TestCase
         $this->assertDatabaseHas('productos', [
             'id' => $producto->id,
             'activo' => false,
+            'cantidad' => 0,
         ]);
         $this->assertDatabaseCount('productos', 1);
     }
@@ -56,6 +57,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Producto Inactivo',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.data'));
@@ -106,6 +108,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Producto Inactivo',
             'activo' => false,
+            'cantidad' => 0,
         ]);
         // Producto con stock 0 y activo=true (bypass del saving event).
         // Debe aparecer en inactivos aunque activo sea true, porque no está
@@ -126,7 +129,7 @@ class ProductoSoftDisableTest extends TestCase
         // Inactivos muestra: el desactivado + el de stock 0. No el activo con stock.
         $response->assertJsonFragment(['id' => $inactive->id, 'activo' => false]);
         $response->assertJsonFragment(['id' => $zeroStock->id]);
-        $this->assertNotContains($active->id, array_column($response->json(), 'id'));
+        $this->assertNotContains($active->id, array_column($response->json('data'), 'id'));
     }
 
     public function test_search_endpoint_excludes_inactive_products(): void
@@ -141,6 +144,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'ZapatillaUnicaParaBusqueda Inactiva',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.search', ['q' => 'ZapatillaUnicaParaBusqueda']));
@@ -156,6 +160,7 @@ class ProductoSoftDisableTest extends TestCase
             'categoria_id' => $this->categoria->id,
             'nombre' => 'SoloInactivoBusqueda',
             'activo' => false,
+            'cantidad' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.search', ['q' => 'SoloInactivoBusqueda']));

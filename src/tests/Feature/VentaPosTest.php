@@ -22,6 +22,13 @@ class VentaPosTest extends TestCase
 
     private Producto $producto;
 
+    private function quote(): int
+    {
+        return $this->actingAs($this->userVentas)->postJson('/ventas/cart', [
+            'producto_id' => $this->producto->id, 'precio_venta' => $this->producto->precio_venta,
+        ])->assertOk()->json('id');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -110,9 +117,24 @@ class VentaPosTest extends TestCase
 
     // ─── Create Sale ───────────────────────────────────────────
 
+    public function test_sale_total_cannot_be_reduced_by_a_manipulated_request(): void
+    {
+        $this->actingAs($this->userVentas)->post('/ventas', [
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 1]],
+            'subtotal' => 1,
+            'total' => 1,
+            'pago_con' => 25,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
+        ]);
+
+        $this->assertDatabaseMissing('ventas', ['user_id' => $this->userVentas->id, 'total' => 1]);
+    }
+
     public function test_can_create_complete_sale(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 3],
             ],
@@ -165,6 +187,7 @@ class VentaPosTest extends TestCase
     public function test_can_create_sale_with_uber_tipo_entrega(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 1],
             ],
@@ -231,6 +254,7 @@ class VentaPosTest extends TestCase
     public function test_insufficient_stock_returns_validation_error(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 999],
             ],
@@ -250,6 +274,7 @@ class VentaPosTest extends TestCase
     public function test_pago_con_less_than_total_returns_validation_error(): void
     {
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 1],
             ],
@@ -265,11 +290,34 @@ class VentaPosTest extends TestCase
 
     // ─── Transactional Integrity (NFR-01) ────────────────────
 
+    public function test_transactional_stock_failure_redirects_to_pos_and_rolls_back(): void
+    {
+        $response = $this->actingAs($this->userVentas)->from(route('ventas.pos'))->post('/ventas', [
+            'cart_id' => $this->quote(),
+            'items' => [
+                ['producto_id' => $this->producto->id, 'cantidad' => 6],
+                ['producto_id' => $this->producto->id, 'cantidad' => 6],
+            ],
+            'subtotal' => 300,
+            'total' => 300,
+            'pago_con' => 300,
+            'metodo_pago' => 'efectivo',
+            'tipo_entrega' => 'local',
+        ]);
+
+        $response->assertRedirect(route('ventas.pos'));
+        $response->assertSessionHasErrors('items.1.cantidad');
+        $this->assertDatabaseCount('ventas', 0);
+        $this->assertDatabaseCount('venta_items', 0);
+        $this->assertSame(10, $this->producto->fresh()->cantidad);
+    }
+
     public function test_transactional_integrity_no_orphan_records_on_failure(): void
     {
         // When FormRequest validation fails (insufficient stock via withValidator),
         // NO venta or venta_items records should be created
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 999],
             ],
@@ -291,6 +339,7 @@ class VentaPosTest extends TestCase
     {
         // When a sale succeeds, ALL records (venta + items + stock decrement) must exist
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 2],
                 ['producto_id' => $this->producto->id, 'cantidad' => 3],
@@ -315,6 +364,7 @@ class VentaPosTest extends TestCase
     {
         // Pre-create a completed sale via the controller (not factory)
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 4],
             ],
@@ -345,6 +395,7 @@ class VentaPosTest extends TestCase
     {
         // Create the venta
         $response = $this->actingAs($this->userVentas)->post('/ventas', [
+            'cart_id' => $this->quote(),
             'items' => [
                 ['producto_id' => $this->producto->id, 'cantidad' => 2],
             ],
@@ -486,15 +537,64 @@ class VentaPosTest extends TestCase
         $venta = Venta::factory()->anulada()->create([
             'user_id' => $this->userVentas->id,
         ]);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
 
         $response = $this->actingAs($this->userVentas)->post("/ventas/{$venta->id}/cancel");
 
         $response->assertRedirect();
         $response->assertSessionHas('error');
 
-        // Stock should NOT have changed (no items in this venta)
-        $this->producto->refresh();
-        $this->assertEquals(10, $this->producto->cantidad);
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'anulada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
+    }
+
+    public function test_admin_can_cancel_another_sellers_sale_and_reactivate_products_once(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
+        $other = Producto::factory()->create(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0]);
+        $first = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $other->id, 'cantidad' => 2]);
+        $second = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 1]);
+
+        $this->actingAs($this->userAdmin)->post("/ventas/{$venta->id}/cancel")
+            ->assertRedirect(route('ventas.index'))->assertSessionHas('success');
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'anulada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $first->id, 'cantidad' => 2]);
+        $this->assertDatabaseHas('venta_items', ['id' => $second->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $other->id, 'cantidad' => 2, 'activo' => true]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 4, 'activo' => true]);
+
+        $this->post("/ventas/{$venta->id}/cancel")->assertSessionHas('error');
+        $this->assertDatabaseHas('productos', ['id' => $other->id, 'cantidad' => 2, 'activo' => true]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 4, 'activo' => true]);
+    }
+
+    public function test_other_seller_cannot_cancel_sale_or_change_stock(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
+
+        $this->actingAs(User::factory()->ventas()->create())->post("/ventas/{$venta->id}/cancel")->assertForbidden();
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'completada']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
+    }
+
+    public function test_sale_in_other_state_cannot_be_cancelled(): void
+    {
+        $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'pendiente']);
+        $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
+        $this->producto->update(['cantidad' => 0]);
+
+        $this->actingAs($this->userVentas)->from('/ventas')->post("/ventas/{$venta->id}/cancel")
+            ->assertRedirect('/ventas')->assertSessionHas('error');
+        $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'pendiente']);
+        $this->assertDatabaseHas('venta_items', ['id' => $item->id, 'cantidad' => 3]);
+        $this->assertDatabaseHas('productos', ['id' => $this->producto->id, 'cantidad' => 0, 'activo' => false]);
     }
 
     // ─── Role Authorization ────────────────────────────────────
@@ -553,7 +653,8 @@ class VentaPosTest extends TestCase
 
     public function test_sidebar_link_shown_for_ventas(): void
     {
-        $response = $this->actingAs($this->userVentas)->get('/dashboard');
+        config(['frontend.driver' => 'blade']);
+        $response = $this->actingAs($this->userVentas)->get('/ventas');
         $response->assertOk();
         $response->assertSee('Ventas');
     }
@@ -567,7 +668,8 @@ class VentaPosTest extends TestCase
 
     public function test_sidebar_link_hidden_for_control_stock(): void
     {
-        $response = $this->actingAs($this->userControlStock)->get('/dashboard');
+        config(['frontend.driver' => 'blade']);
+        $response = $this->actingAs($this->userControlStock)->get('/productos');
         $response->assertOk();
         $response->assertDontSee('Ventas');
     }

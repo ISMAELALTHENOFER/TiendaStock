@@ -8,11 +8,13 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
+import { Dropdown } from './components/ui/Dropdown.jsx';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
+import { stockTone } from './lib/stockTone.js';
+import { isValidDateRange } from './lib/dateRange.js';
+import { formatMoney } from './lib/formatMoney.js';
 
-const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-const formatMoney = (value) => money.format(Number(value || 0));
 const maskMoney = (value) => {
     const digits = String(value).replace(/\D/g, '');
     return digits ? (Number(digits) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
@@ -26,12 +28,12 @@ const deliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : 
 const detailDeliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : sale.tipo_entrega === 'uber' ? 'Envío por Uber' : '—';
 const paymentLabel = (method) => method ? method.charAt(0).toUpperCase() + method.slice(1) : '—';
 
-function CancelForm({ sale, compact = false }) {
+function CancelForm({ sale, routes, compact = false }) {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const formRef = useRef(null);
     if (sale.estado !== 'completada') return null;
     return <>
-        <form ref={formRef} action={`/ventas/${sale.id}/cancel`} method="post">
+        <form ref={formRef} action={`${routes.ventas}/${sale.id}/cancel`} method="post">
             <input type="hidden" name="_token" value={csrf()} />
             <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className={compact ? 'block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50' : 'min-h-11 rounded-control px-4 text-sm font-semibold text-red-700 hover:bg-red-50'}>Cancelar venta #{sale.id}</button>
         </form>
@@ -47,13 +49,10 @@ function CancelForm({ sale, compact = false }) {
     </>;
 }
 
-function SaleActions({ sale }) {
+function SaleActions({ sale, routes }) {
     return <div className="flex items-center justify-start gap-2">
-        <a href={`/ventas/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
-        {sale.estado === 'completada' && <details className="relative">
-            <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-control text-lg text-muted hover:bg-surface-muted" aria-label={`Acciones de venta #${sale.id}`} title={`Acciones de venta #${sale.id}`}>⋮</summary>
-            <div className="absolute right-0 z-10 mt-1 min-w-44 rounded-card border border-border bg-surface p-2 shadow-subtle"><CancelForm sale={sale} compact /></div>
-        </details>}
+        <a href={`${routes.ventas}/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
+        {sale.estado === 'completada' && <Dropdown portal ariaLabel={`Acciones de venta #${sale.id}`} label="⋮"><CancelForm sale={sale} routes={routes} compact /></Dropdown>}
     </div>;
 }
 
@@ -75,11 +74,14 @@ export function SalesHistory({ sales, query = {}, routes }) {
         params.set('per_page', String(pageSize));
         return `${routes.ventas}?${params}`;
     };
+    const [dateError, setDateError] = useState('');
     const submit = (event) => {
-        event.preventDefault();
-        if (filters.desde && filters.hasta && filters.desde > filters.hasta) {
-            window.alert('La fecha Desde debe ser menor o igual a Hasta.');
+        if (!isValidDateRange(filters.desde, filters.hasta)) {
+            event.preventDefault();
+            setDateError('La fecha Desde debe ser anterior o igual a Hasta.');
+            return;
         }
+        setDateError('');
     };
     return <div className="space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -95,37 +97,42 @@ export function SalesHistory({ sales, query = {}, routes }) {
                 <input type="hidden" name="per_page" value={pageSize} />
                 <Button type="submit">Filtrar</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted">Limpiar</a>
             </form>
+            {dateError && <p className="mt-3 text-sm text-red-700" role="alert">{dateError}</p>}
         </Card>
         {liveSearch.searching && <p role="status" className="text-sm text-muted">Buscando ventas…</p>}
         {liveSearch.searchError && <p role="alert" className="text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
         {data.length === 0 ? <Card className="py-12 text-center"><p className="text-lg font-semibold text-ink">No hay ventas registradas.</p><p className="mt-1 text-sm text-muted">Las ventas realizadas aparecerán aquí.</p><a href={routes.ventasPos} className="mt-6 inline-flex min-h-11 items-center rounded-control bg-primary px-5 text-sm font-semibold text-white">Realizar primera venta</a></Card> : <>
             <div className="hidden overflow-x-auto rounded-card border border-border bg-surface shadow-subtle md:block">
-                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Items', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
-                     <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items?.length || 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} /></td></tr>)}</tbody>
+                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Artículos', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
+                      <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items_count ?? sale.items?.length ?? 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} routes={routes} /></td></tr>)}</tbody>
                 </table>
             </div>
-             <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Items</dt><dd>{sale.items?.length || 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesado por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} /></Card>)}</div>
+              <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Artículos</dt><dd>{sale.items_count ?? sale.items?.length ?? 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesada por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} routes={routes} /></Card>)}</div>
         </>}
         <Pagination currentPage={page?.current_page || 1} lastPage={page?.last_page || 1} pageSize={pageSize} ariaLabel="Paginación de ventas" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} ventas`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const params = new URLSearchParams(window.location.search); params.set('per_page', String(size)); params.set('page', '1'); window.location.assign(`${routes.ventas}?${params}`); }} />
     </div>;
 }
 
-async function postSale(payload, onError) {
-    const response = await fetch('/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify(payload) });
+async function postSale(payload, routes, onError) {
+    const response = await fetch(routes.ventas, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify(payload) });
     if (response.redirected) { window.location.assign(response.url); return true; }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) { onError(data.errors || { form: [data.message || 'No se pudo registrar la venta.'] }); return false; }
+    if (data.redirect) { window.location.assign(data.redirect); return true; }
     window.location.reload();
     return true;
 }
 
-export function SalesPos({ routes, initialErrors = {} }) {
+export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) {
     const [search, setSearch] = useState('');
     const [results, setResults] = useState([]);
     const searchRequest = useRef(0);
     const searchInput = useRef(null);
     const [searchError, setSearchError] = useState(false);
     const [cart, setCart] = useState([]);
+    const [cartId, setCartId] = useState(null);
+    const [adding, setAdding] = useState(false);
+    const cartBusy = useRef(false);
     const [delivery, setDelivery] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
     const [paid, setPaid] = useState('');
@@ -139,30 +146,69 @@ export function SalesPos({ routes, initialErrors = {} }) {
     const total = totalCents / 100;
     const paidCents = Math.round(parseMoney(paid) * 100);
     const change = Math.max(0, parseMoney(paid) - total);
-    const searchProducts = async (value) => {
+    useEffect(() => {
         const request = ++searchRequest.current;
-        setSearch(value);
+        const controller = new AbortController();
+        const query = search.trim();
         setSearchError(false);
-        if (value.trim().length < 2) { setResults([]); setSearching(false); return; }
-        setSearching(true);
-        try {
-            const products = await api.get(`/productos/search?q=${encodeURIComponent(value)}`);
-            if (request === searchRequest.current) setResults(products);
-        } catch {
-            if (request === searchRequest.current) { setResults([]); setSearchError(true); }
-        } finally {
-            if (request === searchRequest.current) setSearching(false);
+        if (query.length < 2) {
+            setResults([]);
+            setSearching(false);
+            return () => controller.abort();
         }
+
+        const timeout = window.setTimeout(async () => {
+            setSearching(true);
+            try {
+                const products = await api.get(`${routes.productosSearch}?q=${encodeURIComponent(query)}`, { cache: 'no-store', signal: controller.signal });
+                if (request === searchRequest.current) setResults(products);
+            } catch (error) {
+                if (error.name !== 'AbortError' && request === searchRequest.current) { setResults([]); setSearchError(true); }
+            } finally {
+                if (request === searchRequest.current) setSearching(false);
+            }
+        }, 250);
+
+        return () => { window.clearTimeout(timeout); controller.abort(); };
+    }, [search]);
+    const searchProducts = (value) => { setSearch(value); setSearchError(false); };
+    const add = async (product) => {
+        if (cartBusy.current) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch(`${routes.ventas}/cart`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ cart_id: cartId, producto_id: product.id, precio_venta: cart.find((item) => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }) });
+            const data = await response.json();
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo agregar el producto.'] }); return; }
+            setCartId(data.id);
+            setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: data.precio_venta, cantidad: 1, stock: product.cantidad }]);
+        } catch { setErrors({ form: ['No se pudo agregar el producto. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
     };
-    const add = (product) => setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: product.precio_venta, cantidad: 1, stock: product.cantidad }]);
+    const remove = async (productId = null) => {
+        if (cartBusy.current || !cartId) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch(`${routes.ventas}/cart/${cartId}/items${productId === null ? '' : `/${productId}`}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
+            const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
+            setCart(remaining);
+            if (!remaining.length) { setCartId(null); setPaid(''); setDiscount(''); }
+        } catch { setErrors({ form: ['No se pudo actualizar el carrito. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
+    };
     const submit = async () => {
-        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting) return;
+        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || cartBusy.current) return;
+        cartBusy.current = true;
         setSubmitting(true); setErrors({});
         try {
-            await postSale({ items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), subtotal, descuento: parseMoney(discount), impuesto: 0, total, pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, setErrors);
+            await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, routes, setErrors);
         } catch {
-            setErrors({ form: ['No se pudo registrar la venta. Reintente.'] });
+            setErrors({ form: ['No se pudo registrar la venta. Intenta nuevamente.'] });
         } finally {
+            cartBusy.current = false;
             setSubmitting(false);
         }
     };
@@ -189,11 +235,11 @@ export function SalesPos({ routes, initialErrors = {} }) {
                 <Card className="min-w-0 space-y-4 p-4 sm:p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
                     {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2" role="region" aria-label="Artículos del carrito" tabIndex={0}>{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
-                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" onClick={() => setCart(cart.filter((_, itemIndex) => itemIndex !== index))} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" disabled={adding || submitting} onClick={() => remove(item.producto_id)} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
                         <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
-                            <button type="button" disabled={item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
-                            <Input type="number" min="1" max={item.stock} step="1" value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
-                            <button type="button" disabled={item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
+                            <button type="button" disabled={adding || submitting || item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
+                            <Input type="number" min="1" max={item.stock} step="1" disabled={adding || submitting} value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                            <button type="button" disabled={adding || submitting || item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
                         </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
                     </div>)}</div>}
                 </Card>
@@ -205,11 +251,11 @@ export function SalesPos({ routes, initialErrors = {} }) {
                     return <Card key={product.id} className="flex min-w-0 flex-col justify-between gap-4 p-4 sm:p-4">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-ink">{product.nombre}</h3><p className="mt-1 text-xs text-muted">{product.categoria?.nombre}{product.color ? ` · ${product.color}` : ''}{product.talle ? ` · ${product.talle}` : ''}</p></div>
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${available === 0 ? 'bg-red-50 text-red-800' : available <= 6 ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-primary-700'}`}><Package size={14} aria-hidden="true" />{available} un.</span>
+                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${stockTone(available, lowStockThreshold) === 'danger' ? 'bg-red-50 text-red-800' : stockTone(available, lowStockThreshold) === 'warning' ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-primary-700'}`}><Package size={14} aria-hidden="true" />{available === 0 ? 'Agotado' : available <= lowStockThreshold ? `${available} · Bajo` : `${available} un.`}</span>
                         </div>
                         <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
                             <div><p className="text-xs font-semibold uppercase text-muted">Precio unitario</p><p className="text-lg font-bold tabular-nums text-ink">{formatMoney(product.precio_venta)}</p></div>
-                            <Button type="button" disabled={available <= 0} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
+                            <Button type="button" disabled={available <= 0 || adding || submitting} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
                         </div>
                     </Card>;
                 })}</div>}
@@ -228,7 +274,7 @@ export function SalesPos({ routes, initialErrors = {} }) {
                     </fieldset>
                 </div>
                 <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
-                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" onClick={() => { setCart([]); setPaid(''); setDiscount(''); }} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
+                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting || adding} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => remove()} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
             </Card>
         </div>
     </div>;
@@ -236,5 +282,5 @@ export function SalesPos({ routes, initialErrors = {} }) {
 
 export function SaleShow({ sale, routes }) {
     if (!sale) return null;
-    return <div className="mx-auto max-w-2xl space-y-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print"><div><p className="eyebrow">Recibo</p><h1 className="page-title mt-2">Venta #{sale.id}</h1><p className="mt-2 text-sm text-muted">{formatDate(sale.created_at)}</p></div><div className="flex flex-wrap gap-2"><Button type="button" onClick={() => window.print()}>Imprimir</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm font-semibold">Volver</a></div></header><Card id="recibo" className="space-y-6"><div className="border-b border-border pb-4 text-center"><h2 className="text-2xl font-bold">TiendaStock</h2><p className="text-sm text-muted">Recibo de Venta #{sale.id}</p></div>{sale.cliente_nombre && <p className="text-sm"><strong>Cliente:</strong> {sale.cliente_nombre}</p>}<div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Producto</th><th className="py-2 text-right">Precio</th><th className="py-2 text-right">Cant.</th><th className="py-2 text-right">Subtotal</th></tr></thead><tbody>{(sale.items || []).map((item) => <tr key={item.id} className="border-b border-border"><td className="py-3">{item.producto?.nombre}</td><td className="py-3 text-right">{formatMoney(item.precio_unitario)}</td><td className="py-3 text-right">{item.cantidad}</td><td className="py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td></tr>)}</tbody></table></div><div className="space-y-2 border-t border-border pt-4 text-right text-sm"><p>Subtotal: {formatMoney(sale.subtotal)}</p>{Number(sale.descuento) > 0 && <p>Descuento: -{formatMoney(sale.descuento)}</p>}<p>Impuesto: {formatMoney(sale.impuesto)}</p><p className="border-t border-border pt-2 text-xl font-bold">Total: {formatMoney(sale.total)}</p><p>Pagó: {formatMoney(sale.pago_con)}</p><p>Cambio: {formatMoney(sale.cambio)}</p></div><div className="border-t border-border pt-4 text-sm text-muted"><p><strong>Método de pago:</strong> {paymentLabel(sale.metodo_pago)}</p><p><strong>Tipo de entrega:</strong> {detailDeliveryLabel(sale)}</p><p><strong>Procesado por:</strong> {sale.user?.name || '—'}</p><p><strong>Estado:</strong> {statusLabel(sale.estado)}</p></div><div className="text-center">{sale.estado === 'anulada' ? <Badge tone="danger">ANULADA</Badge> : <p className="text-sm text-muted">Gracias por su compra</p>}</div></Card>{sale.estado === 'completada' && <div className="no-print text-center"><CancelForm sale={sale} /></div>}<style>{'@media print { .no-print { display: none !important; } #recibo { box-shadow: none; border: 0; } }'}</style></div>;
+    return <div className="mx-auto max-w-2xl space-y-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print"><div><p className="eyebrow">Recibo</p><h1 className="page-title mt-2">Venta #{sale.id}</h1><p className="mt-2 text-sm text-muted">{formatDate(sale.created_at)}</p></div><div className="flex flex-wrap gap-2"><Button type="button" onClick={() => window.print()}>Imprimir</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm font-semibold">Volver</a></div></header><Card id="recibo" className="space-y-6"><div className="border-b border-border pb-4 text-center"><h2 className="text-2xl font-bold">TiendaStock</h2><p className="text-sm text-muted">Recibo de Venta #{sale.id}</p></div>{sale.cliente_nombre && <p className="text-sm"><strong>Cliente:</strong> {sale.cliente_nombre}</p>}<div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Producto</th><th className="py-2 text-right">Precio</th><th className="py-2 text-right">Cant.</th><th className="py-2 text-right">Subtotal</th></tr></thead><tbody>{(sale.items || []).map((item) => <tr key={item.id} className="border-b border-border"><td className="py-3">{item.producto?.nombre}</td><td className="py-3 text-right">{formatMoney(item.precio_unitario)}</td><td className="py-3 text-right">{item.cantidad}</td><td className="py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td></tr>)}</tbody></table></div><div className="space-y-2 border-t border-border pt-4 text-right text-sm"><p>Subtotal: {formatMoney(sale.subtotal)}</p>{Number(sale.descuento) > 0 && <p>Descuento: -{formatMoney(sale.descuento)}</p>}<p>Impuesto: {formatMoney(sale.impuesto)}</p><p className="border-t border-border pt-2 text-xl font-bold">Total: {formatMoney(sale.total)}</p><p>Pagó: {formatMoney(sale.pago_con)}</p><p>Cambio: {formatMoney(sale.cambio)}</p></div><div className="border-t border-border pt-4 text-sm text-muted"><p><strong>Método de pago:</strong> {paymentLabel(sale.metodo_pago)}</p><p><strong>Tipo de entrega:</strong> {detailDeliveryLabel(sale)}</p><p><strong>Procesado por:</strong> {sale.user?.name || '—'}</p><p><strong>Estado:</strong> {statusLabel(sale.estado)}</p></div><div className="text-center">{sale.estado === 'anulada' ? <Badge tone="danger">ANULADA</Badge> : <p className="text-sm text-muted">Gracias por tu compra</p>}</div></Card>{sale.estado === 'completada' && <div className="no-print text-center"><CancelForm sale={sale} routes={routes} /></div>}<style>{'@media print { .no-print { display: none !important; } #recibo { box-shadow: none; border: 0; } }'}</style></div>;
 }

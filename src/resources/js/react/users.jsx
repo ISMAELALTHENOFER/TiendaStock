@@ -8,6 +8,7 @@ import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
 import { csrf } from './lib/api.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
+import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 
 function roleBadge(user) {
     if (user.role === 'ADMIN') return { tone: 'success', short: 'Admin', long: 'Administrador' };
@@ -19,22 +20,36 @@ function roleBadge(user) {
 export function UserList({ users, routes }) {
     const params = new URLSearchParams(window.location.search);
     const [buscar, setBuscar] = useState(params.get('buscar') || '');
-    const liveSearch = useLiveSearchResults(users, { query: buscar, route: routes.users, pageSize: Number(users?.per_page) || 15 });
+    const [verInactivos, setVerInactivos] = useState(params.get('inactivos') === '1');
+    const [pending, setPending] = useState(null);
+    const [actionError, setActionError] = useState('');
+    const liveSearch = useLiveSearchResults(users, { query: buscar, route: routes.users, pageSize: Number(users?.per_page) || 15, filters: { inactivos: verInactivos ? '1' : '' } });
     const page = liveSearch.results || users;
     const data = page?.data || [];
     const currentPage = page?.current_page || 1;
     const lastPage = page?.last_page || 1;
     const pageSize = Number(page?.per_page) || 15;
     const paginationUrl = (page) => { const next = new URLSearchParams(window.location.search); next.set('page', String(page)); next.set('per_page', String(pageSize)); return `${routes.users}?${next}`; };
+    async function toggleActive() {
+        const url = (pending.active ? routes.usersActivate : routes.usersDeactivate).replace('__USER__', pending.user.id);
+        const token = csrf();
+        try {
+            const response = await fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' } });
+            if (!response.ok) throw new Error();
+            window.location.reload();
+        } catch {
+            setActionError('No se pudo actualizar el estado del usuario. Intenta de nuevo.');
+        }
+    }
 
     return (
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="page-title">Usuarios del Sistema</h2>
-                    <p className="mt-1 text-sm text-muted">Gestiona todos los usuarios de la plataforma</p>
+                    <h1 className="page-title">Usuarios del sistema</h1>
+                    <p className="mt-1 text-sm text-muted">Gestiona los usuarios de la plataforma.</p>
                 </div>
-                <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo Usuario</a>
+                <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo usuario</a>
             </div>
 
             <form method="get" action={routes.users} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
@@ -43,13 +58,15 @@ export function UserList({ users, routes }) {
                 <input type="hidden" name="per_page" value={pageSize} />
                 <Button type="submit">Buscar</Button>
             </form>
+            <label className="mb-5 flex min-h-11 items-center gap-2 text-sm text-ink"><input type="checkbox" checked={verInactivos} onChange={(event) => setVerInactivos(event.target.checked)} className="h-4 w-4 accent-primary" />Ver inactivos</label>
+            {actionError && <p role="alert" className="mb-3 text-sm text-red-700">{actionError}</p>}
             {liveSearch.searching && <p role="status" className="mb-3 text-sm text-muted">Buscando usuarios…</p>}
             {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
-                    <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para comenzar" />
-                    <a href={routes.usersCreate} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Crear Primer Usuario</a>
+                    <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para empezar." />
+                    <a href={routes.usersCreate} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Crear primer usuario</a>
                 </Card>
             ) : (
                 <div className="space-y-6">
@@ -59,8 +76,8 @@ export function UserList({ users, routes }) {
                                 <tr className="border-b border-border text-xs uppercase tracking-wide text-white">
                                     <th className="px-4 py-3">Nombre</th>
                                     <th className="px-4 py-3">Usuario</th>
-                                    <th className="px-4 py-3">Email</th>
-                                    <th className="px-4 py-3 text-center">Rol</th>
+                                    <th className="px-4 py-3">Correo electrónico</th>
+                                    <th className="px-4 py-3 text-center">Rol</th><th className="px-4 py-3 text-center">Estado</th>
                                     <th className="px-4 py-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -72,9 +89,9 @@ export function UserList({ users, routes }) {
                                             <td className="px-4 py-3 font-semibold text-ink">{user.name}</td>
                                             <td className="px-4 py-3 text-muted">{user.username}</td>
                                             <td className="px-4 py-3 text-muted">{user.email}</td>
-                                            <td className="px-4 py-3 text-center"><Badge tone={badge.tone}>{badge.long}</Badge></td>
+                                            <td className="px-4 py-3 text-center"><Badge tone={badge.tone}>{badge.long}</Badge></td><td className="px-4 py-3 text-center"><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></td>
                                              <td className="px-4 py-3">
-                                                 <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a></div>
+                                                  <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a>{user.id !== routes.currentUserId && <Button variant="secondary" onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}</div>
                                             </td>
                                         </tr>
                                     );
@@ -95,7 +112,8 @@ export function UserList({ users, routes }) {
                                         </div>
                                         <Badge tone={badge.tone}>{badge.short}</Badge>
                                     </div>
-                                     <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Email</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div></dl>
+                                     <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Correo electrónico</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div><div className="data-card-field"><dt>Estado</dt><dd><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></dd></div></dl>
+                                     {user.id !== routes.currentUserId && <Button className="mt-3 w-full" variant="secondary" onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}
                                      <a href={`${routes.users}/${user.id}/edit`} className="mt-4 block min-h-11 w-full rounded-control bg-surface-muted px-4 py-3 text-center text-sm font-semibold text-primary transition-colors duration-200 hover:bg-border" aria-label={`Editar usuario ${user.username}`}>Editar usuario</a>
                                 </Card>
                             );
@@ -105,6 +123,7 @@ export function UserList({ users, routes }) {
                 </div>
             )}
             <Pagination currentPage={currentPage} lastPage={lastPage} pageSize={pageSize} ariaLabel="Paginación de usuarios" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} usuarios`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const next = new URLSearchParams(window.location.search); next.set('per_page', String(size)); next.set('page', '1'); window.location.assign(`${routes.users}?${next}`); }} />
+            <ConfirmDialog open={Boolean(pending)} title={pending?.active ? 'Activar usuario' : 'Desactivar usuario'} message={`¿Confirmas ${pending?.active ? 'la activación' : 'la desactivación'} de ${pending?.user.name}?`} confirmLabel={pending?.active ? 'Activar' : 'Desactivar'} tone={pending?.active ? 'primary' : 'danger'} onConfirm={toggleActive} onClose={() => setPending(null)} />
         </div>
     );
 }
@@ -142,7 +161,7 @@ export function UserForm({ routes, usuario = null }) {
             window.location.assign(body?.redirect || routes.users);
         } catch {
             setSubmitting(false);
-            setErrors({ _general: ['No se pudo guardar el usuario. Inténtelo de nuevo.'] });
+            setErrors({ _general: ['No se pudo guardar el usuario. Inténtalo de nuevo.'] });
         }
     }
 
@@ -155,8 +174,8 @@ export function UserForm({ routes, usuario = null }) {
         <div className="py-4 sm:py-8">
             <div className="min-w-0 overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
                 <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                    <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar Usuario' : 'Información del Usuario'}</h3>
-                    <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los detalles del usuario' : 'Completa los detalles para crear un nuevo usuario'}</p>
+                    <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar usuario' : 'Información del usuario'}</h3>
+                    <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los datos del usuario.' : 'Completa los datos para crear un usuario.'}</p>
                 </div>
 
                 <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
@@ -185,7 +204,7 @@ export function UserForm({ routes, usuario = null }) {
                             <label htmlFor="password-field" className="mb-1.5 block text-sm font-medium text-ink">
                                 Contraseña{' '}
                                 {isEdit
-                                    ? <span className="font-normal text-muted">(dejar en blanco para mantener la actual)</span>
+                                ? <span className="font-normal text-muted">(nueva contraseña; dejar en blanco para mantener la actual)</span>
                                     : <span className="text-red-600">*</span>}
                             </label>
                             <Input id="password-field" type="password" name="password" autoComplete="new-password" placeholder="••••••••" error={errors?.password?.[0]} />
@@ -210,7 +229,7 @@ export function UserForm({ routes, usuario = null }) {
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
                         <a href={routes.users} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-muted">Cancelar</a>
-                        <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Actualizar Usuario' : 'Crear Usuario'}</Button>
+                        <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Actualizar usuario' : 'Crear usuario'}</Button>
                     </div>
                 </form>
             </div>

@@ -14,12 +14,8 @@ import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
-
-const formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-
-export function formatMoney(value) {
-    return formatter.format(value);
-}
+import { stockTone } from './lib/stockTone.js';
+import { formatMoney } from './lib/formatMoney.js';
 
 /**
  * Money input with the same live mask semantics as the legacy Alpine
@@ -65,10 +61,16 @@ function MoneyInput({ label, name, initial = 0, error }) {
  */
 function ProductImage({ value, error }) {
     const [preview, setPreview] = useState(value || '');
+    const previewUrl = useRef(null);
+    useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
 
     const handleChange = (event) => {
         const file = event.target.files?.[0];
-        if (file) setPreview(URL.createObjectURL(file));
+        if (file) {
+            if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+            previewUrl.current = URL.createObjectURL(file);
+            setPreview(previewUrl.current);
+        }
     };
 
     return (
@@ -87,8 +89,8 @@ function ProductImage({ value, error }) {
             {error && <p id="imagen-error" className="mt-1 text-sm text-red-600">{error}</p>}
             {preview && (
                 <div className="mt-3 flex items-center gap-3">
-                    <img src={preview} alt="Vista previa" className="h-20 w-20 rounded-lg border border-border object-cover" />
-                    {value && <p className="text-xs text-muted">Imagen actual. Si no elegís un archivo nuevo, se conserva.</p>}
+                    <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
+                    {value && <p className="text-xs text-muted">Imagen actual. Si no eliges un archivo nuevo, se conserva.</p>}
                 </div>
             )}
         </div>
@@ -101,9 +103,11 @@ function ProductImage({ value, error }) {
  * then posts to productos.update. Error responses (422 JSON) keep the
  * typed state and render inline field errors instead of redirecting back.
  */
-export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved }) {
+export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved, onCategoryCreated }) {
     const isEdit = Boolean(producto);
     const [errors, setErrors] = useState({});
+    const [categoryOptions, setCategoryOptions] = useState(categorias);
+    const [categoryId, setCategoryId] = useState(String(producto?.categoria_id ?? ''));
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [inlineOpen, setInlineOpen] = useState(false);
@@ -121,7 +125,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         if (!nombre || nombre.length < 2 || nombre === lastCheckedName.current) return;
         lastCheckedName.current = nombre;
         try {
-            const dato = await api.get(`/productos/check-duplicate?nombre=${encodeURIComponent(nombre)}`);
+            const dato = await api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`);
             if (dato.exists) setDuplicado(dato);
         } catch {
             // Advisory only: the database unique rule is the final guard.
@@ -133,15 +137,10 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         setInlineSubmitting(true);
         setInlineError('');
         try {
-            const categoria = await api.post('/categorias/inline', { nombre: inlineNombre.trim() });
-            const select = formRef.current?.querySelector('[name="categoria_id"]');
-            if (select) {
-                const option = document.createElement('option');
-                option.value = String(categoria.id);
-                option.selected = true;
-                option.textContent = categoria.nombre;
-                select.appendChild(option);
-            }
+            const categoria = await api.post(routes.categoriasInline, { nombre: inlineNombre.trim() });
+            setCategoryOptions((current) => [...current, categoria]);
+            setCategoryId(String(categoria.id));
+            onCategoryCreated?.(categoria);
             setInlineOpen(false);
             setInlineNombre('');
         } catch (err) {
@@ -171,7 +170,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             window.location.assign(body.redirect);
         } catch (error) {
             setSubmitting(false);
-            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar el producto. Reintentá.'] });
+            setErrors(error.errors || { _general: [error.message || 'No se pudo guardar el producto. Intenta nuevamente.'] });
         }
     };
 
@@ -204,12 +203,14 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     </div>
                 ) : (
                     <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                        <h3 className="text-lg font-bold text-white">Información del Producto</h3>
+                        <h1 className="text-lg font-bold text-white">Información del Producto</h1>
                         <p className="mt-1 text-sm text-white/80">Ingresa todos los detalles del producto</p>
                     </div>
                 )}
 
                 <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
+                    {isEdit && <input type="hidden" name="stock_original" value={producto.cantidad} />}
+                    {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors.stock_original[0]}</div>}
                     {errors._general && (
                         <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
                     )}
@@ -223,9 +224,9 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600">*</span></label>
                         <div className="mt-1 flex flex-wrap gap-2">
-                            <Select id="categoria-field" name="categoria_id" required defaultValue={producto?.categoria_id ?? ''} className="min-w-0 flex-1 basis-40">
-                                <option value="">Seleccioná una categoría</option>
-                                {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+                            <Select id="categoria-field" name="categoria_id" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="min-w-0 flex-1 basis-40">
+                                <option value="">Selecciona una categoría</option>
+                                {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                             </Select>
                             <Button type="button" variant="secondary" title="Crear categoría nueva" aria-label="Crear categoría nueva" onClick={() => setInlineOpen(true)}>+ Nueva</Button>
                         </div>
@@ -237,7 +238,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
                         </div>
-                        <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} />
+                        {routes.canViewProductCost ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
                         <MoneyInput label="Precio de Venta" name="precio_venta" initial={producto?.precio_venta ?? 0} error={errors?.precio_venta?.[0]} />
                         <div>
                             <label htmlFor="talle-field" className="block text-sm font-medium text-ink">Talle</label>
@@ -254,7 +255,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         <textarea id="descripcion-field" name="descripcion" rows="3" defaultValue={producto?.descripcion ?? ''} placeholder="Detalles opcionales (material, cuidados, etc.)" className="mt-1 block w-full rounded-control border border-border bg-surface px-3 py-2 text-ink placeholder:text-muted focus:border-primary focus:outline-none" />
                     </div>
 
-                    <div><ProductImage value={producto?.imagen ? `/storage/${producto.imagen}` : ''} error={errors?.imagen?.[0]} /></div>
+                    <div><ProductImage value={producto?.imagen || ''} error={errors?.imagen?.[0]} /></div>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
                         {modal ? (
@@ -284,7 +285,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             <ConfirmDialog
                 open={Boolean(duplicado)}
                 title="Producto existente"
-                message={`Ya existe un producto llamado «${duplicado?.nombre}». ¿Querés editarlo?`}
+                message={`Ya existe un producto llamado «${duplicado?.nombre}». ¿Quieres editarlo?`}
                 confirmLabel="Sí, editar"
                 onConfirm={() => window.location.assign(`${routes.productos}/${duplicado.id}/edit`)}
                 onClose={() => setDuplicado(null)}
@@ -317,7 +318,7 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
             {producto.activo ? (
                 <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
-                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-600 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
+                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
             )}
         </div>
     );
@@ -330,75 +331,77 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
  * included when "Ver inactivos" is on. Activation/deactivation stays
  * server-driven via hidden native forms confirmed with the shared dialog.
  */
-export function ProductList({ categorias, routes }) {
-    const [verInactivos, setVerInactivos] = useState(false);
-    const [busqueda, setBusqueda] = useState('');
-    const [filtroCategoria, setFiltroCategoria] = useState('');
-    const [filtroTalle, setFiltroTalle] = useState('');
-    const [filtroColor, setFiltroColor] = useState('');
-    const [productos, setProductos] = useState(null);
+export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
+    const params = new URLSearchParams(window.location.search);
+    const [verInactivos, setVerInactivos] = useState(params.get('inactivos') === '1');
+    const [busqueda, setBusqueda] = useState(params.get('buscar') || '');
+    const [filtroCategoria, setFiltroCategoria] = useState(params.get('categoria_id') || '');
+    const [filtroTalle, setFiltroTalle] = useState(params.get('talle') || '');
+    const [filtroColor, setFiltroColor] = useState(params.get('color') || '');
+    const [catalogo, setCatalogo] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(false);
-    const [paginaActual, setPaginaActual] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
+    const [paginaActual, setPaginaActual] = useState(Number(params.get('page')) || 1);
+    const [pageSize, setPageSize] = useState([15, 30, 50].includes(Number(params.get('per_page'))) ? Number(params.get('per_page')) : 15);
+    const [reload, setReload] = useState(0);
     const [toggle, setToggle] = useState(null);
+    const [activationError, setActivationError] = useState('');
+    const [activating, setActivating] = useState(false);
+    const activationDialog = useRef(null);
     const [crearAbierto, setCrearAbierto] = useState(false);
+    const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [productoEditando, setProductoEditando] = useState(null);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
 
-    const cargar = useCallback(async () => {
-        setCargando(true);
-        setError(false);
-        try {
-            const response = await fetch(`/productos/data${verInactivos ? '?inactivos=1' : ''}`, {
-                headers: { Accept: 'application/json' },
-                cache: 'no-store',
-            });
-            if (!response.ok) throw new Error('carga');
-            const data = await response.json();
-            setProductos(data);
-            setPaginaActual(1);
-        } catch {
-            setError(true);
-        } finally {
-            setCargando(false);
-        }
-    }, [verInactivos]);
-
-    useEffect(() => { cargar(); }, [cargar]);
-    useEffect(() => { setPaginaActual(1); }, [busqueda, filtroCategoria, filtroTalle, filtroColor]);
-
-    const filtrados = useMemo(() => {
-        if (!productos) return [];
-        const termino = isInteractiveSearch(busqueda) ? busqueda.trim().toLowerCase() : '';
-        const tokens = termino.split(' ').filter(Boolean);
-        return productos.filter((p) => {
-            const matchesTermino = tokens.length === 0 || tokens.every((token) =>
-                [p.nombre, p.categoria?.nombre, p.talle, p.color].some((campo) => campo && campo.toLowerCase().includes(token))
-            );
-            const matchesCategoria = !filtroCategoria || String(p.categoria_id) === filtroCategoria;
-            const matchesTalle = !filtroTalle || p.talle === filtroTalle;
-            const matchesColor = !filtroColor || p.color === filtroColor;
-            return matchesTermino && matchesCategoria && matchesTalle && matchesColor;
-        });
-    }, [productos, busqueda, filtroCategoria, filtroTalle, filtroColor]);
-
-    const talies = useMemo(() => [...new Set((productos || []).map((p) => p.talle).filter(Boolean))].sort(), [productos]);
-    const colores = useMemo(() => [...new Set((productos || []).map((p) => p.color).filter(Boolean))].sort(), [productos]);
-
-    const totalPaginas = Math.max(1, Math.ceil(filtrados.length / pageSize));
-    const paginaSegura = Math.min(paginaActual, totalPaginas);
-    const visibles = filtrados.slice((paginaSegura - 1) * pageSize, paginaSegura * pageSize);
-    const desde = filtrados.length === 0 ? 0 : (paginaSegura - 1) * pageSize + 1;
-    const hasta = Math.min(paginaSegura * pageSize, filtrados.length);
+    useEffect(() => {
+        const controller = new AbortController();
+        const params = new URLSearchParams({ per_page: String(pageSize), page: String(paginaActual) });
+        if (verInactivos) params.set('inactivos', '1');
+        if (isInteractiveSearch(busqueda)) params.set('buscar', busqueda.trim());
+        if (filtroCategoria) params.set('categoria_id', filtroCategoria);
+        if (filtroTalle) params.set('talle', filtroTalle);
+        if (filtroColor) params.set('color', filtroColor);
+        const timeout = window.setTimeout(async () => {
+            setCargando(true);
+            setError(false);
+            try {
+                const response = await fetch(`${routes.productosData}?${params}`, {
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                if (!response.ok) throw new Error('carga');
+                setCatalogo(await response.json());
+            } catch (requestError) {
+                if (requestError.name !== 'AbortError') setError(true);
+            } finally {
+                if (!controller.signal.aborted) setCargando(false);
+            }
+        }, busqueda ? 250 : 0);
+        return () => { window.clearTimeout(timeout); controller.abort(); };
+    }, [verInactivos, busqueda, filtroCategoria, filtroTalle, filtroColor, paginaActual, pageSize, reload, routes.productosData]);
+    useEffect(() => {
+        if (toggle?.tipo === 'activar') activationDialog.current?.showModal();
+    }, [toggle]);
+    const visibles = catalogo?.data || [];
+    const total = catalogo?.total || 0;
+    const talies = catalogo?.filters?.talles || [];
+    const colores = catalogo?.filters?.colores || [];
+    const totalPaginas = catalogo?.last_page || 1;
+    const paginaSegura = catalogo?.current_page || 1;
+    const desde = catalogo?.from || 0;
+    const hasta = catalogo?.to || 0;
     const hayFiltros = Boolean(busqueda || filtroCategoria || filtroTalle || filtroColor);
+    const cargar = () => { setPaginaActual(1); setReload((value) => value + 1); };
+    const cambiarFiltro = (setter) => (value) => { setter(value); setPaginaActual(1); };
 
     const limpiarFiltros = () => {
         setBusqueda('');
         setFiltroCategoria('');
         setFiltroTalle('');
         setFiltroColor('');
+        setPaginaActual(1);
         searchRef.current?.focus();
     };
 
@@ -409,16 +412,38 @@ export function ProductList({ categorias, routes }) {
         document.getElementById(formId)?.submit();
     };
 
+    const activar = async (event) => {
+        event.preventDefault();
+        setActivating(true);
+        setActivationError('');
+        try {
+            const response = await fetch(`${routes.productos}/${toggle.producto.id}/activate`, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+                body: new FormData(event.currentTarget),
+            });
+            const body = await response.json();
+            if (!response.ok) throw new Error(body.errors?.cantidad?.[0] || body.message || 'No se pudo activar el producto.');
+            activationDialog.current.close();
+            setToggle(null);
+            await cargar();
+        } catch (error) {
+            setActivationError(error.message);
+        } finally {
+            setActivating(false);
+        }
+    };
+
     return (
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="page-title">Inventario de Productos</h2>
+                    <h1 className="page-title">Inventario de Productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todos tus productos en un solo lugar</p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label htmlFor="show-inactive-products" className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">
-                        <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => setVerInactivos(event.target.checked)} className="h-4 w-4 rounded border-border accent-primary" />
+                        <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => { setVerInactivos(event.target.checked); setPaginaActual(1); }} className="h-4 w-4 rounded border-border accent-primary" />
                         Ver inactivos
                     </label>
                     <a href={routes.productosCreate} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCrearAbierto(true); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline-offset-4">
@@ -432,21 +457,21 @@ export function ProductList({ categorias, routes }) {
                     <Input
                         ref={searchRef}
                         value={busqueda}
-                        onChange={(event) => setBusqueda(event.target.value)}
+                        onChange={(event) => { setBusqueda(event.target.value); setPaginaActual(1); }}
                         placeholder="Buscar por nombre, categoría, talle o color..."
                         aria-label="Buscar por nombre, categoría, talle o color"
                     />
                 </div>
                 <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-[2]">
-                    <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => setFiltroCategoria(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Categoría<Select aria-label="Filtrar por categoría" value={filtroCategoria} onChange={(event) => cambiarFiltro(setFiltroCategoria)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todas las categorías</option>
-                        {categorias.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
+                        {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
                     </Select></label>
-                    <label className="text-xs font-semibold text-muted">Talle<Select aria-label="Filtrar por talle" value={filtroTalle} onChange={(event) => setFiltroTalle(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Talle<Select aria-label="Filtrar por talle" value={filtroTalle} onChange={(event) => cambiarFiltro(setFiltroTalle)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todos los talles</option>
                         {talies.map((talle) => <option key={talle} value={talle}>{talle}</option>)}
                     </Select></label>
-                    <label className="text-xs font-semibold text-muted">Color<Select aria-label="Filtrar por color" value={filtroColor} onChange={(event) => setFiltroColor(event.target.value)} className="mt-1 text-sm font-normal">
+                    <label className="text-xs font-semibold text-muted">Color<Select aria-label="Filtrar por color" value={filtroColor} onChange={(event) => cambiarFiltro(setFiltroColor)(event.target.value)} className="mt-1 text-sm font-normal">
                         <option value="">Todos los colores</option>
                         {colores.map((color) => <option key={color} value={color}>{color}</option>)}
                     </Select></label>
@@ -457,8 +482,8 @@ export function ProductList({ categorias, routes }) {
             {cargando ? (
                 <LoadingState label="Cargando catálogo..." />
             ) : error ? (
-                <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisá tu conexión e intentá nuevamente." onRetry={() => cargar()} />
-            ) : filtrados.length === 0 ? (
+                <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisa tu conexión e intenta nuevamente." onRetry={() => cargar()} />
+            ) : total === 0 ? (
                 <EmptyState
                     title="No se encontraron productos"
                     description="Prueba con otros términos de búsqueda"
@@ -486,7 +511,7 @@ export function ProductList({ categorias, routes }) {
                                     <tr key={producto.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                                         <td className="px-4 py-3">
                                             {producto.imagen
-                                                ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-12 w-12 rounded-lg object-cover" />
+                                                ? <img src={producto.imagen} alt={producto.nombre} width="48" height="48" loading="lazy" className="h-12 w-12 rounded-lg object-cover" />
                                                 : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                         </td>
                                         <td className="px-4 py-3 font-semibold text-ink">
@@ -496,11 +521,11 @@ export function ProductList({ categorias, routes }) {
                                         <td className="px-4 py-3"><Badge tone="neutral">{producto.categoria?.nombre ?? '—'}</Badge></td>
                                         <td className="px-4 py-3 text-muted">{producto.talle || '—'}</td>
                                         <td className="px-4 py-3 text-muted">{producto.color || '—'}</td>
-                                        <td className="px-4 py-3 text-right">{formatMoney(producto.precio_compra)}</td>
+                                        {routes.canViewProductCost && <td className="px-4 py-3 text-right">{formatMoney(producto.precio_compra)}</td>}
                                         <td className="px-4 py-3 text-right">{formatMoney(producto.precio_venta)}</td>
-                                         <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>
+                                         {routes.canViewProductCost && <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>}
                                          <td className="px-4 py-3 text-right tabular-nums">
-                                             <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
+                                             <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
                                           <td className="px-4 py-3">{acciones(producto, routes, setToggle, setProductoEditando, setProductoViendo)}</td>
                                     </tr>
@@ -514,41 +539,41 @@ export function ProductList({ categorias, routes }) {
                             <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
-                                        ? <img src={`/storage/${producto.imagen}`} alt={producto.nombre} className="h-14 w-14 rounded-lg object-cover" />
+                                        ? <img src={producto.imagen} alt={producto.nombre} width="56" height="56" loading="lazy" className="h-14 w-14 rounded-lg object-cover" />
                                         : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                     <div className="min-w-0">
                                         <p className="font-bold text-ink">{producto.nombre}</p>
                                         <p className="mt-0.5 text-xs text-muted">{producto.categoria?.nombre}</p>
                                     </div>
                                     <div className="ml-auto shrink-0">
-                                         <Badge tone={producto.cantidad === 0 ? 'danger' : producto.cantidad <= 5 ? 'warning' : 'success'}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
+                                         <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                     </div>
                                 </div>
                                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Talle</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{producto.talle || '—'}</dd>
-                                    </div>
-                                     <div className="data-card-field">
+                                     </div>
+                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Color</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{producto.color || '—'}</dd>
-                                    </div>
-                                     <div className="data-card-field">
+                                      </div>
+                                      {routes.canViewProductCost && <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">P. Compra</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{formatMoney(producto.precio_compra)}</dd>
-                                    </div>
+                                    </div>}
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">P. Venta</dt>
                                         <dd className="mt-0.5 font-medium text-ink">{formatMoney(producto.precio_venta)}</dd>
                                     </div>
-                                     <div className="data-card-field">
-                                        <dt className="text-xs uppercase tracking-wide text-muted">Ganancia</dt>
-                                         <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
-                                    </div>
+                                      {routes.canViewProductCost && <div className="data-card-field">
+                                         <dt className="text-xs uppercase tracking-wide text-muted">Ganancia</dt>
+                                          <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
+                                     </div>}
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Stock</dt>
                                         <dd className="mt-0.5 font-medium text-ink">
-                                             {producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= 5 ? `${producto.cantidad} · Bajo` : producto.cantidad}
+                                             {producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}
                                             {!producto.activo && <Badge tone="neutral" className="ml-2">Inactivo</Badge>}
                                         </dd>
                                     </div>
@@ -558,11 +583,11 @@ export function ProductList({ categorias, routes }) {
                         ))}
                     </div>
 
-                    <Pagination currentPage={paginaSegura} lastPage={totalPaginas} pageSize={pageSize} ariaLabel="Paginación de productos" summary={`Mostrando ${desde}–${hasta} de ${filtrados.length} productos`} onPageChange={setPaginaActual} onPageSizeChange={(size) => { setPageSize(size); setPaginaActual(1); }} />
+                    <Pagination currentPage={paginaSegura} lastPage={totalPaginas} pageSize={pageSize} ariaLabel="Paginación de productos" summary={`Mostrando ${desde}–${hasta} de ${total} productos`} onPageChange={setPaginaActual} onPageSizeChange={(size) => { setPageSize(size); setPaginaActual(1); }} />
                 </div>
             )}
 
-            {filtrados.length === 0 && hayFiltros && !cargando && !error && (
+            {total === 0 && hayFiltros && !cargando && !error && (
                 <div className="mt-4 text-center">
                     <Button variant="secondary" onClick={limpiarFiltros}>Ver todos los productos</Button>
                 </div>
@@ -573,34 +598,46 @@ export function ProductList({ categorias, routes }) {
                     <form id={`desactivar-${producto.id}`} action={`/productos/${producto.id}`} method="POST">
                         <input type="hidden" name="_token" value={csrf()} />
                         <input type="hidden" name="_method" value="DELETE" />
-                    </form>
-                    <form id={`activar-${producto.id}`} action={`/productos/${producto.id}/activate`} method="POST">
-                        <input type="hidden" name="_token" value={csrf()} />
-                        <input type="hidden" name="_method" value="PATCH" />
+                        <input type="hidden" name="stock_original" value={producto.cantidad} />
                     </form>
                 </div>
             ))}
 
             <ConfirmDialog
-                open={Boolean(toggle)}
+                open={toggle?.tipo === 'desactivar'}
                 title={toggle?.tipo === 'activar' ? 'Activar producto' : 'Desactivar producto'}
-                 message={toggle?.tipo === 'activar' ? `¿Activar «${toggle?.producto?.nombre}» para que vuelva a estar disponible?` : `«${toggle?.producto?.nombre}» se desactivará, no se borrará. Podrás reactivarlo si vuelve a tener stock.`}
+                 message={`«${toggle?.producto?.nombre}» se desactivará y su stock pasará a cero. No se registrará una venta.`}
                 confirmLabel={toggle?.tipo === 'activar' ? 'Sí, activar' : 'Sí, desactivar'}
                 tone={toggle?.tipo === 'activar' ? 'primary' : 'danger'}
                 onConfirm={confirmarToggle}
                 onClose={() => setToggle(null)}
             />
 
+            <dialog ref={activationDialog} aria-labelledby="activation-title" onCancel={(event) => { if (activating) event.preventDefault(); }} onClose={() => { setToggle(null); setActivationError(''); }} className="w-[calc(100%-2rem)] max-w-md rounded-card p-5 shadow-subtle backdrop:bg-black/50">
+                <form onSubmit={activar} className="space-y-4">
+                    <h2 id="activation-title" className="text-lg font-bold">Activar producto</h2>
+                    <p>Ingresa el stock de «{toggle?.producto?.nombre}» y confirma la activación.</p>
+                    <label htmlFor="activation-stock" className="block font-medium">Stock</label>
+                    <input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required autoFocus aria-invalid={Boolean(activationError)} aria-describedby={activationError ? 'activation-error' : undefined} className="w-full rounded-control border border-border px-3 py-2" />
+                    <input type="hidden" name="_method" value="PATCH" />
+                    {activationError && <p id="activation-error" role="alert" className="text-sm text-red-700">{activationError}</p>}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="secondary" disabled={activating} onClick={() => activationDialog.current.close()}>Cancelar</Button>
+                        <Button type="submit" disabled={activating}>Sí, activar</Button>
+                    </div>
+                </form>
+            </dialog>
+
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                        {productoViendo.imagen && <img src={`/storage/${productoViendo.imagen}`} alt={productoViendo.nombre} className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" loading="lazy" className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
                         </div>
-                        <Badge tone={productoViendo.cantidad === 0 ? 'danger' : productoViendo.cantidad <= 5 ? 'warning' : 'success'}>
-                            {productoViendo.cantidad} {productoViendo.cantidad === 1 ? 'unidad' : 'unidades'}
+                         <Badge tone={stockTone(productoViendo.cantidad, lowStockThreshold)}>
+                             {productoViendo.cantidad === 0 ? 'Sin stock' : productoViendo.cantidad <= lowStockThreshold ? `${productoViendo.cantidad} · Bajo` : productoViendo.cantidad} {productoViendo.cantidad === 1 ? 'unidad' : 'unidades'}
                         </Badge>
                     </div>
                     <dl className="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
@@ -609,11 +646,11 @@ export function ProductList({ categorias, routes }) {
                             ['Color', productoViendo.color || '—'],
                         ].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words font-medium text-ink">{value}</dd></div>)}
                     </dl>
-                    <dl className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                    <dl className={`grid grid-cols-1 divide-y divide-border border-y border-border ${routes.canViewProductCost ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-1'}`}>
                         {[
-                            ['Costo', productoViendo.precio_compra],
+                            ...(routes.canViewProductCost ? [['Costo', productoViendo.precio_compra]] : []),
                             ['Precio de venta', productoViendo.precio_venta],
-                            ['Ganancia por unidad', productoViendo.precio_venta - productoViendo.precio_compra],
+                            ...(routes.canViewProductCost ? [['Ganancia por unidad', productoViendo.precio_venta - productoViendo.precio_compra]] : []),
                         ].map(([label, value]) => <div key={label} className="min-w-0 py-3 sm:px-3 first:sm:pl-0 last:sm:pr-0"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words text-base font-bold tabular-nums text-ink">{formatMoney(value)}</dd></div>)}
                     </dl>
                     {productoViendo.descripcion && <section aria-label="Descripción del producto" className="space-y-1"><h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Descripción</h4><p className="whitespace-pre-line break-words text-sm leading-6 text-ink">{productoViendo.descripcion}</p></section>}
@@ -625,6 +662,7 @@ export function ProductList({ categorias, routes }) {
                     key={productoEditando?.id ?? 'new-product'}
                     routes={routes}
                     categorias={categorias}
+                    onCategoryCreated={(categoria) => setCategoryOptions((current) => [...current, categoria])}
                     producto={productoEditando}
                     modal
                     onClose={() => { setCrearAbierto(false); setProductoEditando(null); }}

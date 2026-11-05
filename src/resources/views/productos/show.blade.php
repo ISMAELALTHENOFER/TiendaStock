@@ -1,5 +1,4 @@
-@use('Illuminate\Support\Facades\Storage')
-<x-app-layout>
+<x-app-layout :producto="$producto">
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <div>
@@ -43,8 +42,8 @@
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Stock Actual</dt>
                         <dd>
                             <span class="inline-block px-4 py-2 rounded-full text-sm font-bold
-                                {{ $producto->cantidad <= 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
-                                {{ $producto->cantidad }} unidades
+                                {{ $producto->cantidad === 0 ? 'bg-red-100 text-red-700' : ($producto->cantidad <= config('inventory.low_stock_threshold', 1) ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-700') }}">
+                                {{ $producto->cantidad === 0 ? 'Agotado' : ($producto->cantidad <= config('inventory.low_stock_threshold', 1) ? 'Bajo · '.$producto->cantidad : $producto->cantidad) }} unidades
                             </span>
                         </dd>
                     </div>
@@ -67,7 +66,7 @@
                     <div class="md:col-span-2">
                         <dt class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Imagen</dt>
                         <dd>
-                            <img src="{{ Storage::url($producto->imagen) }}" alt="{{ $producto->nombre }}"
+                            <img src="{{ route('productos.imagen', $producto) }}{{ $producto->imagenRecord ? '?v='.$producto->imagenRecord->sha1 : '' }}" alt="{{ $producto->nombre }}"
                                 class="h-40 w-40 object-cover rounded-xl border border-slate-200 shadow-sm">
                         </dd>
                     </div>
@@ -77,6 +76,7 @@
 
             <!-- Información de Precios -->
             <div class="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                @if (auth()->user()->role === 'ADMIN')
                 <!-- Costo (precio_compra) -->
                 <div class="surface-panel overflow-hidden">
                     <div class="bg-blue-50 px-6 py-6">
@@ -84,6 +84,7 @@
                         <p class="text-3xl font-bold text-blue-700 mt-2">{{ formato_pesos($producto->precio_compra) }}</p>
                     </div>
                 </div>
+                @endif
 
                 <!-- Precio de Venta -->
                 <div class="surface-panel overflow-hidden">
@@ -93,6 +94,7 @@
                     </div>
                 </div>
 
+                @if (auth()->user()->role === 'ADMIN')
                 <!-- Ganancia por Unidad -->
                 <div class="surface-panel overflow-hidden">
                     <div class="bg-green-50 px-6 py-6">
@@ -100,6 +102,7 @@
                         <p class="text-3xl font-bold text-green-700 mt-2">{{ formato_pesos($producto->ganancia) }}</p>
                     </div>
                 </div>
+                @endif
             </div>
 
             <!-- Descripción -->

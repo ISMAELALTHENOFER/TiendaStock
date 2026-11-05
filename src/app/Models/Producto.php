@@ -6,6 +6,7 @@ use Database\Factories\ProductoFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Producto extends Model
 {
@@ -31,6 +32,8 @@ class Producto extends Model
     {
         return [
             'activo' => 'boolean',
+            'precio_compra' => 'decimal:2',
+            'precio_venta' => 'decimal:2',
         ];
     }
 
@@ -44,22 +47,15 @@ class Producto extends Model
         return $this->hasMany(VentaItem::class);
     }
 
-    /**
-     * Zero-stock invariant (single chokepoint): a product with cantidad===0
-     * can never be active. Forced on BOTH create and update (and any future
-     * code path that persists the model), so the POS/search/store always see
-     * a coherent activo state regardless of who flipped the flag.
-     *
-     * The rule is intentionally one-directional: it forces activo=false when
-     * stock hits 0, but never forces activo=true when stock is positive —
-     * admins may keep an in-stock product manually deactivated.
-     */
+    public function imagenRecord(): HasOne
+    {
+        return $this->hasOne(ProductoImagen::class);
+    }
+
     protected static function booted()
     {
         static::saving(function (Producto $producto) {
-            if ((int) $producto->cantidad === 0) {
-                $producto->activo = false;
-            }
+            $producto->activo = (int) $producto->cantidad > 0;
         });
     }
 

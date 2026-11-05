@@ -46,7 +46,7 @@ class InteractiveGridSearchTest extends TestCase
         $this->assertStringContainsString('value="completada" selected', $sales);
 
         $products = $this->actingAs($admin)->get('/productos')->assertOk()->getContent();
-        $this->assertStringContainsString("termino.length >= 2", $products);
+        $this->assertStringContainsString("this.busqueda.trim().length >= 2", $products);
         $this->assertStringContainsString('Buscar por nombre, categoría, talle o color', $products);
     }
 

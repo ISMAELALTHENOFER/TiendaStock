@@ -62,13 +62,13 @@ class CategoriaController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255|unique:categorias',
             'descripcion' => 'nullable|string|max:500',
         ]);
 
-        return DB::transaction(function () use ($request) {
-            $categoria = Categoria::create($request->all());
+        return DB::transaction(function () use ($request, $validated) {
+            $categoria = Categoria::create($validated);
 
             ActivityRecorder::recordAfterCommit(
                 $request->user(), 'category.created', 'Category created', "Category {$categoria->nombre} was created.", $categoria
@@ -86,6 +86,7 @@ class CategoriaController extends Controller
     public function show(Request $request, Categoria $categoria)
     {
         $categoria->loadCount('productos');
+        $request->attributes->set('categoriaDetail', $categoria);
         $productosQuery = $categoria->productos()->orderBy('nombre');
 
         if ($request->filled('buscar')) {
@@ -99,6 +100,10 @@ class CategoriaController extends Controller
         }
 
         $productos = $productosQuery->paginate($this->pageSize($request))->withQueryString();
+        if ($request->user()?->role !== 'ADMIN') {
+            $productos->getCollection()->each(fn (Producto $producto) => $producto->makeHidden(['precio_compra', 'ganancia']));
+        }
+        $request->attributes->set('categoriaProductsPage', $productos);
 
         return view('categorias.show', compact('categoria', 'productos'));
     }
@@ -120,13 +125,13 @@ class CategoriaController extends Controller
 
     public function update(Request $request, Categoria $categoria)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255|unique:categorias,nombre,'.$categoria->id,
             'descripcion' => 'nullable|string|max:500',
         ]);
 
-        return DB::transaction(function () use ($request, $categoria) {
-            $categoria->update($request->all());
+        return DB::transaction(function () use ($request, $categoria, $validated) {
+            $categoria->update($validated);
 
             ActivityRecorder::recordAfterCommit(
                 $request->user(), 'category.updated', 'Category updated', "Category {$categoria->nombre} was updated.", $categoria

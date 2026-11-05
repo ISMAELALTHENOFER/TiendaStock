@@ -24,9 +24,6 @@
                     @include('profile.partials.update-password-form')
                 </div>
 
-                <div class="surface-panel border border-red-200 p-4 sm:p-6 lg:p-8">
-                    @include('profile.partials.delete-user-form')
-                </div>
             </div>
         </div>
     </div>

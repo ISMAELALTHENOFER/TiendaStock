@@ -29,6 +29,39 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString("@include('react.app'", $source);
     }
 
+    public function test_categoria_detail_uses_react_by_default_and_keeps_pagination_search_and_blade_fallback(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $categoria = Categoria::factory()->create(['nombre' => 'Temporada', 'descripcion' => 'Colección de temporada']);
+        Producto::factory()->count(16)->create(['categoria_id' => $categoria->id, 'nombre' => 'Verano producto']);
+
+        $response = $this->actingAs($admin)->get(route('categorias.show', ['categoria' => $categoria, 'buscar' => 'verano', 'per_page' => 15]));
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $response->assertOk()->assertSee('id="react-root"', false);
+        $this->assertSame('categorias.show', $props['page'] ?? null);
+        $this->assertSame('Temporada', $props['categoria']['nombre'] ?? null);
+        $this->assertSame(2, $props['productosPage']['last_page'] ?? null);
+        $this->assertSame('verano', $props['query']['buscar'] ?? null);
+
+        $staff = User::factory()->create(['role' => 'Control Stock']);
+        $staffResponse = $this->actingAs($staff)->get(route('categorias.show', $categoria));
+        preg_match('/data-props="([^"]*)"/', $staffResponse->getContent(), $staffMatches);
+        $staffProps = json_decode(html_entity_decode($staffMatches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $this->assertFalse($staffProps['routes']['canViewProductCost'] ?? true);
+        $this->assertArrayNotHasKey('precio_compra', $staffProps['productosPage']['data'][0] ?? []);
+
+        $source = file_get_contents(base_path('resources/js/react/details.jsx'));
+        $this->assertStringContainsString("params.set('page', String(page))", $source);
+        $this->assertStringContainsString('action={routes.categoriaDetail}', $source);
+        $this->assertStringContainsString("name=\"buscar\"", $source);
+        $this->assertStringContainsString('canViewProductCost &&', $source);
+
+        config(['frontend.routes.categorias.show' => 'blade']);
+        $this->actingAs($admin)->get(route('categorias.show', $categoria))
+            ->assertOk()->assertDontSee('id="react-root"', false)->assertSee('Productos en esta Categoría');
+    }
+
     public function test_categoria_create_and_edit_routes_reuse_the_react_grid_modal_when_enabled(): void
     {
         $admin = User::factory()->admin()->create();
@@ -112,7 +145,7 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString('ConfirmDialog', $source, 'The grid must use the shared ConfirmDialog.');
         $this->assertStringNotContainsString('window.confirm', $source, 'The legacy native confirm() must be gone from the React grid.');
 
-        foreach (['Nueva Categoría', 'Ver', 'Editar', 'Eliminar'] as $contract) {
+        foreach (['Nueva categoría', 'Ver', 'Editar', 'Eliminar'] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
     }
@@ -128,8 +161,8 @@ class CategoriaReactViewContractTest extends TestCase
             "params.set('page'",
             "params.set('per_page'",
             "get('buscar')",
-            'No hay categorías creadas aún',
-            'Crear Primera Categoría',
+            'Aún no hay categorías',
+            'Crear primera categoría',
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }

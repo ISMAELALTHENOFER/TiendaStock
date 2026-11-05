@@ -57,7 +57,7 @@ class ProductoModelTest extends TestCase
     public function test_activo_scope_filters_only_active_products(): void
     {
         $active = Producto::factory()->create(['activo' => true]);
-        $inactive = Producto::factory()->create(['activo' => false]);
+        $inactive = Producto::factory()->create(['cantidad' => 0]);
 
         $found = Producto::where('activo', true)->pluck('id');
 
@@ -65,11 +65,11 @@ class ProductoModelTest extends TestCase
         $this->assertNotContains($inactive->id, $found);
     }
 
-    public function test_activo_can_be_toggled_to_false(): void
+    public function test_zero_stock_deactivates_product(): void
     {
         $producto = Producto::factory()->create(['activo' => true]);
 
-        $producto->update(['activo' => false]);
+        $producto->update(['cantidad' => 0]);
 
         $this->assertFalse($producto->fresh()->activo);
         $this->assertDatabaseHas('productos', ['id' => $producto->id, 'activo' => false]);
