@@ -49,6 +49,18 @@ class AuthReactViewContractTest extends TestCase
         $this->actingAs($user)->put('/password', [])->assertSessionHasErrorsIn('updatePassword', ['current_password', 'password']);
     }
 
+    public function test_react_shell_and_password_fields_keep_mobile_controls_unbroken(): void
+    {
+        $header = file_get_contents(resource_path('js/react/layout/Header.jsx'));
+        $auth = file_get_contents(resource_path('js/react/auth.jsx'));
+
+        $this->assertStringContainsString('whitespace-nowrap font-bold tracking-tight', $header);
+        $this->assertStringContainsString('sr-only text-right sm:not-sr-only', $header);
+        $this->assertStringContainsString('className="min-w-0"', $auth);
+        $this->assertStringContainsString('className="shrink-0 whitespace-nowrap"', $auth);
+        $this->assertStringContainsString("aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}", $auth);
+    }
+
     public function test_confirm_password_uses_react_and_keeps_route_specific_blade_fallback(): void
     {
         $user = User::factory()->create();
