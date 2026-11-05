@@ -61,10 +61,9 @@
     *::before,
     *::after { box-sizing: border-box; }
 
-    html { min-width: 320px; scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; }
 
     body {
-        min-width: 320px;
         overflow-wrap: anywhere;
         background: var(--canvas);
         color: var(--ink);
