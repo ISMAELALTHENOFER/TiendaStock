@@ -596,6 +596,7 @@ document.addEventListener('alpine:init', () => {
                 maximumFractionDigits: 2,
             });
         },
+        });
     });
 });
 </script>

@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'TiendaStock') }} | Gestión de inventario</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    @include('layouts.theme')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing-page font-sans antialiased">
@@ -18,6 +19,7 @@
                 </a>
                 <nav class="landing-nav" aria-label="Navegación principal">
                     <a class="landing-nav__link" href="#funciones">Funciones</a>
+                    <button type="button" data-theme-toggle aria-pressed="false" class="theme-toggle">Modo oscuro</button>
                     <a class="landing-action landing-action--compact" href="{{ route('login') }}">Iniciar sesión</a>
                 </nav>
             </div>

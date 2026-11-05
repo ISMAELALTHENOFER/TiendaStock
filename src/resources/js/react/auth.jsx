@@ -10,8 +10,8 @@ function Field({ id, label, name = id, type = 'text', value, error, autoComplete
     return <div>
         <label htmlFor={id} className="mb-1 block text-sm font-semibold text-ink">{label}</label>
         <div className="flex gap-2">
-            <Input id={id} name={name} type={inputType} defaultValue={value} error={error} required={required} autoComplete={autoComplete} aria-describedby={error ? `${id}-error` : undefined} />
-            {type === 'password' && <Button type="button" variant="secondary" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? 'Ocultar' : 'Mostrar'}</Button>}
+            <Input id={id} name={name} type={inputType} defaultValue={value} error={error} required={required} autoComplete={autoComplete} aria-describedby={error ? `${id}-error` : undefined} className="min-w-0" />
+            {type === 'password' && <Button type="button" variant="secondary" className="shrink-0 whitespace-nowrap" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? 'Ocultar' : 'Mostrar'}</Button>}
         </div>
         {error && <p id={`${id}-error`} className="mt-1 text-sm text-red-700">{error}</p>}
     </div>;
