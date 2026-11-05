@@ -14,7 +14,8 @@
             </div>
 
             <!-- User menu -->
-            <div class="flex items-center">
+            <div class="flex items-center gap-2">
+                <button type="button" data-theme-toggle aria-pressed="false" class="theme-toggle">Modo oscuro</button>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button type="button" aria-label="Abrir menú de usuario" class="flex min-h-11 items-center gap-2.5 rounded-control px-2 text-left focus:outline-none focus:ring-2 focus:ring-primary">

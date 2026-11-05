@@ -18,6 +18,7 @@
     <meta name="theme-color" content="#006948">
     <link rel="apple-touch-icon" href="{{ asset('images/logo-tiendastock.png') }}">
 
+    @include('layouts.theme')
     <!-- Scripts -->
     @vite('resources/css/app.css')
     @if (! $useReact)

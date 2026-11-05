@@ -16,6 +16,7 @@
     <title>{{ config('app.name', 'TiendaStock') }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
+    @include('layouts.theme')
     <!-- Scripts -->
     @vite('resources/css/app.css')
     @if (! $reactAuth)
@@ -25,6 +26,7 @@
 
 <body class="font-sans text-gray-900 antialiased">
     <div class="min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 {{ isset($brand) ? 'login-page' : 'bg-stone-50' }}" style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));">
+        <button type="button" data-theme-toggle aria-pressed="false" class="theme-toggle mb-4">Modo oscuro</button>
         @if ($reactAuth)
             {{ $slot }}
         @else
