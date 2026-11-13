@@ -115,6 +115,9 @@ class ProductoController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Producto creado correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
             }
 
@@ -170,6 +173,9 @@ class ProductoController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Producto actualizado correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
             }
 

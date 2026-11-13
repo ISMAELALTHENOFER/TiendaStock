@@ -151,7 +151,8 @@ class ProductoImagenTest extends TestCase
             'nombre' => 'Desde React', 'categoria_id' => $this->categoria->id,
             'precio_compra' => 10, 'precio_venta' => 20, 'cantidad' => 5,
         ], ['Accept' => 'application/json'])->assertOk()
-            ->assertJsonPath('saved', true)->assertJsonPath('redirect', route('productos.index'));
+            ->assertJsonPath('saved', true)->assertJsonPath('redirect', route('productos.index'))
+            ->assertSessionHas('success', 'Producto creado correctamente.');
 
         $this->post(route('productos.store'), ['nombre' => ''], ['Accept' => 'application/json'])
             ->assertUnprocessable()->assertJsonValidationErrors(['nombre']);
@@ -161,7 +162,8 @@ class ProductoImagenTest extends TestCase
             'stock_original' => $producto->cantidad,
             'nombre' => 'Actualizado', 'categoria_id' => $this->categoria->id,
             'precio_compra' => 10, 'precio_venta' => 20, 'cantidad' => 5,
-        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true)
+            ->assertSessionHas('success', 'Producto actualizado correctamente.');
         $this->assertDatabaseHas('productos', ['id' => $producto->id, 'nombre' => 'Actualizado']);
     }
 

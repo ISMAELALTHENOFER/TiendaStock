@@ -10,6 +10,7 @@ import { Modal } from './components/ui/Modal.jsx';
 import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
+import { Toast } from './components/ui/Toast.jsx';
 import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
 import { saveResponse } from './lib/saveResponse.js';
@@ -208,7 +209,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     </div>
                 )}
 
-                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
+                <form ref={formRef} action={action} method="POST" encType="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
                     {isEdit && <input type="hidden" name="stock_original" value={producto.cantidad} />}
                     {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors.stock_original[0]}</div>}
                     {errors._general && (
@@ -343,6 +344,9 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [crearAbierto, setCrearAbierto] = useState(false);
     const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [productoEditando, setProductoEditando] = useState(null);
+    // In-place saves never reload the page, so the server flash toast cannot show them.
+    const [aviso, setAviso] = useState('');
+    const cerrarAviso = useCallback(() => setAviso(''), []);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
 
@@ -418,6 +422,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             if (!response.ok) throw new Error(body.errors?.cantidad?.[0] || body.message || 'No se pudo activar el producto.');
             activationDialog.current.close();
             setToggle(null);
+            setAviso('Producto activado correctamente.');
             await cargar();
         } catch (error) {
             setActivationError(error.message);
@@ -659,12 +664,14 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                     modal
                     onClose={() => { setCrearAbierto(false); setProductoEditando(null); }}
                     onSaved={async () => {
+                        setAviso(productoEditando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.');
                         setCrearAbierto(false);
                         setProductoEditando(null);
                         await cargar();
                     }}
                 />
             )}
+            <Toast type="success" message={aviso} onClose={cerrarAviso} />
         </div>
     );
 }

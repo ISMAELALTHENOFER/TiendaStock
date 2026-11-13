@@ -4,7 +4,11 @@ const PAGE_SIZES = [15, 30, 50];
 export function pageItems(page, last) {
     if (last <= 7) return Array.from({ length: last }, (_, index) => index + 1);
     const pages = [...new Set([1, page - 1, page, page + 1, last])].filter((value) => value >= 1 && value <= last).sort((a, b) => a - b);
-    return pages.flatMap((value, index) => (index > 0 && value - pages[index - 1] > 1 ? [`gap-${value}`, value] : [value]));
+    // A gap hiding exactly one page shows that page instead of an ellipsis.
+    return pages.flatMap((value, index) => {
+        const gap = index > 0 ? value - pages[index - 1] : 1;
+        return gap === 2 ? [value - 1, value] : gap > 2 ? [`gap-${value}`, value] : [value];
+    });
 }
 
 const Chevron = ({ direction }) => (
@@ -18,10 +22,11 @@ export function Pagination({ currentPage = 1, lastPage = 1, pageSize = 15, summa
     const page = Math.min(last, Math.max(1, Number(currentPage) || 1));
     const navigate = (next) => onPageChange?.(Math.max(1, Math.min(last, next)));
     const link = (target, content, { current = false, label, className } = {}) => {
-        const props = { key: label ?? target, 'aria-current': current ? 'page' : undefined, 'aria-label': label, className };
+        const key = label ?? target;
+        const props = { 'aria-current': current ? 'page' : undefined, 'aria-label': label, className };
         return hrefForPage
-            ? <a {...props} href={hrefForPage(target)}>{content}</a>
-            : <button {...props} type="button" onClick={() => navigate(target)}>{content}</button>;
+            ? <a key={key} {...props} href={hrefForPage(target)}>{content}</a>
+            : <button key={key} {...props} type="button" onClick={() => navigate(target)}>{content}</button>;
     };
     const step = (target, enabled, direction, text) => {
         const content = direction === 'left'

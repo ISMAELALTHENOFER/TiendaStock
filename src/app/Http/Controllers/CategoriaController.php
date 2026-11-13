@@ -67,6 +67,9 @@ class CategoriaController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Categoría creada correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('categorias.index')]);
             }
 
@@ -122,6 +125,9 @@ class CategoriaController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Categoría actualizada correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('categorias.index')]);
             }
 

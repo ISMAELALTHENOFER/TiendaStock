@@ -119,7 +119,7 @@ export function Profile({ props }) {
                         <input type="hidden" name="_token" value={token} />
                         <input type="hidden" name="_method" value="put" />
                         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{passwordFields.map(([key, label, autoComplete]) => <Field key={key} id={`update_password_${key}`} label={label} name={key} type="password" autoComplete={autoComplete} error={passwordErrors[key]?.[0]} />)}</div>
-                        <Button type="submit" className="w-full sm:w-auto">Actualizar contraseña</Button>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><Button type="submit" className="w-full sm:w-auto">Actualizar contraseña</Button>{props.status === 'password-updated' && <span role="status" className="text-sm text-muted">Contraseña actualizada.</span>}</div>
                     </form>
                 </section>
             </Card>

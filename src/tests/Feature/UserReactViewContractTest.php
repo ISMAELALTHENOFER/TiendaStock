@@ -155,4 +155,29 @@ class UserReactViewContractTest extends TestCase
             $this->assertStringContainsString($contract, $source);
         }
     }
+
+    public function test_react_user_json_saves_flash_the_success_toast(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $json = ['Accept' => 'application/json'];
+
+        $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Toast User', 'username' => 'toastuser', 'email' => 'toast@example.com',
+            'password' => 'Password123!', 'password_confirmation' => 'Password123!', 'role' => 'Ventas',
+        ], $json)->assertOk()->assertJsonPath('redirect', route('admin.users.index'))
+            ->assertSessionHas('success', 'Usuario creado correctamente.');
+
+        $user = User::where('username', 'toastuser')->firstOrFail();
+        $this->put(route('admin.users.update', $user), [
+            'name' => 'Toast User 2', 'username' => 'toastuser', 'email' => 'toast@example.com', 'role' => 'Ventas',
+        ], $json)->assertOk()->assertJsonPath('redirect', route('admin.users.index'))
+            ->assertSessionHas('success', 'Usuario actualizado correctamente.');
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'Toast User 2']);
+
+        $this->post(route('admin.users.deactivate', $user), [], $json)->assertOk()
+            ->assertSessionHas('success', 'Usuario desactivado correctamente.');
+        $this->post(route('admin.users.activate', $user), [], $json)->assertOk()
+            ->assertSessionHas('success', 'Usuario activado correctamente.');
+        $this->assertTrue($user->fresh()->activo);
+    }
 }

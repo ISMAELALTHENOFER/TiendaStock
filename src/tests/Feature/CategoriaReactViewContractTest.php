@@ -211,12 +211,14 @@ class CategoriaReactViewContractTest extends TestCase
             'descripcion' => 'Complementos',
         ], ['Accept' => 'application/json']);
         $created->assertOk()->assertJsonPath('saved', true)->assertJsonPath('redirect', route('categorias.index'));
+        $created->assertSessionHas('success', 'Categoría creada correctamente.');
         $categoria = Categoria::where('nombre', 'Accesorios')->firstOrFail();
 
         $this->put(route('categorias.update', $categoria), [
             'nombre' => 'Accesorios nuevos',
             'descripcion' => 'Descripción actualizada',
-        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true)
+            ->assertSessionHas('success', 'Categoría actualizada correctamente.');
         $this->assertDatabaseHas('categorias', [
             'id' => $categoria->id,
             'nombre' => 'Accesorios nuevos',

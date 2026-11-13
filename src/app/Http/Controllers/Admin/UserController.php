@@ -59,6 +59,13 @@ class UserController extends Controller
                 $request->user(), 'user.created', 'User created', "User {$user->name} was created.", $user
             );
 
+            if ($request->expectsJson()) {
+                // React follows `redirect` itself; a followed 302 would consume the flash before the toast.
+                $request->session()->flash('success', 'Usuario creado correctamente.');
+
+                return response()->json(['saved' => true, 'redirect' => route('admin.users.index')]);
+            }
+
             return redirect()->route('admin.users.index')
                 ->with('success', 'Usuario creado correctamente.');
         });
@@ -94,6 +101,13 @@ class UserController extends Controller
                 $request->user(), 'user.updated', 'User updated', "User {$user->name} was updated.", $user
             );
 
+            if ($request->expectsJson()) {
+                // React follows `redirect` itself; a followed 302 would consume the flash before the toast.
+                $request->session()->flash('success', 'Usuario actualizado correctamente.');
+
+                return response()->json(['saved' => true, 'redirect' => route('admin.users.index')]);
+            }
+
             return redirect()->route('admin.users.index')
                 ->with('success', 'Usuario actualizado correctamente.');
         });
@@ -119,8 +133,16 @@ class UserController extends Controller
                 $this->ensureAnotherActiveAdmin();
             }
             $user->update(['activo' => $active]);
+            $message = $active ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.';
 
-            return redirect()->route('admin.users.index')->with('success', $active ? 'Usuario activado correctamente.' : 'Usuario desactivado correctamente.');
+            if ($request->expectsJson()) {
+                // React reloads the list itself; a followed 302 would consume the flash before the toast.
+                $request->session()->flash('success', $message);
+
+                return response()->json(['saved' => true]);
+            }
+
+            return redirect()->route('admin.users.index')->with('success', $message);
         });
     }
 
