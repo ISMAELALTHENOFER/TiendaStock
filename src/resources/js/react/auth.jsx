@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
 import { Input } from './components/ui/Input.jsx';
+import { ArrowRight, BarChart3, Boxes, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
 
 function Field({ id, label, name = id, type = 'text', value, error, autoComplete, required = true }) {
     const [visible, setVisible] = useState(false);
@@ -24,24 +25,40 @@ function csrfToken() {
 export function Login({ props }) {
     const authError = props.authError;
     const errors = props.errors || {};
+    const [visible, setVisible] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-    return <main className="login-page flex min-h-dvh items-center justify-center px-3 py-8" style={{ paddingInline: 'max(.75rem, env(safe-area-inset-left))' }}>
-        <div className="w-full max-w-md">
-            <div className="login-brand" aria-label="TiendaStock"><img src="/images/tiendastock-mark.svg" alt="" className="h-10 w-10" /><span>TiendaStock</span></div>
-            <Card className="p-6 sm:p-9">
-                <header className="login-heading"><h1>Bienvenido</h1><p>Ingresa a TiendaStock para gestionar tu negocio.</p></header>
-                {authError && <p className="mb-4 rounded-control border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">{authError}</p>}
-                {props.status && <p className="mb-4" role="status">{props.status}</p>}
-                <form method="post" action={props.routes.login} className="space-y-5">
+    return <main className="login-react">
+        <aside className="login-react__visual" aria-label="Vista ilustrativa de TiendaStock">
+            <div className="login-react__visual-inner">
+                <div className="login-react__brand"><img src="/images/tiendastock-mark.svg" alt="" /><span>TiendaStock</span></div>
+                <div className="login-react__intro"><p>TODO EN UN SOLO LUGAR</p><h2>Gestioná tu negocio de forma simple</h2><span>Organiza tu inventario y mantén tus ventas a la vista.</span></div>
+                <div className="login-preview">
+                    <div className="login-preview__header"><div><span>VISTA DE EJEMPLO</span><h3>Resumen del negocio</h3></div><BarChart3 size={22} aria-hidden="true" /></div>
+                    <div className="login-preview__stats"><div><span>Ventas del día</span><strong>$ 124.500</strong><small>Ejemplo ilustrativo</small></div><div><span>Productos</span><strong>248</strong><small>Ejemplo ilustrativo</small></div></div>
+                    <svg className="login-preview__chart" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 50H400M0 25H400" fill="none" stroke="#4c7c6c" strokeWidth="1" /><path d="M0 56 L45 47 L90 50 L135 33 L180 38 L225 23 L270 29 L315 13 L360 19 L400 5" fill="none" stroke="#a3f3cb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /></svg>
+                    <div className="login-preview__inventory"><div><Boxes size={19} aria-hidden="true" /><strong>Inventario</strong><span>Ejemplo</span></div><p>Camisa clásica <b>32 unidades</b></p><p>Remera básica <b>18 unidades</b></p><p>Pantalón recto <b>12 unidades</b></p></div>
+                </div>
+                <p className="login-react__visual-note">Una vista más simple de tu negocio.</p>
+            </div>
+        </aside>
+        <section className="login-react__content" aria-labelledby="login-title">
+            <div className="login-react__form">
+                <div className="login-react__mobile-brand"><img src="/images/tiendastock-mark.svg" alt="" /><span>TiendaStock</span></div>
+                <header className="login-react__heading"><span>TE DAMOS LA BIENVENIDA</span><h1 id="login-title">Inicia sesión</h1><p>Ingresa tus datos para continuar a TiendaStock.</p></header>
+                {authError && <p id="login-auth-error" className="login-react__error" role="alert">{authError}</p>}
+                {props.status && <p className="login-react__status" role="status">{props.status}</p>}
+                <form method="post" action={props.routes.login} className="login-react__fields" onSubmit={() => setSubmitting(true)}>
                     <input type="hidden" name="_token" value={csrfToken()} />
-                    <Field id="username" label="Usuario" value={props.old?.username} error={!authError && errors.username?.[0]} autoComplete="username" />
-                    <Field id="password" label="Contraseña" type="password" error={!authError && errors.password?.[0]} autoComplete="current-password" />
-                    <label className="flex min-h-11 items-center gap-2 text-sm text-muted"><input type="checkbox" name="remember" value="1" className="h-4 w-4 accent-primary" />Recordarme</label>
-                    <Button className="w-full" type="submit">Iniciar sesión</Button>
+                    <div><label htmlFor="username">Usuario</label><div className="login-react__input"><UserRound size={19} aria-hidden="true" /><input id="username" name="username" type="text" defaultValue={props.old?.username} autoComplete="username" placeholder="Ingresa tu usuario" required autoFocus aria-invalid={Boolean(authError || errors.username)} aria-describedby={authError ? 'login-auth-error' : errors.username?.[0] ? 'login-username-error' : undefined} /></div>{!authError && errors.username?.[0] && <p id="login-username-error" className="login-react__field-error">{errors.username[0]}</p>}</div>
+                    <div><label htmlFor="password">Contraseña</label><div className="login-react__input"><LockKeyhole size={19} aria-hidden="true" /><input id="password" name="password" type={visible ? 'text' : 'password'} autoComplete="current-password" placeholder="Ingresa tu contraseña" required aria-invalid={Boolean(authError || errors.password)} aria-describedby={authError ? 'login-auth-error' : errors.password?.[0] ? 'login-password-error' : undefined} /><button type="button" className="login-react__reveal" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button></div>{!authError && errors.password?.[0] && <p id="login-password-error" className="login-react__field-error">{errors.password[0]}</p>}</div>
+                    <label className="login-react__remember"><input type="checkbox" name="remember" value="1" />Recordarme</label>
+                    <button className="login-react__submit" type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? 'Ingresando…' : 'Iniciar sesión'} <ArrowRight size={19} aria-hidden="true" /></button>
                 </form>
-            </Card>
-            <p className="login-footer mt-6 text-center text-sm text-muted">© {new Date().getFullYear()} TiendaStock</p>
-        </div>
+                <p className="login-react__security"><ShieldCheck size={16} aria-hidden="true" /> Acceso seguro a tu cuenta</p>
+            </div>
+            <p className="login-react__footer">© {new Date().getFullYear()} TiendaStock</p>
+        </section>
     </main>;
 }
 

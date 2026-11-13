@@ -6,13 +6,13 @@ import postcss from 'postcss';
 
 const source = readFileSync(new URL('../../../views/layouts/theme.blade.php', import.meta.url), 'utf8').replace(/<\/?script>/g, '');
 
-function setup(saved, unavailable = false) {
+function setup(saved, unavailable = false, systemDark = false, login = false) {
     const events = {};
     const windowEvents = {};
     const classes = new Set();
-    const button = { setAttribute: (name, value) => { button[name] = value; } };
+    const button = { hasAttribute: (name) => login && name === 'data-login-theme-toggle', setAttribute: (name, value) => { button[name] = value; } };
     const document = {
-        documentElement: { classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name) } },
+        documentElement: { hasAttribute: () => login, classList: { toggle: (name, enabled) => enabled ? classes.add(name) : classes.delete(name) } },
         querySelectorAll: () => [button],
         addEventListener: (name, handler) => { events[name] = handler; },
         body: {},
@@ -21,9 +21,38 @@ function setup(saved, unavailable = false) {
         getItem: () => { if (unavailable) throw Error('denied'); return saved; },
         setItem: (_, value) => { if (unavailable) throw Error('denied'); saved = value; },
     };
-    vm.runInNewContext(source, { document, localStorage, window: { addEventListener: (name, handler) => { windowEvents[name] = handler; } }, MutationObserver: class { observe() {} } });
-    return { classes, button, events, windowEvents, stored: () => saved, click: () => events.click({ target: { closest: () => button } }) };
+    const system = { matches: systemDark, addEventListener: (_, handler) => { system.change = handler; } };
+    vm.runInNewContext(source, { document, localStorage, window: { matchMedia: () => system, addEventListener: (name, handler) => { windowEvents[name] = handler; } }, MutationObserver: class { observe() {} } });
+    return { classes, button, events, windowEvents, system, stored: () => saved, click: () => events.click({ target: { closest: () => button } }) };
 }
+
+test('login follows system until a theme is explicitly selected', () => {
+    const theme = setup(null, false, true, true);
+    assert.equal(theme.classes.has('dark'), true);
+    assert.equal(theme.button['aria-label'], 'Activar modo claro');
+    theme.system.change({ matches: false });
+    assert.equal(theme.classes.has('dark'), false);
+    assert.equal(theme.button['aria-label'], 'Activar modo oscuro');
+    theme.click();
+    assert.equal(theme.stored(), 'dark');
+    assert.equal(theme.button['aria-label'], 'Activar modo claro');
+    theme.system.change({ matches: false });
+    assert.equal(theme.classes.has('dark'), true);
+    assert.equal(setup('light', false, true, true).classes.has('dark'), false);
+    assert.equal(setup(null, false, true).classes.has('dark'), false);
+});
+
+test('other pages retain their explicit theme and do not follow system changes', () => {
+    const page = setup(null, false, true);
+    assert.equal(page.classes.has('dark'), false);
+    assert.equal(page.button['aria-label'], undefined);
+    assert.equal(page.system.change, undefined);
+    page.click();
+    assert.equal(page.stored(), 'dark');
+    page.windowEvents.storage({ key: 'tiendastock.theme', newValue: null });
+    assert.equal(page.classes.has('dark'), false);
+    assert.equal(setup('dark', false, false).classes.has('dark'), true);
+});
 
 test('restores and persists an explicit theme before rendering', () => {
     const theme = setup('dark');

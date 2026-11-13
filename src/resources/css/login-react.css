@@ -1,0 +1,65 @@
+.login-react-host { position: relative; min-height: 100dvh; background: var(--surface); }
+.login-react-host > .theme-toggle { position: absolute; z-index: 2; top: max(1rem, env(safe-area-inset-top)); right: max(1rem, env(safe-area-inset-right)); margin: 0; }
+.login-react-host > .login-react__theme { display: grid; place-items: center; width: 2.75rem; padding: .5rem; }
+.login-react-host > .login-react__theme::before { content: none; }
+.login-react__theme svg { width: 1.25rem; height: 1.25rem; }
+.login-react__theme .login-react__theme-sun, .dark .login-react__theme .login-react__theme-moon { display: none; }
+.dark .login-react__theme .login-react__theme-sun { display: block; }
+.login-react-host #react-root { min-height: 100dvh; }
+.login-react { min-height: 100dvh; font-family: Inter, sans-serif; color: var(--ink); }
+.login-react__visual { display: none; background: #073e32; color: #fff; }
+.login-react__content { min-width: 0; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: 6rem max(1.5rem, env(safe-area-inset-right)) 1.5rem max(1.5rem, env(safe-area-inset-left)); background: var(--surface); }
+.login-react__form { width: min(100%, 26rem); margin: auto; }
+.login-react__brand, .login-react__mobile-brand { display: flex; align-items: center; gap: .7rem; font-weight: 700; font-size: 1.2rem; letter-spacing: -.03em; }
+.login-react__brand img, .login-react__mobile-brand img { width: 2.5rem; height: 2.5rem; }
+.login-react__mobile-brand { margin-bottom: 3rem; }
+.login-react__heading > span { color: #006948; font-size: .72rem; font-weight: 700; letter-spacing: .1em; }
+.dark .login-react__heading > span { color: #85f8c4; }
+.login-react__heading h1 { margin: .7rem 0 .55rem; font-size: clamp(2rem, 3vw, 2.6rem); line-height: 1.15; font-weight: 700; letter-spacing: -.035em; }
+.login-react__heading p { color: var(--muted); line-height: 1.6; }
+.login-react__fields { display: grid; gap: 1.2rem; margin-top: 2rem; }
+.login-react__fields label:not(.login-react__remember) { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 600; }
+.login-react__input { display: flex; align-items: center; gap: .75rem; min-height: 3.25rem; padding-left: 1rem; border: 1px solid var(--border); border-radius: .65rem; color: var(--muted); background: var(--surface); }
+.login-react__input:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.login-react__input input { width: 100%; min-width: 0; padding: .75rem 0; border: 0; outline: 0; background: transparent; color: var(--ink); box-shadow: none; }
+.login-react__input input:focus { outline: 0; box-shadow: none; }
+.login-react__input input::placeholder { color: var(--muted); opacity: 1; }
+.login-react__input input:last-child { padding-right: 1rem; }
+.login-react__reveal { display: grid; flex: none; place-items: center; width: 3rem; min-height: 3rem; color: var(--muted); }
+.login-react__remember { display: flex; align-items: center; gap: .65rem; min-height: 2.75rem; color: var(--muted); font-size: .875rem; cursor: pointer; }
+.login-react__remember input { width: 1.1rem; height: 1.1rem; accent-color: #006948; }
+.login-react__submit { display: flex; align-items: center; justify-content: center; gap: .75rem; width: 100%; min-height: 3.25rem; border-radius: .65rem; background: #006948; color: #fff; font-weight: 700; }
+.login-react__submit:hover:not(:disabled) { background: #005137; }
+.login-react__submit:disabled { cursor: wait; opacity: .7; }
+.login-react__error, .login-react__status { margin-top: 1.5rem; padding: .85rem 1rem; border-radius: .5rem; font-size: .875rem; }
+.login-react__error { background: #fee2e2; color: #991b1b; }
+.login-react__status { background: var(--surface-muted); color: var(--ink); }
+.login-react__field-error { margin-top: .4rem; color: #b91c1c; font-size: .875rem; }
+.dark .login-react__field-error { color: #ff9a9a; }
+.login-react__security { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 2rem; color: var(--muted); font-size: .8rem; }
+.login-react__footer { margin-top: 3rem; text-align: center; color: var(--muted); font-size: .8rem; }
+@media (min-width: 60rem) {
+    .login-react { display: grid; grid-template-columns: 55fr 45fr; }
+    .login-react__visual { display: flex; align-items: center; min-width: 0; padding: 3rem clamp(2rem, 5vw, 5rem); }
+    .login-react__visual-inner { width: min(100%, 39rem); margin: auto; }
+    .login-react__intro { margin: clamp(3rem, 6vh, 5rem) 0 2rem; }
+    .login-react__intro p, .login-preview__header span { color: #b6dfcf; font-size: .7rem; font-weight: 700; letter-spacing: .1em; }
+    .login-react__intro h2 { max-width: 15ch; margin: .8rem 0; font-size: clamp(2rem, 3.2vw, 3.3rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.1; }
+    .login-react__intro > span, .login-react__visual-note { color: #d3e8df; line-height: 1.6; }
+    .login-preview { padding: 1.4rem; border: 1px solid #4c7c6c; border-radius: 1rem; background: #104c3e; box-shadow: 0 18px 48px rgb(0 0 0 / .18); }
+    .login-preview__header, .login-preview__inventory > div { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .login-preview__header h3 { margin-top: .4rem; font-size: 1.05rem; font-weight: 700; }
+    .login-preview__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.3rem; }
+    .login-preview__stats > div { display: grid; gap: .4rem; padding: 1rem; border-radius: .65rem; background: #1b5b4a; }
+    .login-preview__stats span, .login-preview__stats small, .login-preview__inventory p, .login-preview__inventory span { color: #d3e8df; font-size: .75rem; }
+    .login-preview__stats strong { font-size: clamp(1.1rem, 1.7vw, 1.6rem); }
+    .login-preview__chart { display: block; width: 100%; height: 4rem; margin-top: 1rem; }
+    .login-preview__inventory { margin-top: 1.4rem; }
+    .login-preview__inventory > div { justify-content: flex-start; margin-bottom: .8rem; }
+    .login-preview__inventory > div span { margin-left: auto; }
+    .login-preview__inventory p { display: flex; justify-content: space-between; gap: .5rem; padding: .65rem 0; border-top: 1px solid #4c7c6c; }
+    .login-preview__inventory b { color: #fff; font-weight: 600; }
+    .login-react__visual-note { margin-top: 1.5rem; font-size: .8rem; }
+    .login-react__content { padding-inline: clamp(2rem, 5vw, 5rem); }
+    .login-react__mobile-brand { display: none; }
+}
