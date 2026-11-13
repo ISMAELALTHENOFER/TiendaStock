@@ -9,18 +9,25 @@ import { Pagination } from './components/ui/Pagination.jsx';
 import { csrf } from './lib/api.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
+import { useConfirm } from './lib/useConfirm.jsx';
 
 function CategoryForm({ categoria, routes, onClose }) {
     const isEdit = Boolean(categoria);
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
     const action = isEdit ? `${routes.categorias}/${categoria.id}` : routes.categorias;
 
-    async function submit(event) {
+    function handleSubmit(event) {
         event.preventDefault();
+        const form = event.currentTarget;
+        confirm(() => submit(form), isEdit ? {} : { title: '¿Guardar categoría?', message: 'Se creará la categoría con los datos ingresados.' });
+    }
+
+    async function submit(form) {
         setSubmitting(true);
         setErrors({});
-        const body = new FormData(event.currentTarget);
+        const body = new FormData(form);
         if (isEdit) body.append('_method', 'PUT');
         const headers = { Accept: 'application/json' };
         const token = csrf();
@@ -40,7 +47,7 @@ function CategoryForm({ categoria, routes, onClose }) {
 
     return (
         <Modal open title={isEdit ? 'Editar categoría' : 'Nueva categoría'} onClose={onClose} size="product">
-            <form onSubmit={submit} className="p-4 sm:p-7">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-7">
                 <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualiza los datos de esta categoría.' : 'Añade una clasificación para organizar tu inventario.'}</p>
                 {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 p-3 text-sm text-red-700">{error('_general')}</p>}
                 <div className="space-y-5">
@@ -60,6 +67,7 @@ function CategoryForm({ categoria, routes, onClose }) {
                     <Button type="submit" disabled={submitting}>{submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar categoría'}</Button>
                 </div>
             </form>
+            {confirmDialog}
         </Modal>
     );
 }

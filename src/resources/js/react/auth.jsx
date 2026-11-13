@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
 import { Input } from './components/ui/Input.jsx';
+import { useConfirm } from './lib/useConfirm.jsx';
 import { ArrowRight, BarChart3, Boxes, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
 
 function Field({ id, label, name = id, type = 'text', value, error, autoComplete, required = true }) {
@@ -80,6 +81,13 @@ export function Profile({ props }) {
     const profileErrors = props.errors || {};
     const passwordErrors = props.passwordErrors || {};
     const token = csrfToken();
+    const [confirm, confirmDialog] = useConfirm();
+    // Native submit() skips onSubmit, so the confirmed post goes straight to the server.
+    const confirmSubmit = (copy) => (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        confirm(() => form.submit(), copy);
+    };
     const profileFields = [
         ['name', 'Nombre', 'name'],
         ['username', 'Nombre de usuario', 'username'],
@@ -102,11 +110,11 @@ export function Profile({ props }) {
                 <section>
                     <h2 className="text-xl font-bold text-ink">Información del perfil</h2>
                     <p className="mt-1 text-sm text-muted">Actualiza tus datos personales y correo electrónico.</p>
-                    <form method="post" action={props.routes.profile} className="mt-6 space-y-5">
+                    <form method="post" action={props.routes.profile} onSubmit={confirmSubmit()} className="mt-6 space-y-5">
                         <input type="hidden" name="_token" value={token} />
                         <input type="hidden" name="_method" value="patch" />
-                        {profileFields.map(([key, label, autoComplete]) => <Field key={key} id={key} label={label} name={key} type={key === 'email' ? 'email' : 'text'} value={profileErrors[key] ? props.old?.[key] : props.userProfile?.[key]} error={profileErrors[key]?.[0]} autoComplete={autoComplete} />)}
-                        <div className="flex flex-wrap items-center gap-4"><Button type="submit">Guardar</Button>{props.status === 'profile-updated' && <span role="status" className="text-sm text-muted">Guardado.</span>}</div>
+                        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{profileFields.map(([key, label, autoComplete]) => <Field key={key} id={key} label={label} name={key} type={key === 'email' ? 'email' : 'text'} value={profileErrors[key] ? props.old?.[key] : props.userProfile?.[key]} error={profileErrors[key]?.[0]} autoComplete={autoComplete} />)}</div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><Button type="submit" className="w-full sm:w-auto">Guardar</Button>{props.status === 'profile-updated' && <span role="status" className="text-sm text-muted">Guardado.</span>}</div>
                     </form>
                 </section>
             </Card>
@@ -114,14 +122,15 @@ export function Profile({ props }) {
                 <section>
                     <h2 className="text-xl font-bold text-ink">Cambiar contraseña</h2>
                     <p className="mt-1 text-sm text-muted">Usa una contraseña larga y difícil de adivinar para proteger tu cuenta.</p>
-                    <form method="post" action={props.routes.passwordUpdate} className="mt-6 space-y-5">
+                    <form method="post" action={props.routes.passwordUpdate} onSubmit={confirmSubmit({ title: '¿Actualizar contraseña?', message: 'Tu contraseña será reemplazada por la nueva.', confirmLabel: 'Actualizar' })} className="mt-6 space-y-5">
                         <input type="hidden" name="_token" value={token} />
                         <input type="hidden" name="_method" value="put" />
-                        {passwordFields.map(([key, label, autoComplete]) => <Field key={key} id={`update_password_${key}`} label={label} name={key} type="password" autoComplete={autoComplete} error={passwordErrors[key]?.[0]} />)}
-                        <Button type="submit">Actualizar contraseña</Button>
+                        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{passwordFields.map(([key, label, autoComplete]) => <Field key={key} id={`update_password_${key}`} label={label} name={key} type="password" autoComplete={autoComplete} error={passwordErrors[key]?.[0]} />)}</div>
+                        <Button type="submit" className="w-full sm:w-auto">Actualizar contraseña</Button>
                     </form>
                 </section>
             </Card>
         </div>
+        {confirmDialog}
     </div>;
 }

@@ -11,7 +11,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, tone = 'prim
     return (
         <Modal open={open} title={title} onClose={onClose}>
             <p className="mt-2 text-sm text-muted">{message}</p>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <Button variant="secondary" onClick={onClose}>Cancelar</Button>
                 <Button variant={tone} onClick={() => { onConfirm(); onClose(); }}>{confirmLabel}</Button>
             </div>

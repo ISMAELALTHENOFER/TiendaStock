@@ -9,6 +9,7 @@ import { Pagination } from './components/ui/Pagination.jsx';
 import { csrf } from './lib/api.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
+import { useConfirm } from './lib/useConfirm.jsx';
 
 function roleBadge(user) {
     if (user.role === 'ADMIN') return { tone: 'success', short: 'Admin', long: 'Administrador' };
@@ -133,6 +134,7 @@ export function UserForm({ routes, usuario = null }) {
     const formRef = useRef(null);
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
 
     const action = isEdit ? `${routes.users}/${usuario.id}` : routes.users;
 
@@ -167,7 +169,7 @@ export function UserForm({ routes, usuario = null }) {
 
     function handleSubmit(event) {
         event.preventDefault();
-        submit();
+        confirm(submit, isEdit ? {} : { title: '¿Crear usuario?', message: 'Se creará el usuario con los datos ingresados.' });
     }
 
     return (
@@ -181,7 +183,7 @@ export function UserForm({ routes, usuario = null }) {
                 <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
                     {errors._general && <div className="rounded-card bg-red-50 p-3 text-sm text-red-700" role="alert">{errors._general[0]}</div>}
 
-                    <div className="grid gap-5 md:grid-cols-2">
+                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div>
                             <label htmlFor="name-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre completo <span className="text-red-600">*</span></label>
                             <Input id="name-field" name="name" required autoComplete="name" placeholder="Ej: Juan Pérez" defaultValue={usuario?.name ?? ''} error={errors?.name?.[0]} />
@@ -233,6 +235,7 @@ export function UserForm({ routes, usuario = null }) {
                     </div>
                 </form>
             </div>
+            {confirmDialog}
         </div>
     );
 }

@@ -16,6 +16,7 @@ import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { stockTone } from './lib/stockTone.js';
 import { formatMoney } from './lib/formatMoney.js';
+import { useConfirm } from './lib/useConfirm.jsx';
 
 /**
  * Money input with the same live mask semantics as the legacy Alpine
@@ -98,9 +99,8 @@ function ProductImage({ value, error }) {
 }
 
 /**
- * Shared create/edit form. Create posts directly to productos.store; edit
- * asks for confirmation (matching the legacy confirmDialogShow flow) and
- * then posts to productos.update. Error responses (422 JSON) keep the
+ * Shared create/edit form. Both create and edit ask for confirmation with
+ * the shared dialog before posting to productos.store / productos.update. Error responses (422 JSON) keep the
  * typed state and render inline field errors instead of redirecting back.
  */
 export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved, onCategoryCreated }) {
@@ -109,7 +109,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
     const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [categoryId, setCategoryId] = useState(String(producto?.categoria_id ?? ''));
     const [submitting, setSubmitting] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
     const [inlineOpen, setInlineOpen] = useState(false);
     const [inlineNombre, setInlineNombre] = useState('');
     const [inlineError, setInlineError] = useState('');
@@ -132,8 +132,12 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         }
     };
 
-    const crearCategoria = async (event) => {
+    const pedirCrearCategoria = (event) => {
         event.preventDefault();
+        confirm(crearCategoria, { title: '¿Guardar categoría?', message: `Se creará la categoría «${inlineNombre.trim()}».` });
+    };
+
+    const crearCategoria = async () => {
         setInlineSubmitting(true);
         setInlineError('');
         try {
@@ -176,11 +180,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        if (isEdit) {
-            setConfirmOpen(true);
-            return;
-        }
-        submit();
+        confirm(submit, isEdit ? {} : { title: '¿Guardar producto?', message: 'Se creará el producto con los datos ingresados.' });
     };
 
     const action = isEdit ? `${routes.productos}/${producto.id}` : routes.productos;
@@ -233,7 +233,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         {errors?.categoria_id && <p className="mt-1 text-sm text-red-600">{errors.categoria_id[0]}</p>}
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className={`grid gap-4 sm:grid-cols-2 ${modal ? '' : 'lg:grid-cols-3'}`}>
                         <div>
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
@@ -269,13 +269,13 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             </div>
 
             <Modal open={inlineOpen} title="Nueva Categoría" onClose={closeInline}>
-                <form onSubmit={crearCategoria} className="mt-4 space-y-4">
+                <form onSubmit={pedirCrearCategoria} className="mt-4 space-y-4">
                     <div>
                         <label htmlFor="inline-nombre-field" className="block text-sm font-medium text-ink">Nombre</label>
                         <Input id="inline-nombre-field" value={inlineNombre} onChange={(event) => setInlineNombre(event.target.value)} placeholder="Ej: Accesorios" required className="mt-1" />
                     </div>
                     {inlineError && <p className="text-sm text-red-600">{inlineError}</p>}
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <Button type="button" variant="secondary" onClick={() => setInlineOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={inlineSubmitting}>{inlineSubmitting ? 'Creando...' : 'Crear Categoría'}</Button>
                     </div>
@@ -291,15 +291,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                 onClose={() => setDuplicado(null)}
             />
 
-            <ConfirmDialog
-                open={confirmOpen}
-                title="Editar producto"
-                message="¿Confirmar los cambios en este producto?"
-                confirmLabel="Sí, guardar"
-                tone="primary"
-                onConfirm={submit}
-                onClose={() => setConfirmOpen(false)}
-            />
+            {confirmDialog}
         </div>
     );
     return modal ? (
@@ -499,9 +491,9 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <th className="px-4 py-3">Categoría</th>
                                     <th className="px-4 py-3">Talle</th>
                                     <th className="px-4 py-3">Color</th>
-                                    <th className="px-4 py-3 text-right">P. Compra</th>
+                                    {routes.canViewProductCost && <th className="px-4 py-3 text-right">P. Compra</th>}
                                     <th className="px-4 py-3 text-right">P. Venta</th>
-                                    <th className="px-4 py-3 text-right">Ganancia</th>
+                                    {routes.canViewProductCost && <th className="px-4 py-3 text-right">Ganancia</th>}
                                     <th className="px-4 py-3 text-right">Stock</th>
                                     <th className="px-4 py-3 text-center">Acciones</th>
                                 </tr>
@@ -595,7 +587,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
 
             {visibles.map((producto) => (
                 <div key={producto.id} className="hidden">
-                    <form id={`desactivar-${producto.id}`} action={`/productos/${producto.id}`} method="POST">
+                    <form id={`desactivar-${producto.id}`} action={`${routes.productos}/${producto.id}`} method="POST">
                         <input type="hidden" name="_token" value={csrf()} />
                         <input type="hidden" name="_method" value="DELETE" />
                         <input type="hidden" name="stock_original" value={producto.cantidad} />
