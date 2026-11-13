@@ -21,10 +21,14 @@ class AuthReactViewContractTest extends TestCase
 
     public function test_login_uses_react_by_default_and_keeps_blade_fallback(): void
     {
-        $this->get('/login')->assertOk()->assertSee('id="react-root"', false);
+        $response = $this->get('/login')->assertOk()->assertSee('id="react-root"', false)->assertSee('data-theme-system', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'data-theme-toggle aria-pressed'));
+        $response->assertSee('data-login-theme-toggle', false)->assertSee('login-react__theme-moon')->assertSee('login-react__theme-sun');
 
         config(['frontend.routes.login' => 'blade']);
-        $this->get('/login')->assertOk()->assertDontSee('id="react-root"')->assertSee('class="login-brand"', false);
+        $fallback = $this->get('/login')->assertOk()->assertDontSee('id="react-root"')->assertSee('class="login-brand"', false)->assertSee('data-theme-system', false);
+        $this->assertSame(1, substr_count($fallback->getContent(), 'data-theme-toggle aria-pressed'));
+        $fallback->assertDontSee('data-login-theme-toggle aria-label=', false);
 
         config(['frontend.routes.login' => 'react', 'frontend.driver' => 'blade']);
         $this->get('/login')->assertOk()->assertDontSee('id="react-root"');
@@ -46,6 +50,7 @@ class AuthReactViewContractTest extends TestCase
     public function test_react_auth_forms_keep_existing_server_endpoints_and_validation(): void
     {
         $auth = file_get_contents(resource_path('js/react/auth.jsx'));
+        $this->assertStringContainsString('Gestioná tu negocio de forma simple', $auth);
         foreach (['props.routes.login', 'props.routes.profile', 'props.routes.passwordUpdate', 'name="_method"', 'current_password', 'password_confirmation', 'csrf-token', 'aria-describedby', 'aria-pressed'] as $contract) {
             $this->assertStringContainsString($contract, $auth);
         }

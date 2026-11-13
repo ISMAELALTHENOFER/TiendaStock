@@ -6,6 +6,7 @@
 @import "@fontsource/inter/latin-ext-600.css";
 @import "@fontsource/inter/latin-700.css";
 @import "@fontsource/inter/latin-ext-700.css";
+@import "./login-react.css";
 
 @tailwind base;
 @tailwind components;
