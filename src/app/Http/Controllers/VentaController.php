@@ -156,6 +156,9 @@ class VentaController extends Controller
         );
 
         if ($request->expectsJson()) {
+            // The POS follows `redirect` itself, so flash here for the receipt page toast.
+            $request->session()->flash('success', "Venta #{$venta->id} registrada correctamente.");
+
             return response()->json(['redirect' => route('ventas.show', $venta)]);
         }
 
@@ -173,6 +176,10 @@ class VentaController extends Controller
         abort_unless($user->isAdmin() || ($user->isVentas() && $venta->user_id === $user->id), 403);
 
         $venta->load('user', 'items.producto');
+        if (! $user->isAdmin()) {
+            // The sale is serialized into data-props; purchase cost is ADMIN-only.
+            $venta->items->each(fn ($item) => $item->producto?->makeHidden(['precio_compra', 'ganancia']));
+        }
 
         return view('layouts.app', compact('venta'));
     }
