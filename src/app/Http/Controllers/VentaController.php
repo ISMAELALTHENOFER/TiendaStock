@@ -62,7 +62,7 @@ class VentaController extends Controller
             return response()->json($ventas);
         }
 
-        return view('ventas.index', compact('ventas'));
+        return view('layouts.app', compact('ventas'));
     }
 
     /**
@@ -71,7 +71,7 @@ class VentaController extends Controller
      */
     public function create()
     {
-        return view('ventas.pos');
+        return view('layouts.app');
     }
 
     /**
@@ -174,7 +174,7 @@ class VentaController extends Controller
 
         $venta->load('user', 'items.producto');
 
-        return view('ventas.show', compact('venta'));
+        return view('layouts.app', compact('venta'));
     }
 
     /**

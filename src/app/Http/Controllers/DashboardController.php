@@ -10,14 +10,16 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        return view('dashboard', [
+        return view('layouts.app', [
             'categorias' => Categoria::orderBy('nombre')->get(),
-            'productosCount' => Producto::count(),
-            'categoriasCount' => Categoria::count(),
-            'productosActivos' => Producto::where('activo', true)->count(),
-            'productosAgotados' => Producto::where('cantidad', 0)->count(),
-            'productosBajoStock' => Producto::where('activo', true)->where('cantidad', 1)->count(),
-            'valorTotal' => Producto::where('activo', true)->selectRaw('COALESCE(SUM(precio_venta * cantidad), 0) as total')->value('total'),
+            'metrics' => [
+                'productosCount' => Producto::count(),
+                'categoriasCount' => Categoria::count(),
+                'productosActivos' => Producto::where('activo', true)->count(),
+                'productosAgotados' => Producto::where('cantidad', 0)->count(),
+                'productosBajoStock' => Producto::where('activo', true)->where('cantidad', 1)->count(),
+                'valorTotal' => Producto::where('activo', true)->selectRaw('COALESCE(SUM(precio_venta * cantidad), 0) as total')->value('total'),
+            ],
         ]);
     }
 }

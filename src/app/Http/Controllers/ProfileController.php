@@ -10,11 +10,9 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function edit(Request $request): View
+    public function edit(): View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        return view('layouts.app');
     }
 
     public function update(ProfileUpdateRequest $request): RedirectResponse

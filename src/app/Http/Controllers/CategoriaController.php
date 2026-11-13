@@ -16,25 +16,17 @@ class CategoriaController extends Controller
 
         return $request->expectsJson()
             ? response()->json($data['categorias'])
-            : view('categorias.index', $data);
+            : view('layouts.app', $data);
     }
 
     public function create(Request $request)
     {
-        if (! $this->usesReact($request)) {
-            return view('categorias.create');
-        }
-
-        return view('categorias.index', $this->categoryGridData($request));
+        return view('layouts.app', $this->categoryGridData($request));
     }
 
     public function edit(Request $request, Categoria $categoria)
     {
-        if (! $this->usesReact($request)) {
-            return view('categorias.edit', compact('categoria'));
-        }
-
-        return view('categorias.index', $this->categoryGridData($request, $categoria));
+        return view('layouts.app', $this->categoryGridData($request, $categoria));
     }
 
     private function categoryGridData(Request $request, ?Categoria $categoria = null): array
@@ -105,7 +97,7 @@ class CategoriaController extends Controller
         }
         $request->attributes->set('categoriaProductsPage', $productos);
 
-        return view('categorias.show', compact('categoria', 'productos'));
+        return view('layouts.app', compact('categoria', 'productos'));
     }
 
     private function pageSize(Request $request): int
@@ -113,14 +105,6 @@ class CategoriaController extends Controller
         $pageSize = $request->query('per_page', '15');
 
         return in_array($pageSize, ['15', '30', '50'], true) ? (int) $pageSize : 15;
-    }
-
-    private function usesReact(Request $request): bool
-    {
-        $routeName = $request->route()?->getName();
-
-        return config('frontend.driver', 'blade') === 'react'
-            && (config("frontend.routes.{$routeName}") ?? 'react') === 'react';
     }
 
     public function update(Request $request, Categoria $categoria)

@@ -7,11 +7,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Coexistence contract for the migrated Usuarios slice (react driver).
+ * React view contract for the Usuarios slice.
  *
- * admin.users.index/create/edit are React-owned by default but MUST roll back
- * to the legacy Blade surface via the per-route override or the global
- * FRONTEND_DRIVER=blade switch (SH-R1). The React list preserves the current
+ * admin.users.index/create/edit render only through the React host. The
+ * React list preserves the current
  * fields, role badges, single edit action, server pagination and the Spanish
  * empty state; the forms preserve validation, CSRF, redirects and the
  * password-retention contract (SH-R3). Server ADMIN authorization stays in
@@ -21,58 +20,23 @@ class UserReactViewContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_routes_render_the_react_host_when_enabled(): void
-    {
-        $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
-
-        $this->assertStringContainsString("'admin.users.index'", $source);
-        $this->assertStringContainsString("'admin.users.create'", $source);
-        $this->assertStringContainsString("'admin.users.edit'", $source);
-        $this->assertStringContainsString("@include('react.app'", $source);
-    }
-
-    public function test_user_index_can_roll_back_to_the_legacy_blade_surface(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.routes.admin.users.index' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/admin/users');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Usuarios del Sistema');
-        $response->assertSee('Gestiona todos los usuarios de la plataforma');
-    }
-
-    public function test_user_create_can_roll_back_to_the_legacy_blade_form(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.routes.admin.users.create' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/admin/users/create');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Nuevo Usuario');
-        $response->assertSee('Información del Usuario');
-    }
-
-    public function test_user_edit_can_roll_back_to_the_legacy_blade_form(): void
+    public function test_user_routes_render_the_react_host(): void
     {
         $admin = User::factory()->admin()->create();
         $user = User::factory()->create();
 
-        config(['frontend.routes.admin.users.edit' => 'blade']);
+        foreach ([
+            ['/admin/users', 'admin.users.index'],
+            ['/admin/users/create', 'admin.users.create'],
+            [route('admin.users.edit', $user), 'admin.users.edit'],
+        ] as [$url, $page]) {
+            $response = $this->actingAs($admin)->get($url)->assertOk()->assertSee('id="react-root"', false);
+            preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+            $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame($page, $props['page']);
+        }
 
-        $response = $this->actingAs($admin)->get(route('admin.users.edit', $user));
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Editar Usuario');
-    }
-
-    public function test_global_blade_driver_restores_the_users_surface(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.driver' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/admin/users');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Usuarios del Sistema');
+        $this->assertSame($user->id, $props['usuario']['id']);
     }
 
     public function test_react_user_index_preserves_fields_role_badges_and_edit_action(): void

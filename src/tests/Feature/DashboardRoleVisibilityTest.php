@@ -10,10 +10,9 @@ class DashboardRoleVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_both_dashboard_drivers_show_accessible_category_comparison_bars(): void
+    public function test_dashboard_shows_accessible_category_comparison_bars(): void
     {
         $react = file_get_contents(resource_path('js/react/dashboard.jsx'));
-        $blade = file_get_contents(resource_path('views/dashboard.blade.php'));
 
         $this->assertStringContainsString('<CategoryChart data={data.series.sales_by_category} />', $react);
         $this->assertStringContainsString('category.count} unidades', $react);
@@ -21,11 +20,7 @@ class DashboardRoleVisibilityTest extends TestCase
         $this->assertStringContainsString('aria-hidden="true"', $react);
         $this->assertStringContainsString('text-[12px]', $react);
         $this->assertStringContainsString('minWidth: Math.max(data.length * 54, 320)', $react);
-        $this->assertStringContainsString('category.count} unidades', $blade);
-        $this->assertStringContainsString('Math.max(0, category.count) / categoryMax * 100', $blade);
-        $this->assertStringContainsString("track.setAttribute('aria-hidden', 'true')", $blade);
         $this->assertStringContainsString('[overflow-wrap:anywhere]', $react);
-        $this->assertStringContainsString('[overflow-wrap:anywhere]', $blade);
     }
 
     public function test_admin_sees_all_links(): void
@@ -42,45 +37,11 @@ class DashboardRoleVisibilityTest extends TestCase
         $response->assertSee('Nuevo Usuario');
     }
 
-    public function test_non_admin_sidebar_hides_dashboard_in_blade_and_react(): void
+    public function test_non_admin_sidebar_hides_dashboard(): void
     {
-        foreach (['Ventas', 'Control Stock', null, 'invalid'] as $role) {
-            $this->actingAs(User::factory()->create(['role' => $role]));
-            $html = view('layouts.sidebar')->render();
-            $this->assertStringNotContainsString('href="'.route('dashboard').'"', $html);
-            $this->assertStringNotContainsString('aria-label="Dashboard"', $html);
-            $this->assertStringContainsString('href="'.route('profile.edit').'"', $html);
-        }
-
         $sidebar = file_get_contents(resource_path('js/react/layout/Sidebar.jsx'));
         $this->assertStringContainsString("icon: LayoutDashboard, roles: ['ADMIN']", $sidebar);
         $this->assertStringContainsString("user.role === 'ADMIN' ? routes.dashboard : routes.profilePage", $sidebar);
-    }
-
-    public function test_blade_driver_restores_the_legacy_dashboard(): void
-    {
-        config(['frontend.driver' => 'blade']);
-        $user = User::factory()->admin()->create();
-
-        $response = $this->actingAs($user)->get('/dashboard');
-
-        $response->assertDontSee('react-root')->assertDontSee('Actividad Reciente')
-            ->assertDontSee('Producto "Ejemplo"')->assertDontSee('Categoría "Electrónicos"')
-            ->assertSee('Total Productos')->assertSee('Acciones Rápidas')->assertSee('Nueva Venta (POS)');
-    }
-
-    public function test_dashboard_route_driver_restores_the_legacy_dashboard_without_global_rollback(): void
-    {
-        config([
-            'frontend.driver' => 'react',
-            'frontend.routes.dashboard' => 'blade',
-        ]);
-        $user = User::factory()->admin()->create();
-
-        $response = $this->actingAs($user)->get('/dashboard');
-
-        $response->assertDontSee('react-root')->assertDontSee('Actividad Reciente')
-            ->assertSee('Total Productos')->assertSee('Acciones Rápidas');
     }
 
     public function test_desktop_sidebar_is_an_independent_viewport_height_region(): void

@@ -24,7 +24,6 @@ class ProductoImagenTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
-        config(['frontend.routes.productos.show' => 'blade']);
 
         $this->admin = User::factory()->admin()->create();
         $this->categoria = Categoria::factory()->create();
@@ -262,8 +261,9 @@ class ProductoImagenTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('productos.show', $producto));
 
         $response->assertOk();
-        $response->assertSee('<img', false);
-        $response->assertSee(route('productos.imagen', $producto));
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $this->assertStringStartsWith(route('productos.imagen', $producto), $props['routes']['productoImage'] ?? '');
     }
 
     public function test_show_emits_no_product_image_when_imagen_is_null(): void
@@ -277,6 +277,9 @@ class ProductoImagenTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('alt="'.$producto->nombre.'"', false);
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true);
+        $this->assertNull($props['routes']['productoImage']);
     }
 
     public function test_data_endpoint_returns_imagen_field_for_client_thumbnails(): void

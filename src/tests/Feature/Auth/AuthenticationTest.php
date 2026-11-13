@@ -12,38 +12,21 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(['frontend.driver' => 'blade']);
-    }
-
     public function test_login_screen_can_be_rendered(): void
     {
-        $response = $this->get('/login');
+        $response = $this->get('/login')->assertStatus(200)->assertSee('id="react-root"', false);
+        $props = $this->loginProps($response->getContent());
 
-        $response
-            ->assertStatus(200)
-            ->assertSee('class="login-brand" aria-label="TiendaStock"', false)
-            ->assertSee('class="login-brand__icon"', false)
-            ->assertDontSee('class="w-14 h-14 text-brand-600"', false)
-            ->assertDontSee('images/logo-tiendastock.png', false)
-            ->assertDontSee('id="login-auth-error"', false);
+        $this->assertSame('login', $props['page']);
+        $this->assertNull($props['authError']);
     }
 
     public function test_login_screen_has_no_dangling_error_descriptions(): void
     {
-        $response = $this->get('/login');
-        $xpath = $this->loginXpath($response->getContent());
+        $props = $this->loginProps($this->get('/login')->getContent());
 
-        foreach (['username', 'password'] as $field) {
-            $this->assertSame('false', $xpath->query("//input[@id='$field']")->item(0)->getAttribute('aria-invalid'));
-            $this->assertFalse($xpath->query("//input[@id='$field']")->item(0)->hasAttribute('aria-describedby'));
-        }
-
-        $this->assertSame(0, $xpath->query('//*[@id="login-auth-error"]')->length);
-        $this->assertSame(1, $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " login-footer ")]')->length);
-        $this->assertStringContainsString('Todos los derechos reservados • Términos Privacidad', $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " login-footer ")]')->item(0)->textContent);
+        $this->assertSame([], $props['errors']);
+        $this->assertNull($props['authError']);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -90,19 +73,10 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertSessionHasErrors('username');
 
-        $response = $this->get('/login');
-        $xpath = $this->loginXpath($response->getContent());
+        $props = $this->loginProps($this->get('/login')->getContent());
 
-        $this->assertSame(1, $xpath->query('//*[@id="login-auth-error" and @role="alert"]')->length);
-        $this->assertSame(__('auth.failed'), trim($xpath->query('//*[@id="login-auth-error"]')->item(0)->textContent));
-        foreach (['username', 'password'] as $field) {
-            $input = $xpath->query("//input[@id='$field']")->item(0);
-            $this->assertSame('true', $input->getAttribute('aria-invalid'));
-            $this->assertSame('login-auth-error', $input->getAttribute('aria-describedby'));
-        }
-        $this->assertSame(0, $xpath->query('//*[@id="username-error" or @id="password-error"]')->length);
-
-        $this->assertSame(1, substr_count($response->getContent(), __('auth.failed')));
+        $this->assertSame(__('auth.failed'), $props['authError']);
+        $this->assertSame(['username' => [__('auth.failed')]], $props['errors']);
     }
 
     public function test_inactive_account_is_reported_only_after_valid_password(): void
@@ -139,15 +113,11 @@ class AuthenticationTest extends TestCase
     {
         $this->post('/login', [])->assertSessionHasErrors(['username', 'password']);
 
-        $xpath = $this->loginXpath($this->get('/login')->getContent());
+        $props = $this->loginProps($this->get('/login')->getContent());
 
-        $this->assertSame(0, $xpath->query('//*[@id="login-auth-error"]')->length);
-        foreach (['username', 'password'] as $field) {
-            $this->assertSame(1, $xpath->query("//*[@id='$field-error']")->length);
-            $input = $xpath->query("//input[@id='$field']")->item(0);
-            $this->assertSame('true', $input->getAttribute('aria-invalid'));
-            $this->assertSame("$field-error", $input->getAttribute('aria-describedby'));
-        }
+        $this->assertNull($props['authError']);
+        $this->assertArrayHasKey('username', $props['errors']);
+        $this->assertArrayHasKey('password', $props['errors']);
     }
 
     public function test_users_can_logout(): void
@@ -160,28 +130,13 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect('/');
     }
 
-    public function test_blade_logout_controls_submit_post_without_logout_links(): void
-    {
-        config(['frontend.driver' => 'blade']);
-        $this->actingAs(User::factory()->admin()->create());
-
-        foreach ([
-            [$this->get('/dashboard')->assertOk()->getContent(), 1],
-            [view('layouts.navigation')->render(), 2],
-        ] as [$html, $expectedForms]) {
-            $xpath = $this->loginXpath($html);
-            $logout = route('logout');
-
-            $this->assertSame($expectedForms, $xpath->query("//form[@method='POST' and @action='$logout'][input[@name='_token'] and button[@type='submit']]")->length);
-            $this->assertSame(0, $xpath->query("//*[@href='$logout']")->length);
-        }
-    }
-
-    private function loginXpath(string $html): DOMXPath
+    private function loginProps(string $html): array
     {
         $document = new DOMDocument();
         $document->loadHTML('<?xml encoding="UTF-8"?>'.$html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $node = (new DOMXPath($document))->query('//*[@id="react-root"]')->item(0);
+        $this->assertNotNull($node);
 
-        return new DOMXPath($document);
+        return json_decode($node->getAttribute('data-props'), true, flags: JSON_THROW_ON_ERROR);
     }
 }

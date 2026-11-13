@@ -1,4 +1,0 @@
-<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="TiendaStock" {{ $attributes }}>
-    <rect width="40" height="40" rx="12" fill="#006948" />
-    <path d="M11 13h18v5H11zM13 18v11h14V18M18 23h4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-</svg>

@@ -1,8 +1,8 @@
 @php
     $routeName = request()->route()?->getName();
-    $routeDriver = config("frontend.routes.{$routeName}");
-    $useReact = config('frontend.driver', 'blade') === 'react'
-        && ($routeDriver ?? 'react') === 'react';
+    foreach (['ventas', 'venta', 'categorias', 'categoria', 'producto', 'users', 'usuario', 'metrics'] as $pageVariable) {
+        $$pageVariable ??= null;
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -21,9 +21,6 @@
     @include('layouts.theme')
     <!-- Scripts -->
     @vite('resources/css/app.css')
-    @if (! $useReact)
-        @vite('resources/js/app.js')
-    @endif
 
     <style>
         body {
@@ -34,7 +31,6 @@
 </head>
 
     <body class="font-sans antialiased bg-canvas">
-    @if ($useReact && in_array($routeName, ['profile.edit', 'dashboard', 'ventas.index', 'ventas.pos', 'ventas.show', 'productos.index', 'productos.create', 'productos.edit', 'productos.show', 'categorias.index', 'categorias.create', 'categorias.edit', 'categorias.show', 'admin.users.index', 'admin.users.create', 'admin.users.edit'], true))
         @include('react.app', ['props' => [
             'page' => $routeName,
             'status' => session('status'),
@@ -95,36 +91,6 @@
             'passwordErrors' => $errors->getBag('updatePassword')->toArray(),
             'old' => old(),
         ]])
-    @else
-    <div x-data="{ sidebarOpen: false, sidebarCollapsed: false }" x-effect="document.body.classList.toggle('overflow-hidden', sidebarOpen)" class="min-h-dvh flex bg-canvas lg:h-dvh lg:overflow-hidden">
-        <!-- Sidebar -->
-        @include('layouts.sidebar')
-
-        <!-- Main Content -->
-        <div class="min-w-0 flex-1 flex flex-col">
-            <!-- Top Navigation -->
-            @include('layouts.topbar')
-
-            <!-- Page Content -->
-            <main class="min-w-0 flex-1 overflow-visible bg-canvas p-4 sm:p-6 lg:overflow-y-auto lg:p-8" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
-                @isset($header)
-                <div class="mb-8 min-w-0">
-                    {{ $header }}
-                </div>
-                @endisset
-
-                {{ $slot }}
-            </main>
-        </div>
-    </div>
-    @endif
-
-    @stack('scripts')
-
-    @if (! $useReact || $routeName === 'profile.edit')
-        <x-confirm-dialog />
-        <x-flash-toast />
-    @endif
 
 </body>
 

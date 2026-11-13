@@ -36,12 +36,12 @@ class UserController extends Controller
             return response()->json($users);
         }
 
-        return view('admin.users.index', compact('users'));
+        return view('layouts.app', compact('users'));
     }
 
     public function create(): View
     {
-        return view('admin.users.create');
+        return view('layouts.app');
     }
 
     public function store(StoreUserRequest $request)
@@ -66,7 +66,7 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        return view('admin.users.edit', compact('user'));
+        return view('layouts.app', ['usuario' => $user]);
     }
 
     public function update(UpdateUserRequest $request, User $user)

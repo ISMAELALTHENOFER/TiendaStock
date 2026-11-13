@@ -22,24 +22,17 @@ class VentaListItemCountTest extends TestCase
         VentaItem::factory()->create(['venta_id' => $other->id]);
 
         $this->actingAs($seller);
-        foreach (['react', 'blade'] as $driver) {
-            config(['frontend.driver' => $driver]);
-            $response = $this->get('/ventas');
-            $response->assertOk()->assertViewHas('ventas', function ($ventas) use ($sale, $empty) {
-                $sales = $ventas->getCollection()->keyBy('id');
+        $response = $this->get('/ventas');
+        $response->assertOk()->assertViewHas('ventas', function ($ventas) use ($sale, $empty) {
+            $sales = $ventas->getCollection()->keyBy('id');
 
-                return $sales->count() === 2
-                    && $sales[$sale->id]->items_count === 2
-                    && $sales[$empty->id]->items_count === 0
-                    && ! $sales[$sale->id]->relationLoaded('items')
-                    && ! $sales[$empty->id]->relationLoaded('items');
-            });
-            if ($driver === 'blade') {
-                $response->assertSee('2 items')->assertSee('0 items');
-            } else {
-                $response->assertSee('&quot;items_count&quot;:2', false);
-            }
-        }
+            return $sales->count() === 2
+                && $sales[$sale->id]->items_count === 2
+                && $sales[$empty->id]->items_count === 0
+                && ! $sales[$sale->id]->relationLoaded('items')
+                && ! $sales[$empty->id]->relationLoaded('items');
+        });
+        $response->assertSee('&quot;items_count&quot;:2', false);
 
         $json = $this->getJson('/ventas')->assertOk()->assertJsonCount(2, 'data');
         $sales = collect($json->json('data'))->keyBy('id');

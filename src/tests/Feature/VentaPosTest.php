@@ -653,7 +653,6 @@ class VentaPosTest extends TestCase
 
     public function test_sidebar_link_shown_for_ventas(): void
     {
-        config(['frontend.driver' => 'blade']);
         $response = $this->actingAs($this->userVentas)->get('/ventas');
         $response->assertOk();
         $response->assertSee('Ventas');
@@ -668,7 +667,6 @@ class VentaPosTest extends TestCase
 
     public function test_sidebar_link_hidden_for_control_stock(): void
     {
-        config(['frontend.driver' => 'blade']);
         $response = $this->actingAs($this->userControlStock)->get('/productos');
         $response->assertOk();
         $response->assertDontSee('Ventas');
