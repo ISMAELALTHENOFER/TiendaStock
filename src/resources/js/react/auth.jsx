@@ -3,7 +3,7 @@ import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { useConfirm } from './lib/useConfirm.jsx';
-import { ArrowRight, BarChart3, Boxes, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
 
 function Field({ id, label, name = id, type = 'text', value, error, autoComplete, required = true }) {
     const [visible, setVisible] = useState(false);
@@ -30,17 +30,10 @@ export function Login({ props }) {
     const [submitting, setSubmitting] = useState(false);
 
     return <main className="login-react">
-        <aside className="login-react__visual" aria-label="Vista ilustrativa de TiendaStock">
+        <aside className="login-react__visual" aria-label="TiendaStock">
             <div className="login-react__visual-inner">
                 <div className="login-react__brand"><img src="/images/tiendastock-mark.svg" alt="" /><span>TiendaStock</span></div>
-                <div className="login-react__intro"><p>TODO EN UN SOLO LUGAR</p><h2>Gestioná tu negocio de forma simple</h2><span>Organiza tu inventario y mantén tus ventas a la vista.</span></div>
-                <div className="login-preview">
-                    <div className="login-preview__header"><div><span>VISTA DE EJEMPLO</span><h3>Resumen del negocio</h3></div><BarChart3 size={22} aria-hidden="true" /></div>
-                    <div className="login-preview__stats"><div><span>Ventas del día</span><strong>$ 124.500</strong><small>Ejemplo ilustrativo</small></div><div><span>Productos</span><strong>248</strong><small>Ejemplo ilustrativo</small></div></div>
-                    <svg className="login-preview__chart" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 50H400M0 25H400" fill="none" stroke="#4c7c6c" strokeWidth="1" /><path d="M0 56 L45 47 L90 50 L135 33 L180 38 L225 23 L270 29 L315 13 L360 19 L400 5" fill="none" stroke="#a3f3cb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /></svg>
-                    <div className="login-preview__inventory"><div><Boxes size={19} aria-hidden="true" /><strong>Inventario</strong><span>Ejemplo</span></div><p>Camisa clásica <b>32 unidades</b></p><p>Remera básica <b>18 unidades</b></p><p>Pantalón recto <b>12 unidades</b></p></div>
-                </div>
-                <p className="login-react__visual-note">Una vista más simple de tu negocio.</p>
+                <div className="login-react__intro"><p>TODO EN UN SOLO LUGAR</p><h2>Gestiona tu negocio de forma simple</h2><span>Organiza tu inventario y mantén tus ventas a la vista.</span></div>
             </div>
         </aside>
         <section className="login-react__content" aria-labelledby="login-title">

@@ -36,7 +36,7 @@ class AuthReactViewContractTest extends TestCase
     public function test_react_auth_forms_keep_existing_server_endpoints_and_validation(): void
     {
         $auth = file_get_contents(resource_path('js/react/auth.jsx'));
-        $this->assertStringContainsString('Gestioná tu negocio de forma simple', $auth);
+        $this->assertStringContainsString('Gestiona tu negocio de forma simple', $auth);
         foreach (['props.routes.login', 'props.routes.profile', 'props.routes.passwordUpdate', 'name="_method"', 'current_password', 'password_confirmation', 'csrf-token', 'aria-describedby', 'aria-pressed'] as $contract) {
             $this->assertStringContainsString($contract, $auth);
         }
