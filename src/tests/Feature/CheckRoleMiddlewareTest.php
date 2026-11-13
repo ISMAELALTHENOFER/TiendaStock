@@ -35,6 +35,19 @@ class CheckRoleMiddlewareTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_forbidden_module_shows_branded_page_linking_to_the_users_own_module(): void
+    {
+        $ventas = User::factory()->ventas()->create();
+        $this->actingAs($ventas)->get('/productos')->assertForbidden()
+            ->assertSee('Acceso restringido')
+            ->assertSee('href="/ventas/pos"', false);
+
+        $stock = User::factory()->controlStock()->create();
+        $this->actingAs($stock)->get('/ventas')->assertForbidden()
+            ->assertSee('Acceso restringido')
+            ->assertSee('href="/productos"', false);
+    }
+
     public function test_admin_user_can_access_admin_routes(): void
     {
         $user = User::factory()->admin()->create();
