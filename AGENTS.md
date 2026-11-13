@@ -24,6 +24,12 @@
 
 Preserve unrelated worktree changes: existing tracked deletions in docs, OpenSpec, and tooling are not an instruction to restore or endorse those deletions.
 
+## GitHub account
+
+- This repository belongs to the `ISMAELALTHENOFER` account; the global `gh` account (`Ismael-Althenofer`) stays active for everything else. Never run `gh auth switch` here.
+- Git already uses the right identity and SSH key via the repo/conditional git config (`github-personal` alias through `core.sshCommand`). Push with plain `git push`; do not test access with bare `ssh`.
+- Run every `gh` command in this repo with the personal token, scoped to that command: `GH_TOKEN="$(gh auth token -u ISMAELALTHENOFER)" gh pr create ...`.
+
 ## Project skills
 
 - React responsive interfaces: load `.opencode/skills/react-responsive/SKILL.md` when implementing or changing responsive React UI.
