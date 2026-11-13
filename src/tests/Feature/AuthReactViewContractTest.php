@@ -12,6 +12,13 @@ class AuthReactViewContractTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_react_host_includes_refresh_preamble_before_its_entrypoint(): void
+    {
+        $host = file_get_contents(resource_path('views/react/app.blade.php'));
+
+        $this->assertStringContainsString("@viteReactRefresh\n@vite('resources/js/react/main.jsx')", $host);
+    }
+
     public function test_login_uses_react_by_default_and_keeps_blade_fallback(): void
     {
         $this->get('/login')->assertOk()->assertSee('id="react-root"', false);
