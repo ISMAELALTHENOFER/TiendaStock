@@ -49,4 +49,5 @@
         @endif
     </noscript>
 </div>
+@viteReactRefresh
 @vite('resources/js/react/main.jsx')
