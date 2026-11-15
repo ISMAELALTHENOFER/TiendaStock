@@ -16,7 +16,7 @@ function Skeleton({ className = '' }) {
 
 function KpiCard({ icon: Icon, label, value, detail, loading, tone = 'neutral' }) {
     const toneClass = tone === 'warning' ? 'bg-amber-50 text-amber-700' : 'bg-primary-50 text-primary-700';
-    return <Card className="min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p>{loading ? <Skeleton className="mt-3 h-9 w-28" /> : <p className="mt-2 break-words text-2xl font-bold tabular-nums tracking-tight sm:text-3xl lg:text-xl 2xl:text-3xl">{value}</p>}<p className="mt-2 text-sm text-muted">{loading ? <Skeleton className="h-4 w-20" /> : detail}</p></div><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${toneClass}`}><Icon size={20} aria-hidden="true" /></span></div></Card>;
+    return <Card className="min-w-0 p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p>{loading ? <Skeleton className="mt-3 h-9 w-28" /> : <p className="mt-2 break-words text-xl font-bold tabular-nums tracking-tight sm:text-3xl lg:text-xl 2xl:text-3xl">{value}</p>}<p className="mt-2 text-sm text-muted">{loading ? <Skeleton className="h-4 w-20" /> : detail}</p></div><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${toneClass}`}><Icon size={20} aria-hidden="true" /></span></div></Card>;
 }
 
 function SalesChart({ data }) {
@@ -32,11 +32,11 @@ function CategoryChart({ data }) {
 }
 
 function AnalyticsContent({ analytics, onRetry, routes }) {
-    if (analytics.state === 'loading') return <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]"><Card><Skeleton className="h-5 w-40" /><Skeleton className="mt-6 h-48 w-full" /></Card><Card><Skeleton className="h-5 w-40" /><Skeleton className="mt-6 h-32 w-full" /></Card></div>;
+    if (analytics.state === 'loading') return <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]"><Card><Skeleton className="h-5 w-40" /><Skeleton className="mt-6 h-48 w-full" /></Card><Card><Skeleton className="h-5 w-40" /><Skeleton className="mt-6 h-32 w-full" /></Card></div>;
     if (analytics.state === 'error') return <ErrorState title="No pudimos cargar la analítica del dashboard." onRetry={onRetry} />;
     const { data } = analytics;
     return <>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
             <Card><SalesChart data={data.series.sales_by_day} /></Card>
             <Card>
                 <h2 className="text-lg font-bold">Unidades vendidas por categoría</h2>

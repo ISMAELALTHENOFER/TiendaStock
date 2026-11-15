@@ -41,11 +41,11 @@ export function Pagination({ currentPage = 1, lastPage = 1, pageSize = 15, summa
         {summary && <p className="pagination-summary" aria-live="polite">{summary}</p>}
         {last > 1 && <div className="pagination-actions">
             {step(page - 1, page > 1, 'left', 'Anterior')}
-            {numbered
-                ? pageItems(page, last).map((item) => (typeof item === 'number'
-                    ? link(item, item, { current: item === page, label: `Página ${item}` })
-                    : <span key={item} className="pagination-gap" aria-hidden="true">…</span>))
-                : <span className="pagination-position">Página {page} de {last}</span>}
+            {numbered && pageItems(page, last).map((item) => (typeof item === 'number'
+                ? link(item, item, { current: item === page, label: `Página ${item}`, className: 'pagination-num' })
+                : <span key={item} className="pagination-gap pagination-num" aria-hidden="true">…</span>))}
+            {/* Phones get a compact position instead of the page numbers. */}
+            <span className={numbered ? 'pagination-position pagination-compact' : 'pagination-position'}>Página {page} de {last}</span>
             {step(page + 1, page < last, 'right', 'Siguiente')}
         </div>}
         {onPageSizeChange && <label className="pagination-size">
