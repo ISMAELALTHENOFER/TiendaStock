@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Boxes, ChartNoAxesCombined, CircleDollarSign } from 'lucide-react';
 import { api } from './lib/api.js';
+import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
 import { EmptyState } from './components/ui/EmptyState.jsx';
 import { ErrorState } from './components/ui/ErrorState.jsx';
@@ -53,7 +54,7 @@ function AnalyticsContent({ analytics, onRetry, routes }) {
     </>;
 }
 
-export function Dashboard({ user, metrics, categorias = [], routes }) {
+export function Dashboard({ metrics, categorias = [], routes }) {
     const [windowDays, setWindowDays] = useState(7);
     const [createProduct, setCreateProduct] = useState(false);
     const [analytics, setAnalytics] = useState({ state: 'loading', data: null });
@@ -69,11 +70,12 @@ export function Dashboard({ user, metrics, categorias = [], routes }) {
         return () => { request.current++; controller.abort(); };
     }, [windowDays, attempt]);
     const loadAnalytics = () => { request.current++; setAnalytics({ state: 'loading', data: null }); setAttempt((value) => value + 1); };
-    const actions = user.role === 'ADMIN' ? [['Nueva Venta', routes.ventasPos], ['Nuevo Producto', routes.productosCreate], ['Nueva Categoría', routes.categoriasCreate], ['Nuevo Usuario', routes.usersCreate]] : user.role === 'Ventas' ? [['Nueva Venta', routes.ventasPos]] : user.role === 'Control Stock' ? [['Nuevo Producto', routes.productosCreate], ['Nueva Categoría', routes.categoriasCreate]] : [];
+    // The dashboard route is ADMIN-only (role:ADMIN middleware), so only the admin shortcuts apply.
+    const actions = [['Nueva Venta', routes.ventasPos], ['Nuevo Producto', routes.productosCreate], ['Nueva Categoría', routes.categoriasCreate], ['Nuevo Usuario', routes.usersCreate]];
     const summary = analytics.data?.summary;
-    return <div className="space-y-6"><div><p className="text-xs font-semibold uppercase tracking-widest text-muted">Resumen</p><h1 className="page-title mt-2">Panel de control</h1><p className="mt-2 text-sm text-muted">Visualiza el estado general de tu negocio.</p></div>
+    return <div className="space-y-6"><div><p className="eyebrow">Resumen</p><h1 className="page-title mt-2">Panel de control</h1><p className="mt-1 text-sm text-muted">Visualiza el estado general de tu negocio.</p></div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><KpiCard icon={CircleDollarSign} label="Ventas hoy" value={summary ? formatMoney(summary.sales_today.total) : 'No disponible'} detail={summary ? `${summary.sales_today.count} ventas` : 'No se pudieron cargar los datos'} loading={analytics.state === 'loading'} /><KpiCard icon={ChartNoAxesCombined} label="Ventas del mes" value={summary ? formatMoney(summary.sales_month.total) : 'No disponible'} detail={summary ? `${summary.sales_month.count} ventas` : 'No se pudieron cargar los datos'} loading={analytics.state === 'loading'} /><KpiCard icon={Boxes} label="Productos" value={metrics.productosCount} detail={`${metrics.productosActivos} activos · ${metrics.productosAgotados} agotados · ${metrics.productosBajoStock} con bajo stock`} /><KpiCard icon={CircleDollarSign} label="Valor del inventario activo" value={formatMoney(Number(metrics.valorTotal))} detail="Precio de venta por unidades disponibles" /></div>
-        {user.role ? <Card><h2 className="text-lg font-bold">Acciones rápidas</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{actions.map(([label, href], index) => <a key={label} href={href} onClick={(event) => { if (label !== 'Nuevo Producto' || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCreateProduct(true); }} className={`flex min-h-12 items-center justify-between rounded-control border px-4 text-sm font-semibold transition-colors ${index === 0 ? 'border-primary bg-primary text-white hover:bg-primary-700' : 'border-border text-ink hover:bg-surface-muted'}`}>{label}<ArrowUpRight size={18} aria-hidden="true" /></a>)}</div></Card> : <Card><h2 className="text-lg font-bold">Bienvenido a TiendaStock</h2><p className="mt-3 text-sm text-muted">Tu cuenta está siendo configurada. Contacta al administrador del sistema para que te asigne un rol y puedas acceder a las funcionalidades disponibles.</p></Card>}
+        <Card><h2 className="text-lg font-bold">Acciones rápidas</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{actions.map(([label, href], index) => <Button key={label} href={href} variant={index === 0 ? 'primary' : 'secondary'} className="min-h-12 justify-between" onClick={(event) => { if (label !== 'Nuevo Producto' || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCreateProduct(true); }}>{label}<ArrowUpRight size={18} aria-hidden="true" /></Button>)}</div></Card>
         <section aria-labelledby="sales-analytics-title"><div className="flex flex-wrap items-center justify-between gap-3"><h2 id="sales-analytics-title" className="text-lg font-bold">Análisis de ventas</h2><label className="flex items-center gap-2 text-sm font-semibold text-muted">Período<select className="form-control h-11 px-3 text-ink" value={windowDays} onChange={(event) => { request.current++; setAnalytics({ state: 'loading', data: null }); setWindowDays(Number(event.target.value)); }}><option value={1}>Hoy</option><option value={7}>Últimos 7 días</option><option value={30}>Últimos 30 días</option></select></label></div><div className="mt-4" aria-live="polite"><AnalyticsContent analytics={analytics} onRetry={loadAnalytics} routes={routes} /></div></section>
         {createProduct && <ProductForm routes={routes} categorias={categorias} modal onClose={() => setCreateProduct(false)} onSaved={() => window.location.reload()} />}
     </div>;

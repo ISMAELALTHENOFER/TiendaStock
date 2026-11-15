@@ -111,11 +111,12 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
     return (
         <div className="py-4 sm:py-8">
             <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="page-title">Categorías de productos</h1>
+                <div className="min-w-0">
+                    <p className="eyebrow">Inventario</p>
+                    <h1 className="page-title mt-2">Categorías de productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todas tus categorías de productos</p>
                 </div>
-                <Button type="button" onClick={() => setModalCategoria(true)}>＋ <span>Nueva categoría</span></Button>
+                <Button type="button" className="w-full sm:w-auto" onClick={() => setModalCategoria(true)}>＋ <span>Nueva categoría</span></Button>
             </div>
 
             <section aria-label="Resumen de categorías" className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -157,12 +158,12 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
                                 <p className="mt-2 line-clamp-2 min-h-10 break-words text-sm text-muted">{categoria.descripcion || 'Sin descripción'}</p>
                             </div>
                             <div className="mt-5 flex flex-wrap items-center gap-1 border-t border-border pt-3">
-                                <a href={`${routes.categorias}/${categoria.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-ink hover:bg-surface-muted">Ver</a>
-                                <a href={`${routes.categorias}/${categoria.id}/edit`} onClick={(event) => openEdit(event, categoria)} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-surface-muted">Editar</a>
+                                <Button href={`${routes.categorias}/${categoria.id}`} variant="ghost" className="px-3">Ver</Button>
+                                <Button href={`${routes.categorias}/${categoria.id}/edit`} onClick={(event) => openEdit(event, categoria)} variant="ghost" className="px-3 text-primary">Editar</Button>
                                 {categoria.productos_count > 0 ? (
                                     <button type="button" disabled title="No se puede eliminar mientras tenga productos" className="ml-auto inline-flex min-h-11 cursor-not-allowed items-center rounded-control px-3 text-sm font-semibold text-muted opacity-70">No se puede eliminar</button>
                                 ) : (
-                                    <button type="button" onClick={() => setEliminar(categoria)} className="ml-auto inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-red-600 hover:bg-red-50">Eliminar</button>
+                                    <Button type="button" variant="danger-ghost" onClick={() => setEliminar(categoria)} className="ml-auto px-3">Eliminar</Button>
                                 )}
                             </div>
                             <form id={`eliminar-categoria-${categoria.id}`} action={`${routes.categorias}/${categoria.id}`} method="POST" className="hidden">
@@ -174,7 +175,7 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
                 </div>
             )}
 
-                <Pagination currentPage={currentPage} lastPage={lastPage} pageSize={pageSize} ariaLabel="Paginación de categorías" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} categorías`} hrefForPage={(page) => paginationHref(page)} onPageSizeChange={(size) => window.location.assign(paginationHref(1, size))} />
+            <Pagination currentPage={currentPage} lastPage={lastPage} pageSize={pageSize} ariaLabel="Paginación de categorías" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} categorías`} hrefForPage={(page) => paginationHref(page)} onPageSizeChange={(size) => window.location.assign(paginationHref(1, size))} />
 
             {modalCategoria !== false && <CategoryForm key={modalCategoria?.id ?? 'new'} categoria={modalCategoria === true ? null : modalCategoria} routes={routes} onClose={closeModal} />}
             <ConfirmDialog open={Boolean(eliminar)} title="Eliminar categoría" message={eliminar && eliminar.productos_count > 0 ? 'Esta categoría tiene productos. No se puede eliminar una categoría que tiene productos.' : `¿Eliminar la categoría «${eliminar?.nombre}»? Esta acción no se puede deshacer.`} confirmLabel="Sí, eliminar" tone="danger" onConfirm={confirmarEliminar} onClose={() => setEliminar(null)} />

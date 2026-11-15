@@ -46,11 +46,12 @@ export function UserList({ users, routes }) {
     return (
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="page-title">Usuarios del sistema</h1>
+                <div className="min-w-0">
+                    <p className="eyebrow">Administración</p>
+                    <h1 className="page-title mt-2">Usuarios del sistema</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona los usuarios de la plataforma.</p>
                 </div>
-                <a href={routes.usersCreate} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Nuevo usuario</a>
+                <Button href={routes.usersCreate} className="w-full px-5 sm:w-auto">Nuevo usuario</Button>
             </div>
 
             <form method="get" action={routes.users} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
@@ -67,7 +68,7 @@ export function UserList({ users, routes }) {
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
                     <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para empezar." />
-                    <a href={routes.usersCreate} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-primary-700">Crear primer usuario</a>
+                    <Button href={routes.usersCreate} className="mt-6 px-6">Crear primer usuario</Button>
                 </Card>
             ) : (
                 <div className="space-y-6">
@@ -92,7 +93,7 @@ export function UserList({ users, routes }) {
                                             <td className="px-4 py-3 text-muted">{user.email}</td>
                                             <td className="px-4 py-3 text-center"><Badge tone={badge.tone}>{badge.long}</Badge></td><td className="px-4 py-3 text-center"><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></td>
                                              <td className="px-4 py-3">
-                                                  <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a>{user.id !== routes.currentUserId && <Button variant="secondary" onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}</div>
+                                                  <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a>{user.id !== routes.currentUserId && <Button type="button" variant={user.activo ? 'danger-ghost' : 'secondary'} onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}</div>
                                             </td>
                                         </tr>
                                     );
@@ -114,8 +115,8 @@ export function UserList({ users, routes }) {
                                         <Badge tone={badge.tone}>{badge.short}</Badge>
                                     </div>
                                      <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Correo electrónico</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div><div className="data-card-field"><dt>Estado</dt><dd><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></dd></div></dl>
-                                     {user.id !== routes.currentUserId && <Button className="mt-3 w-full" variant="secondary" onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}
-                                     <a href={`${routes.users}/${user.id}/edit`} className="mt-4 block min-h-11 w-full rounded-control bg-surface-muted px-4 py-3 text-center text-sm font-semibold text-primary transition-colors duration-200 hover:bg-border" aria-label={`Editar usuario ${user.username}`}>Editar usuario</a>
+                                     {user.id !== routes.currentUserId && <Button type="button" className="mt-3 w-full" variant={user.activo ? 'danger-ghost' : 'secondary'} onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}
+                                     <Button href={`${routes.users}/${user.id}/edit`} variant="secondary" className="mt-3 w-full text-primary" aria-label={`Editar usuario ${user.username}`}>Editar usuario</Button>
                                 </Card>
                             );
                         })}
@@ -174,16 +175,19 @@ export function UserForm({ routes, usuario = null }) {
 
     return (
         <div className="py-4 sm:py-8">
-            <div className="min-w-0 overflow-hidden rounded-card border border-border bg-surface shadow-subtle">
-                <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                    <h3 className="text-lg font-bold text-white">{isEdit ? 'Modificar usuario' : 'Información del usuario'}</h3>
-                    <p className="mt-1 text-sm text-white/80">{isEdit ? 'Actualiza los datos del usuario.' : 'Completa los datos para crear un usuario.'}</p>
-                </div>
-
+            <div className="mb-7 min-w-0">
+                <p className="eyebrow">Administración</p>
+                <h1 className="page-title mt-2">{isEdit ? 'Modificar usuario' : 'Nuevo usuario'}</h1>
+                <p className="mt-1 text-sm text-muted">{isEdit ? 'Actualiza los datos del usuario.' : 'Completa los datos para crear un usuario.'}</p>
+            </div>
+            <div className="min-w-0 rounded-card border border-border bg-surface shadow-subtle">
                 <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
                     {errors._general && <div className="rounded-card bg-red-50 p-3 text-sm text-red-700" role="alert">{errors._general[0]}</div>}
 
-                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    <fieldset className="min-w-0">
+                        <legend className="text-base font-bold text-ink">Datos</legend>
+                        <p className="mt-1 text-sm text-muted">Información del usuario y su correo de contacto.</p>
+                    <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div>
                             <label htmlFor="name-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre completo <span className="text-red-600">*</span></label>
                             <Input id="name-field" name="name" required autoComplete="name" placeholder="Ej: Juan Pérez" defaultValue={usuario?.name ?? ''} error={errors?.name?.[0]} />
@@ -201,7 +205,13 @@ export function UserForm({ routes, usuario = null }) {
                             <Input id="email-field" type="email" name="email" required autoComplete="email" placeholder="Ej: juan@example.com" defaultValue={usuario?.email ?? ''} error={errors?.email?.[0]} />
                             {errors?.email && <p className="mt-1.5 text-sm text-red-600">{errors.email[0]}</p>}
                         </div>
+                    </div>
+                    </fieldset>
 
+                    <fieldset className="min-w-0">
+                        <legend className="w-full border-t border-border pt-6 text-base font-bold text-ink">Acceso</legend>
+                        <p className="mt-1 text-sm text-muted">Contraseña y rol que definen qué puede hacer en el sistema.</p>
+                    <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div>
                             <label htmlFor="password-field" className="mb-1.5 block text-sm font-medium text-ink">
                                 Contraseña{' '}
@@ -228,9 +238,10 @@ export function UserForm({ routes, usuario = null }) {
                             {errors?.role && <p className="mt-1.5 text-sm text-red-600">{errors.role[0]}</p>}
                         </div>
                     </div>
+                    </fieldset>
 
                     <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
-                        <a href={routes.users} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-muted">Cancelar</a>
+                        <Button href={routes.users} variant="secondary">Cancelar</Button>
                         <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Actualizar usuario' : 'Crear usuario'}</Button>
                     </div>
                 </form>

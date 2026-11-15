@@ -59,9 +59,13 @@ export function Login({ props }) {
 export function ConfirmPassword({ props }) {
     const error = props.errors?.password?.[0];
 
-    return <main className="space-y-5">
-        <h1 className="text-xl font-bold text-ink">Confirma tu contraseña</h1>
-        <p className="text-sm text-muted">Esta es una sección segura. Confirma tu contraseña para continuar.</p>
+    // The guest host centers a shrink-to-fit root, so the card sets its own fluid width.
+    return <main className="w-[min(28rem,calc(100vw-1.5rem))] space-y-5 rounded-card border border-border bg-surface p-5 shadow-subtle sm:p-8">
+        <div>
+            <p className="eyebrow">Cuenta</p>
+            <h1 className="mt-2 text-xl font-bold text-ink">Confirma tu contraseña</h1>
+            <p className="mt-1 text-sm text-muted">Esta es una sección segura. Confirma tu contraseña para continuar.</p>
+        </div>
         <form method="post" action={props.routes.passwordConfirm} className="space-y-5">
             <input type="hidden" name="_token" value={csrfToken()} />
             <Field id="confirm-password" name="password" label="Contraseña" type="password" autoComplete="current-password" error={error} />
@@ -93,10 +97,10 @@ export function Profile({ props }) {
     ];
 
     return <div className="py-4 sm:py-8">
-        <header className="mb-8 border-b border-border pb-4">
-            <nav aria-label="Breadcrumb" className="mb-2 text-xs text-muted"><ol className="flex gap-2"><li>Cuenta</li><li aria-hidden="true">&gt;</li><li aria-current="page" className="font-semibold text-primary">Configuración personal</li></ol></nav>
-            <h1 className="page-title">Mi perfil</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted">Administra tu cuenta y actualiza tus datos personales y contraseña.</p>
+        <header className="mb-7 min-w-0">
+            <p className="eyebrow">Cuenta</p>
+            <h1 className="page-title mt-2">Mi perfil</h1>
+            <p className="mt-1 text-sm text-muted">Administra tu cuenta y actualiza tus datos personales y contraseña.</p>
         </header>
         <div className="w-full space-y-6">
             <Card className="p-4 sm:p-6 lg:p-8">
