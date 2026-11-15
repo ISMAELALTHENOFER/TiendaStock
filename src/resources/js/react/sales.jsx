@@ -16,11 +16,12 @@ import { stockTone } from './lib/stockTone.js';
 import { isValidDateRange } from './lib/dateRange.js';
 import { formatMoney } from './lib/formatMoney.js';
 import { useConfirm } from './lib/useConfirm.jsx';
+import { productMoneyInput } from './lib/productMoneyInput.js';
 
-const maskMoney = (value) => {
-    const digits = String(value).replace(/\D/g, '');
-    return digits ? (Number(digits) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-};
+const pesos = (value) => value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Natural typing: digits are whole pesos, a comma starts decimals ("20000,5" -> "20.000,5"); invalid input keeps the previous value.
+const typeMoney = (value, previous) => productMoneyInput(value)?.display ?? previous;
+const blurMoney = (value) => value ? pesos(parseMoney(value)) : '';
 const parseMoney = (value) => Number(String(value).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 const formatDate = (value) => value ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
@@ -139,7 +140,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
     const cartBusy = useRef(false);
     const [delivery, setDelivery] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
-    const [paid, setPaid] = useState('');
+    const [cashPaid, setCashPaid] = useState('');
     const [discount, setDiscount] = useState('');
     const [errors, setErrors] = useState(initialErrors);
     const [searching, setSearching] = useState(false);
@@ -149,6 +150,9 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
     const subtotal = useMemo(() => Math.round(cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0) * 100) / 100, [cart]);
     const totalCents = Math.max(0, Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100));
     const total = totalCents / 100;
+    const isCash = paymentMethod === 'efectivo';
+    // Card/transfer are charged exactly the total; only cash needs the amount received.
+    const paid = isCash ? cashPaid : pesos(total);
     const paidCents = Math.round(parseMoney(paid) * 100);
     const change = Math.max(0, parseMoney(paid) - total);
     useEffect(() => {
@@ -200,7 +204,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
             if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
             const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
             setCart(remaining);
-            if (!remaining.length) { setCartId(null); setPaid(''); setDiscount(''); }
+            if (!remaining.length) { setCartId(null); setCashPaid(''); setDiscount(''); }
         } catch { setErrors({ form: ['No se pudo actualizar el carrito. Intenta nuevamente.'] }); }
         finally { cartBusy.current = false; setAdding(false); }
     };
@@ -269,7 +273,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
                 {!searching && !searchError && search.trim().length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}
             </section>
             <Card aria-label="Resumen y cobro" className="min-w-0 space-y-4 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-3 xl:p-4 [@media(max-height:47.999rem)]:xl:static">
-                 <div className="space-y-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
+                 <div className="space-y-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(typeMoney(event.target.value, discount))} onBlur={() => setDiscount(blurMoney(discount))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
                 <div className="space-y-3">
                     <fieldset>
                         <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend>
@@ -280,7 +284,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([value, label]) => <label key={value} className={`${choiceTileClass(paymentMethod === value)} last:col-span-2 sm:last:col-span-1`}><input type="radio" name="metodo_pago" value={value} checked={paymentMethod === value} onChange={() => setPaymentMethod(value)} className="sr-only" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
                     </fieldset>
                 </div>
-                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
+                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} readOnly={!isCash} onChange={(event) => setCashPaid(typeMoney(event.target.value, cashPaid))} onBlur={() => isCash && setCashPaid(blurMoney(cashPaid))} aria-label="Monto recibido en pesos" aria-describedby={isCash && cart.length > 0 && totalCents > paidCents ? 'pos-paid-hint' : undefined} placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{isCash && cart.length > 0 && totalCents > paidCents && <p id="pos-paid-hint" className="text-xs text-red-700">El pago debe cubrir el total.</p>}{isCash && parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Vuelto</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
                 <div className="space-y-2"><div className="hidden lg:block">{chargeButton}</div>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => confirm(() => remove(), { title: '¿Vaciar carrito?', message: 'Se quitarán todos los productos del carrito.', confirmLabel: 'Vaciar', tone: 'danger' })} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
             </Card>
         </div>

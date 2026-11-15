@@ -67,8 +67,12 @@ export function UserList({ users, routes }) {
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
-                    <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para empezar." />
-                    <Button href={routes.usersCreate} className="mt-6 px-6">Crear primer usuario</Button>
+                    {buscar.trim() ? <EmptyState title="No se encontraron usuarios para tu búsqueda." />
+                        : verInactivos ? <EmptyState title="No hay usuarios inactivos." />
+                        : <>
+                            <EmptyState title="No hay usuarios en el sistema" description="Crea tu primer usuario para empezar." />
+                            <Button href={routes.usersCreate} className="mt-6 px-6">Crear primer usuario</Button>
+                        </>}
                 </Card>
             ) : (
                 <div className="space-y-6">
@@ -170,7 +174,7 @@ export function UserForm({ routes, usuario = null }) {
 
     function handleSubmit(event) {
         event.preventDefault();
-        confirm(submit, isEdit ? {} : { title: '¿Crear usuario?', message: 'Se creará el usuario con los datos ingresados.' });
+        confirm(submit, isEdit ? {} : { title: '¿Crear usuario?', message: 'Se creará el usuario con los datos ingresados.', confirmLabel: 'Crear' });
     }
 
     return (
