@@ -13,6 +13,7 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Toast } from './components/ui/Toast.jsx';
 import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
+import { createDuplicateCheck } from './lib/duplicateCheck.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { stockTone } from './lib/stockTone.js';
@@ -116,26 +117,11 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
     const [inlineError, setInlineError] = useState('');
     const [inlineSubmitting, setInlineSubmitting] = useState(false);
     const [duplicado, setDuplicado] = useState(null);
-    const lastCheckedName = useRef(null);
-    const duplicateCheck = useRef(Promise.resolve(null));
     const formRef = useRef(null);
     const closeInline = useCallback(() => setInlineOpen(false), []);
 
-    // Resolves to the existing product (or null). The same name reuses the in-flight/finished
-    // check, so the blur fired by clicking "Guardar" and the submit share one request.
-    const verificarDuplicado = () => {
-        if (isEdit) return Promise.resolve(null);
-        const nombre = formRef.current?.querySelector('[name="nombre"]')?.value.trim();
-        if (!nombre || nombre.length < 2) return Promise.resolve(null);
-        if (nombre === lastCheckedName.current) return duplicateCheck.current;
-        lastCheckedName.current = nombre;
-        duplicateCheck.current = api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`)
-            .then((dato) => (dato.exists ? dato : null))
-            // Advisory only: the database unique rule is the final guard.
-            .catch(() => null);
-        duplicateCheck.current.then((dato) => { if (dato) setDuplicado(dato); });
-        return duplicateCheck.current;
-    };
+    const [checkDuplicate] = useState(() => createDuplicateCheck((nombre) => api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`), setDuplicado));
+    const verificarDuplicado = () => checkDuplicate(formRef.current?.querySelector('[name="nombre"]')?.value, { edit: isEdit });
 
     const pedirCrearCategoria = (event) => {
         event.preventDefault();

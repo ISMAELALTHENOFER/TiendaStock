@@ -16,13 +16,8 @@ import { stockTone } from './lib/stockTone.js';
 import { isValidDateRange } from './lib/dateRange.js';
 import { formatMoney } from './lib/formatMoney.js';
 import { useConfirm } from './lib/useConfirm.jsx';
-import { productMoneyInput } from './lib/productMoneyInput.js';
+import { blurMoney, parseMoney, pesos, typeMoney } from './lib/money.js';
 
-const pesos = (value) => value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-// Natural typing: digits are whole pesos, a comma starts decimals ("20000,5" -> "20.000,5"); invalid input keeps the previous value.
-const typeMoney = (value, previous) => productMoneyInput(value)?.display ?? previous;
-const blurMoney = (value) => value ? pesos(parseMoney(value)) : '';
-const parseMoney = (value) => Number(String(value).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 const formatDate = (value) => value ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 const statusTone = (status) => status === 'completada' ? 'success' : 'danger';

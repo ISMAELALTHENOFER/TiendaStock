@@ -12,9 +12,9 @@ use Tests\TestCase;
  * React view contract for the Productos slice.
  *
  * The product routes (index/create/edit/show) render only through the React
- * host. Pure client-side behavior
- * (search, pagination, money mask, duplicate check) is guarded as a source
- * contract on productos.jsx, mirroring the VentaReactViewContractTest pattern.
+ * host. Pure client-side logic (money mask, pagination, duplicate check) is
+ * unit-tested with node:test in resources/js/react/lib and tests/js; this file
+ * guards only the wiring and props that productos.jsx exposes.
  */
 class ProductoReactViewContractTest extends TestCase
 {
@@ -141,7 +141,6 @@ class ProductoReactViewContractTest extends TestCase
     public function test_react_product_form_preserves_money_inline_category_and_image_contracts(): void
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
-        $money = file_get_contents(base_path('resources/js/react/lib/productMoneyInput.js'));
 
         foreach ([
             'routes.categoriasInline',
@@ -164,7 +163,6 @@ class ProductoReactViewContractTest extends TestCase
         ] as $contract) {
             $this->assertStringContainsString($contract, $source);
         }
-        $this->assertStringContainsString('digitsLeft', $money);
         // The form must keep the "Costo" label vocabulary (never
         // "Precio de Compra").
         $this->assertStringNotContainsString('Precio de Compra', $source);

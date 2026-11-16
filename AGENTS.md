@@ -11,7 +11,7 @@
 ## Verify changes
 
 - `composer test` clears Laravel's config cache before running `php artisan test`; `php artisan test` alone runs the PHPUnit `Unit` and `Feature` suites. `phpunit.xml` uses SQLite `:memory:` plus array session/cache and a sync queue for tests, not the development database.
-- Focus a feature slice with `php artisan test --filter=ProductoReactViewContractTest` (replace the class name with the relevant test in `tests/Feature/`); then run `composer test` and `npm run build` for cross-stack changes. `package.json` has no JavaScript test or lint script.
+- Focus a feature slice with `php artisan test --filter=ProductoReactViewContractTest` (replace the class name with the relevant test in `tests/Feature/`); then run `composer test` and `npm run build` for cross-stack changes. `npm test` runs `node --test` over `resources/js/react/lib/*.test.js` and `tests/js/*.test.js` (no new deps; keep testable logic in plain `.js` modules, node cannot import `.jsx`); there is no lint script.
 
 ## Presentation and server boundaries
 
