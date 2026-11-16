@@ -32,6 +32,19 @@ composer dev
 
 App en **http://127.0.0.1:8000** (con hot reload en el frontend)
 
+### Levantar en el día a día
+
+| Terminal (en `src/`) | Comando | Puerto |
+|---|---|---|
+| 1 — Laravel | `php artisan serve` | http://127.0.0.1:8000 |
+| 2 — Vite (hot reload) | `npm run dev` | 5173 |
+
+- La base MySQL configurada en `.env` tiene que estar levantada.
+- El primer acceso después de arrancar puede tardar unos segundos.
+- Después de un `git pull`, correr `php artisan migrate` (y `composer install` / `npm ci` si cambiaron los lockfiles).
+- Para probar sin Vite (assets de producción): borrar `public/hot` y correr `npm run build`. Si las pantallas quedan en blanco con Vite apagado, casi siempre es un `public/hot` viejo.
+- Si `composer` no está en el PATH: `php ruta/a/composer.phar <comando>`.
+
 Las cargas nuevas guardan las imágenes en MySQL. `storage:link` sigue siendo
 necesario para imágenes históricas que permanezcan en el disco público.
 
@@ -63,7 +76,8 @@ npm run build
 cd ruta/a/TiendaStock/src
 
 copy .env.example .env
-# EDITAR .env: APP_ENV=production, APP_DEBUG=false, dominios, etc.
+# EDITAR .env: APP_ENV=production, APP_DEBUG=false, APP_URL=https://<dominio>,
+#              SESSION_SECURE_COOKIE=true (servir solo por HTTPS)
 
 composer install --no-dev --optimize-autoloader
 php artisan key:generate
@@ -77,6 +91,11 @@ php artisan view:cache
 ```
 
 Servir con un virtual host apuntando a `src/public/` o usar `php artisan serve` (solo dev).
+
+Seguridad en producción:
+- PHP **8.5.12 o superior** (o 8.4.27 / 8.3.36 / 8.2.35): las versiones anteriores son vulnerables a PHP2Shell (CVE-2026-109618 / CVE-2026-109619).
+- No publicar `public/hot` y revisar las dependencias con `composer audit` y `npm audit`.
+- `bootstrap/app.php` confía en cualquier proxy (`trustProxies(at: '*')`); en producción limitarlo a la IP del proxy real.
 
 ---
 
