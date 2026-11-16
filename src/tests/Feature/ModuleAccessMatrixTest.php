@@ -41,8 +41,7 @@ class ModuleAccessMatrixTest extends TestCase
 
     public function test_ventas_is_forbidden_from_catalog_dashboard_and_admin(): void
     {
-        $producto = Producto::factory()->create(['cantidad' => 5]);
-        Producto::whereKey($producto->id)->update(['activo' => false]); // bypass the saving hook that derives activo from cantidad
+        $producto = Producto::factory()->create(['cantidad' => 5, 'activo' => false]);
         $categorias = Categoria::count();
         $productos = Producto::count();
         $this->actingAs(User::factory()->ventas()->create());

@@ -61,9 +61,9 @@ export function UserList({ users, routes }) {
                 <Button type="submit">Buscar</Button>
             </form>
             <label className="mb-5 flex min-h-11 items-center gap-2 text-sm text-ink"><input type="checkbox" checked={verInactivos} onChange={(event) => setVerInactivos(event.target.checked)} className="h-4 w-4 accent-primary" />Ver inactivos</label>
-            {actionError && <p role="alert" className="mb-3 text-sm text-red-700">{actionError}</p>}
+            {actionError && <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-200">{actionError}</p>}
             {liveSearch.searching && <p role="status" className="mb-3 text-sm text-muted">Buscando usuarios…</p>}
-            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-200">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
@@ -97,7 +97,7 @@ export function UserList({ users, routes }) {
                                             <td className="px-4 py-3 text-muted">{user.email}</td>
                                             <td className="px-4 py-3 text-center"><Badge tone={badge.tone}>{badge.long}</Badge></td><td className="px-4 py-3 text-center"><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></td>
                                              <td className="px-4 py-3">
-                                                  <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a>{user.id !== routes.currentUserId && <Button type="button" variant={user.activo ? 'danger-ghost' : 'secondary'} onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}</div>
+                                                  <div className="data-table-actions"><a href={`${routes.users}/${user.id}/edit`} className="data-table-action text-primary dark:text-primary-300 transition-colors duration-200 hover:bg-surface-muted" aria-label={`Editar usuario ${user.username}`}>Editar</a>{user.id !== routes.currentUserId && <Button type="button" variant={user.activo ? 'danger-ghost' : 'secondary'} onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}</div>
                                             </td>
                                         </tr>
                                     );
@@ -120,7 +120,7 @@ export function UserList({ users, routes }) {
                                     </div>
                                      <dl className="mt-4 space-y-3 text-sm"><div className="data-card-field"><dt>Usuario</dt><dd>@{user.username}</dd></div><div className="data-card-field"><dt>Correo electrónico</dt><dd className="break-words">{user.email}</dd></div><div className="data-card-field"><dt>Rol</dt><dd><Badge tone={badge.tone}>{badge.long}</Badge></dd></div><div className="data-card-field"><dt>Estado</dt><dd><Badge tone={user.activo ? 'success' : 'neutral'}>{user.activo ? 'Activo' : 'Inactivo'}</Badge></dd></div></dl>
                                      {user.id !== routes.currentUserId && <Button type="button" className="mt-3 w-full" variant={user.activo ? 'danger-ghost' : 'secondary'} onClick={() => setPending({ user, active: !user.activo })}>{user.activo ? 'Desactivar' : 'Activar'}</Button>}
-                                     <Button href={`${routes.users}/${user.id}/edit`} variant="secondary" className="mt-3 w-full text-primary" aria-label={`Editar usuario ${user.username}`}>Editar usuario</Button>
+                                     <Button href={`${routes.users}/${user.id}/edit`} variant="secondary" className="mt-3 w-full text-primary dark:text-primary-300" aria-label={`Editar usuario ${user.username}`}>Editar usuario</Button>
                                 </Card>
                             );
                         })}
@@ -186,28 +186,28 @@ export function UserForm({ routes, usuario = null }) {
             </div>
             <div className="min-w-0 rounded-card border border-border bg-surface shadow-subtle">
                 <form ref={formRef} action={action} method="POST" onSubmit={handleSubmit} noValidate className="space-y-6 p-4 sm:p-8">
-                    {errors._general && <div className="rounded-card bg-red-50 p-3 text-sm text-red-700" role="alert">{errors._general[0]}</div>}
+                    {errors._general && <div className="rounded-card bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200" role="alert">{errors._general[0]}</div>}
 
                     <fieldset className="min-w-0">
                         <legend className="text-base font-bold text-ink">Datos</legend>
                         <p className="mt-1 text-sm text-muted">Información del usuario y su correo de contacto.</p>
                     <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div>
-                            <label htmlFor="name-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre completo <span className="text-red-600">*</span></label>
+                            <label htmlFor="name-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre completo <span className="text-red-600 dark:text-red-200">*</span></label>
                             <Input id="name-field" name="name" required autoComplete="name" placeholder="Ej: Juan Pérez" defaultValue={usuario?.name ?? ''} error={errors?.name?.[0]} />
-                            {errors?.name && <p className="mt-1.5 text-sm text-red-600">{errors.name[0]}</p>}
+                            {errors?.name && <p className="mt-1.5 text-sm text-red-600 dark:text-red-200">{errors.name[0]}</p>}
                         </div>
 
                         <div>
-                            <label htmlFor="username-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre de usuario <span className="text-red-600">*</span></label>
+                            <label htmlFor="username-field" className="mb-1.5 block text-sm font-medium text-ink">Nombre de usuario <span className="text-red-600 dark:text-red-200">*</span></label>
                             <Input id="username-field" name="username" required autoComplete="username" placeholder="Ej: juanperez" defaultValue={usuario?.username ?? ''} error={errors?.username?.[0]} />
-                            {errors?.username && <p className="mt-1.5 text-sm text-red-600">{errors.username[0]}</p>}
+                            {errors?.username && <p className="mt-1.5 text-sm text-red-600 dark:text-red-200">{errors.username[0]}</p>}
                         </div>
 
                         <div>
-                            <label htmlFor="email-field" className="mb-1.5 block text-sm font-medium text-ink">Correo electrónico <span className="text-red-600">*</span></label>
+                            <label htmlFor="email-field" className="mb-1.5 block text-sm font-medium text-ink">Correo electrónico <span className="text-red-600 dark:text-red-200">*</span></label>
                             <Input id="email-field" type="email" name="email" required autoComplete="email" placeholder="Ej: juan@example.com" defaultValue={usuario?.email ?? ''} error={errors?.email?.[0]} />
-                            {errors?.email && <p className="mt-1.5 text-sm text-red-600">{errors.email[0]}</p>}
+                            {errors?.email && <p className="mt-1.5 text-sm text-red-600 dark:text-red-200">{errors.email[0]}</p>}
                         </div>
                     </div>
                     </fieldset>
@@ -221,10 +221,10 @@ export function UserForm({ routes, usuario = null }) {
                                 Contraseña{' '}
                                 {isEdit
                                 ? <span className="font-normal text-muted">(nueva contraseña; dejar en blanco para mantener la actual)</span>
-                                    : <span className="text-red-600">*</span>}
+                                    : <span className="text-red-600 dark:text-red-200">*</span>}
                             </label>
                             <Input id="password-field" type="password" name="password" autoComplete="new-password" placeholder="••••••••" error={errors?.password?.[0]} />
-                            {errors?.password && <p className="mt-1.5 text-sm text-red-600">{errors.password[0]}</p>}
+                            {errors?.password && <p className="mt-1.5 text-sm text-red-600 dark:text-red-200">{errors.password[0]}</p>}
                         </div>
 
                         <div>
@@ -233,13 +233,13 @@ export function UserForm({ routes, usuario = null }) {
                         </div>
 
                         <div>
-                            <label htmlFor="role-field" className="mb-1.5 block text-sm font-medium text-ink">Rol de usuario <span className="text-red-600">*</span></label>
+                            <label htmlFor="role-field" className="mb-1.5 block text-sm font-medium text-ink">Rol de usuario <span className="text-red-600 dark:text-red-200">*</span></label>
                             <Select id="role-field" name="role" required defaultValue={usuario?.role ?? 'Control Stock'}>
                                 <option value="Control Stock">Control Stock</option>
                                 <option value="Ventas">Ventas</option>
                                 <option value="ADMIN">Administrador</option>
                             </Select>
-                            {errors?.role && <p className="mt-1.5 text-sm text-red-600">{errors.role[0]}</p>}
+                            {errors?.role && <p className="mt-1.5 text-sm text-red-600 dark:text-red-200">{errors.role[0]}</p>}
                         </div>
                     </div>
                     </fieldset>

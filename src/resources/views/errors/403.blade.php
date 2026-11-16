@@ -13,7 +13,7 @@
     <main class="flex min-h-dvh items-center justify-center px-4 py-12">
         <div class="w-full max-w-md text-center">
             <img src="/images/tiendastock-mark.svg" alt="" class="mx-auto h-12 w-12">
-            <p class="mt-8 text-sm font-semibold tracking-widest text-primary">ERROR 403</p>
+            <p class="mt-8 text-sm font-semibold tracking-widest text-primary dark:text-primary-300">ERROR 403</p>
             <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">Acceso restringido</h1>
             <p class="mt-3 text-base text-muted">Tu usuario no tiene permiso para acceder a esta sección. Si lo necesitas, pide acceso a un administrador.</p>
             <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">

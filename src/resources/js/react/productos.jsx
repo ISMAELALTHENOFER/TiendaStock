@@ -13,6 +13,7 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Toast } from './components/ui/Toast.jsx';
 import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
+import { createDuplicateCheck } from './lib/duplicateCheck.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { stockTone } from './lib/stockTone.js';
@@ -52,7 +53,7 @@ function MoneyInput({ label, name, initial = 0, error }) {
             <label htmlFor={`${name}-field`} className="block text-sm font-medium text-ink">{label}</label>
             <Input id={`${name}-field`} type="text" inputMode="decimal" value={display} onInput={onInput} onBlur={onBlur} error={error} placeholder="0,00" className="mt-1" />
             <input type="hidden" name={name} value={raw} />
-            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-1 text-sm text-red-600 dark:text-red-200">{error}</p>}
         </div>
     );
 }
@@ -88,7 +89,7 @@ function ProductImage({ value, error }) {
                 aria-describedby={error ? 'imagen-error' : undefined}
                 className="mt-1 block w-full cursor-pointer text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
             />
-            {error && <p id="imagen-error" className="mt-1 text-sm text-red-600">{error}</p>}
+            {error && <p id="imagen-error" className="mt-1 text-sm text-red-600 dark:text-red-200">{error}</p>}
             {preview && (
                 <div className="mt-3 flex items-center gap-3">
                     <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
@@ -116,26 +117,11 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
     const [inlineError, setInlineError] = useState('');
     const [inlineSubmitting, setInlineSubmitting] = useState(false);
     const [duplicado, setDuplicado] = useState(null);
-    const lastCheckedName = useRef(null);
-    const duplicateCheck = useRef(Promise.resolve(null));
     const formRef = useRef(null);
     const closeInline = useCallback(() => setInlineOpen(false), []);
 
-    // Resolves to the existing product (or null). The same name reuses the in-flight/finished
-    // check, so the blur fired by clicking "Guardar" and the submit share one request.
-    const verificarDuplicado = () => {
-        if (isEdit) return Promise.resolve(null);
-        const nombre = formRef.current?.querySelector('[name="nombre"]')?.value.trim();
-        if (!nombre || nombre.length < 2) return Promise.resolve(null);
-        if (nombre === lastCheckedName.current) return duplicateCheck.current;
-        lastCheckedName.current = nombre;
-        duplicateCheck.current = api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`)
-            .then((dato) => (dato.exists ? dato : null))
-            // Advisory only: the database unique rule is the final guard.
-            .catch(() => null);
-        duplicateCheck.current.then((dato) => { if (dato) setDuplicado(dato); });
-        return duplicateCheck.current;
-    };
+    const [checkDuplicate] = useState(() => createDuplicateCheck((nombre) => api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`), setDuplicado));
+    const verificarDuplicado = () => checkDuplicate(formRef.current?.querySelector('[name="nombre"]')?.value, { edit: isEdit });
 
     const pedirCrearCategoria = (event) => {
         event.preventDefault();
@@ -218,19 +204,19 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
 
                 <form ref={formRef} action={action} method="POST" encType="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
                     {isEdit && <input type="hidden" name="stock_original" value={producto.cantidad} />}
-                    {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors.stock_original[0]}</div>}
+                    {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200">{errors.stock_original[0]}</div>}
                     {errors._general && (
-                        <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors._general[0]}</div>
+                        <div role="alert" className="rounded-card bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200">{errors._general[0]}</div>
                     )}
 
                     <div>
-                        <label htmlFor="nombre-field" className="block text-sm font-medium text-ink">Nombre <span className="text-red-600">*</span></label>
+                        <label htmlFor="nombre-field" className="block text-sm font-medium text-ink">Nombre <span className="text-red-600 dark:text-red-200">*</span></label>
                         <Input id="nombre-field" name="nombre" required defaultValue={producto?.nombre ?? ''} placeholder="Ej: Remera básica" error={errors?.nombre?.[0]} onBlur={verificarDuplicado} className="mt-1" />
-                        {errors?.nombre && <p className="mt-1 text-sm text-red-600">{errors.nombre[0]}</p>}
+                        {errors?.nombre && <p className="mt-1 text-sm text-red-600 dark:text-red-200">{errors.nombre[0]}</p>}
                     </div>
 
                     <div>
-                        <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600">*</span></label>
+                        <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600 dark:text-red-200">*</span></label>
                         <div className="mt-1 flex flex-wrap gap-2">
                             <Select id="categoria-field" name="categoria_id" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="min-w-0 flex-1 basis-40">
                                 <option value="">Selecciona una categoría</option>
@@ -238,7 +224,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                             </Select>
                             <Button type="button" variant="secondary" title="Crear categoría nueva" aria-label="Crear categoría nueva" onClick={() => setInlineOpen(true)}>+ Nueva</Button>
                         </div>
-                        {errors?.categoria_id && <p className="mt-1 text-sm text-red-600">{errors.categoria_id[0]}</p>}
+                        {errors?.categoria_id && <p className="mt-1 text-sm text-red-600 dark:text-red-200">{errors.categoria_id[0]}</p>}
                     </div>
 
                     <div className={`grid gap-4 sm:grid-cols-2 ${modal ? '' : 'lg:grid-cols-3'}`}>
@@ -246,7 +232,8 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
                         </div>
-                        {routes.canViewProductCost ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
+                        {/* Control Stock enters the cost when creating, but never sees or edits it afterwards. */}
+                        {routes.canViewProductCost || !isEdit ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
                         <MoneyInput label="Precio de Venta" name="precio_venta" initial={producto?.precio_venta ?? 0} error={errors?.precio_venta?.[0]} />
                         <div>
                             <label htmlFor="talle-field" className="block text-sm font-medium text-ink">Talle</label>
@@ -282,7 +269,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         <label htmlFor="inline-nombre-field" className="block text-sm font-medium text-ink">Nombre</label>
                         <Input id="inline-nombre-field" value={inlineNombre} onChange={(event) => setInlineNombre(event.target.value)} placeholder="Ej: Accesorios" required className="mt-1" />
                     </div>
-                    {inlineError && <p className="text-sm text-red-600">{inlineError}</p>}
+                    {inlineError && <p className="text-sm text-red-600 dark:text-red-200">{inlineError}</p>}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <Button type="button" variant="secondary" onClick={() => setInlineOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={inlineSubmitting}>{inlineSubmitting ? 'Creando...' : 'Crear Categoría'}</Button>
@@ -314,11 +301,11 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
     return (
         <div className="data-table-actions">
             <a href={`${routes.productos}/${producto.id}`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setProductoViendo(producto); }} className="data-table-action text-ink hover:bg-surface-muted" aria-label={`Ver ${nombre}`}>Ver</a>
-            <a href={`${routes.productos}/${producto.id}/edit`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setEditingProducto(producto); }} className="data-table-action text-primary hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
+            <a href={`${routes.productos}/${producto.id}/edit`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setEditingProducto(producto); }} className="data-table-action text-primary dark:text-primary-300 hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
             {producto.activo ? (
-                <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-red-50" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
+                <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 dark:text-red-200 hover:bg-red-50 dark:hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
-                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
+                <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 dark:text-primary-300 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
             )}
         </div>
     );
@@ -525,7 +512,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                         <td className="px-4 py-3 text-muted">{producto.color || '—'}</td>
                                         {routes.canViewProductCost && <td className="px-4 py-3 text-right">{formatMoney(producto.precio_compra)}</td>}
                                         <td className="px-4 py-3 text-right">{formatMoney(producto.precio_venta)}</td>
-                                         {routes.canViewProductCost && <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>}
+                                         {routes.canViewProductCost && <td className={`px-4 py-3 text-right font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700 dark:text-red-200' : 'text-green-700 dark:text-primary-300'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</td>}
                                          <td className="px-4 py-3 text-right tabular-nums">
                                              <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                          </td>
@@ -570,7 +557,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     </div>
                                       {routes.canViewProductCost && <div className="data-card-field">
                                          <dt className="text-xs uppercase tracking-wide text-muted">Ganancia</dt>
-                                          <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700' : 'text-green-700'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
+                                          <dd className={`mt-0.5 font-medium ${producto.precio_venta - producto.precio_compra < 0 ? 'text-red-700 dark:text-red-200' : 'text-green-700 dark:text-primary-300'}`}>{formatMoney(producto.precio_venta - producto.precio_compra)}</dd>
                                      </div>}
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Stock</dt>
@@ -623,7 +610,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                         <Input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required error={activationError} aria-describedby={activationError ? 'activation-error' : undefined} className="mt-1" />
                     </div>
                     <input type="hidden" name="_method" value="PATCH" />
-                    {activationError && <p id="activation-error" role="alert" className="text-sm text-red-700">{activationError}</p>}
+                    {activationError && <p id="activation-error" role="alert" className="text-sm text-red-700 dark:text-red-200">{activationError}</p>}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <Button type="button" variant="secondary" disabled={activating} onClick={cerrarActivacion}>Cancelar</Button>
                         <Button type="submit" disabled={activating}>Sí, activar</Button>
@@ -636,7 +623,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
                         {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" loading="lazy" className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-primary">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
+                            <p className="text-sm font-semibold text-primary dark:text-primary-300">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
                         </div>
                          <Badge tone={stockTone(productoViendo.cantidad, lowStockThreshold)}>

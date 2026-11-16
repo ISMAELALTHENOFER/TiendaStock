@@ -28,6 +28,9 @@ class Producto extends Model
         'activo',
     ];
 
+    // Purchase cost is ADMIN-only: hidden from every serialization unless revealCostTo() opts in.
+    protected $hidden = ['precio_compra'];
+
     protected function casts(): array
     {
         return [
@@ -52,11 +55,18 @@ class Producto extends Model
         return $this->hasOne(ProductoImagen::class);
     }
 
-    protected static function booted()
+    /** The only place that grants cost visibility: ADMIN sees precio_compra. */
+    public function revealCostTo(?User $user): static
     {
-        static::saving(function (Producto $producto) {
-            $producto->activo = (int) $producto->cantidad > 0;
-        });
+        return $user?->isAdmin() ? $this->makeVisible('precio_compra')->append('ganancia') : $this;
+    }
+
+    /** Stock rule: a product is active exactly when it has stock. Call it wherever cantidad changes. */
+    public function syncActivoWithStock(): static
+    {
+        $this->activo = (int) $this->cantidad > 0;
+
+        return $this;
     }
 
     // Ganancia calculada automáticamente

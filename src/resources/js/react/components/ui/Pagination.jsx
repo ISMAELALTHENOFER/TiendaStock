@@ -1,15 +1,6 @@
-const PAGE_SIZES = [15, 30, 50];
+import { pageItems } from '../../lib/pagination.js';
 
-// First, last and the current page's neighbours, with gaps collapsed into an ellipsis.
-export function pageItems(page, last) {
-    if (last <= 7) return Array.from({ length: last }, (_, index) => index + 1);
-    const pages = [...new Set([1, page - 1, page, page + 1, last])].filter((value) => value >= 1 && value <= last).sort((a, b) => a - b);
-    // A gap hiding exactly one page shows that page instead of an ellipsis.
-    return pages.flatMap((value, index) => {
-        const gap = index > 0 ? value - pages[index - 1] : 1;
-        return gap === 2 ? [value - 1, value] : gap > 2 ? [`gap-${value}`, value] : [value];
-    });
-}
+const PAGE_SIZES = [15, 30, 50];
 
 const Chevron = ({ direction }) => (
     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="h-4 w-4">

@@ -60,9 +60,7 @@ class ProductoController extends Controller
         $imageHashes = ProductoImagen::whereIn('producto_id', $productos->getCollection()->pluck('id'))
             ->pluck('sha1', 'producto_id');
         $productos->getCollection()->each(function (Producto $producto) use ($request, $imageHashes): void {
-            if ($request->user()?->role !== 'ADMIN') {
-                $producto->makeHidden(['precio_compra', 'ganancia']);
-            }
+            $producto->revealCostTo($request->user());
             if ($producto->imagen) {
                 $url = route('productos.imagen', $producto);
                 $producto->setAttribute('imagen', isset($imageHashes[$producto->id]) ? $url.'?v='.$imageHashes[$producto->id] : $url);
@@ -96,15 +94,14 @@ class ProductoController extends Controller
 
     public function store(StoreProductoRequest $request)
     {
+        // Every role that can create products enters the cost; only ADMIN can see or change it afterwards.
         $data = $request->validated();
-        if ($request->user()?->role !== 'ADMIN') {
-            $data['precio_compra'] = 0;
-        }
 
         return DB::transaction(function () use ($data, $request) {
             $file = $request->file('imagen');
             unset($data['imagen']);
-            $producto = Producto::create($data);
+            $producto = (new Producto($data))->syncActivoWithStock();
+            $producto->save();
             if ($file) {
                 $producto->update(['imagen' => 'database/'.$producto->id]);
                 $this->persistImage($producto, $file->get());
@@ -128,19 +125,13 @@ class ProductoController extends Controller
 
     public function show(Producto $producto)
     {
-        $producto->load(['imagenRecord:producto_id,sha1', 'categoria']);
-        if (request()->user()?->role !== 'ADMIN') {
-            $producto->makeHidden(['precio_compra', 'ganancia']);
-        }
+        $producto->load(['imagenRecord:producto_id,sha1', 'categoria'])->revealCostTo(request()->user());
         return view('layouts.app', compact('producto'));
     }
 
     public function edit(Producto $producto)
     {
-        $producto->load(['imagenRecord:producto_id,sha1']);
-        if (request()->user()?->role !== 'ADMIN') {
-            $producto->makeHidden(['precio_compra', 'ganancia']);
-        }
+        $producto->load(['imagenRecord:producto_id,sha1'])->revealCostTo(request()->user());
         $categorias = Categoria::orderBy('nombre')->get();
 
         return view('layouts.app', compact('producto', 'categorias'));
@@ -162,7 +153,7 @@ class ProductoController extends Controller
             }
             $file = $request->file('imagen');
             unset($data['imagen']);
-            $producto->update($data);
+            $producto->fill($data)->syncActivoWithStock()->save();
             if ($file) {
                 $producto->update(['imagen' => 'database/'.$producto->id]);
                 $this->persistImage($producto, $file->get());
@@ -235,7 +226,7 @@ class ProductoController extends Controller
                 }
                 return redirect()->route('productos.index')->with('error', 'El stock cambió. Actualiza el inventario antes de desactivar.');
             }
-            $producto->update(['cantidad' => 0]);
+            $producto->fill(['cantidad' => 0])->syncActivoWithStock()->save();
 
             ActivityRecorder::recordAfterCommit(
                 request()->user(), 'product.deactivated', 'Product deactivated', "Product {$producto->nombre} was deactivated.", $producto
@@ -259,7 +250,7 @@ class ProductoController extends Controller
                 return redirect()->route('productos.index')
                     ->with('error', 'El producto ya tiene stock. Actualiza el inventario antes de continuar.');
             }
-            $producto->update(['cantidad' => $data['cantidad']]);
+            $producto->fill(['cantidad' => $data['cantidad']])->syncActivoWithStock()->save();
 
             ActivityRecorder::recordAfterCommit(
                 request()->user(), 'product.activated', 'Product activated', "Product {$producto->nombre} was activated.", $producto

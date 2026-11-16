@@ -25,7 +25,7 @@ class ProductoFactory extends Factory
             'talle' => fake()->randomElement(['S', 'M', 'L', 'XL']),
             'color' => fake()->safeColorName(),
             'imagen' => null,
-            'activo' => true,
+            'activo' => fn (array $attributes) => (int) $attributes['cantidad'] > 0,
         ];
     }
 
@@ -65,6 +65,7 @@ class ProductoFactory extends Factory
     public function inactivo(): static
     {
         return $this->state(fn (array $attributes) => [
+            'cantidad' => 0,
             'activo' => false,
         ]);
     }

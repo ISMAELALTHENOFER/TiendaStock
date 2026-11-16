@@ -157,7 +157,8 @@ class ProductoDuplicateCheckTest extends TestCase
 
         $this->assertStringContainsString('verificarDuplicado', $source, 'Create form must wire verificarDuplicado on the nombre input.');
         $this->assertStringContainsString('routes.productoDuplicateCheck', $source, 'The duplicate-check endpoint URL must be supplied by Laravel.');
-        $this->assertStringContainsString('lastCheckedName', $source, 'The duplicate-check flow must track lastCheckedName to avoid re-prompting on the same name.');
+        // Re-prompt avoidance and in-flight reuse live in lib/duplicateCheck.js and are covered by duplicateCheck.test.js.
+        $this->assertStringContainsString('createDuplicateCheck', $source, 'The create form must use the shared duplicate-check helper.');
         $this->assertStringContainsString('Sí, editar', $source, 'The duplicate prompt must offer to edit the existing product.');
     }
 }

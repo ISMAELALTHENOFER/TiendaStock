@@ -6,7 +6,6 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -93,11 +92,7 @@ class ProductoZeroStockTest extends TestCase
         $producto = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
             'cantidad' => 0,
-            'activo' => true, // saving event forces this to false on create
         ]);
-
-        // Sanity: the model rule already made it inactive.
-        $this->assertSame(false, $producto->fresh()->activo);
 
         $response = $this->actingAs($this->admin)
             ->from(route('productos.index'))
@@ -143,24 +138,14 @@ class ProductoZeroStockTest extends TestCase
             'activo' => true,
         ]);
 
-        // A 0-stock row that is STILL flagged activo=true (e.g. stock was
-        // depleted by a sale while activo was not synced, or a legacy row).
-        // Inserted via a raw query to bypass the model `saving` event so we
-        // can assert the search() `cantidad > 0` guard independently of the
-        // activo-based filter.
-        DB::table('productos')->insert([
+        // A 0-stock row that is STILL flagged activo=true (a legacy row), to
+        // assert the search() `cantidad > 0` guard independently of the
+        // activo-based filter. No hook rewrites activo, so a factory row works.
+        Producto::factory()->create([
             'nombre' => 'ZeroStockBusqueda Sin Stock',
-            'descripcion' => null,
             'categoria_id' => $this->categoria->id,
-            'precio_compra' => 10,
-            'precio_venta' => 20,
             'cantidad' => 0,
-            'talle' => null,
-            'color' => null,
-            'imagen' => null,
             'activo' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $response = $this->actingAs($this->admin)
