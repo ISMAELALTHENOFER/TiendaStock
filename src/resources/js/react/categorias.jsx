@@ -49,17 +49,17 @@ function CategoryForm({ categoria, routes, onClose }) {
         <Modal open title={isEdit ? 'Editar categoría' : 'Nueva categoría'} onClose={onClose} size="product">
             <form onSubmit={handleSubmit} className="p-4 sm:p-7">
                 <p className="mb-6 text-sm text-muted">{isEdit ? 'Actualiza los datos de esta categoría.' : 'Añade una clasificación para organizar tu inventario.'}</p>
-                {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 p-3 text-sm text-red-700">{error('_general')}</p>}
+                {error('_general') && <p role="alert" className="mb-4 rounded-control bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-200">{error('_general')}</p>}
                 <div className="space-y-5">
                     <div>
-                        <label htmlFor="categoria-nombre" className="mb-1.5 block text-sm font-semibold text-ink">Nombre de categoría <span className="text-red-600">*</span></label>
+                        <label htmlFor="categoria-nombre" className="mb-1.5 block text-sm font-semibold text-ink">Nombre de categoría <span className="text-red-600 dark:text-red-200">*</span></label>
                         <input id="categoria-nombre" name="nombre" type="text" required maxLength={255} defaultValue={categoria?.nombre ?? ''} placeholder="Ej: Ropa, Electrónica, Alimentos..." aria-invalid={Boolean(error('nombre'))} aria-describedby={error('nombre') ? 'categoria-nombre-error' : undefined} className="min-h-11 w-full rounded-control border border-border bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                        {error('nombre') && <p id="categoria-nombre-error" role="alert" className="mt-1 text-sm text-red-600">{error('nombre')}</p>}
+                        {error('nombre') && <p id="categoria-nombre-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-200">{error('nombre')}</p>}
                     </div>
                     <div>
                         <label htmlFor="categoria-descripcion" className="mb-1.5 block text-sm font-semibold text-ink">Descripción <span className="font-normal text-muted">(opcional)</span></label>
                         <textarea id="categoria-descripcion" name="descripcion" rows="3" maxLength={500} defaultValue={categoria?.descripcion ?? ''} placeholder="Describe los productos que pertenecen a este grupo..." aria-invalid={Boolean(error('descripcion'))} aria-describedby={error('descripcion') ? 'categoria-descripcion-error' : undefined} className="w-full resize-y rounded-control border border-border bg-surface px-3.5 py-3 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-                        {error('descripcion') && <p id="categoria-descripcion-error" role="alert" className="mt-1 text-sm text-red-600">{error('descripcion')}</p>}
+                        {error('descripcion') && <p id="categoria-descripcion-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-200">{error('descripcion')}</p>}
                     </div>
                 </div>
                 <div className="mt-7 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
@@ -121,8 +121,8 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
 
             <section aria-label="Resumen de categorías" className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
-                    ['Total de categorías', summary.total, '▦', 'text-primary'],
-                    ['Productos asignados', summary.productos, '▣', 'text-primary'],
+                    ['Total de categorías', summary.total, '▦', 'text-primary dark:text-primary-300'],
+                    ['Productos asignados', summary.productos, '▣', 'text-primary dark:text-primary-300'],
                     ['Categorías vacías', summary.vacias, '▱', 'text-muted'],
                 ].map(([label, value, icon, tone]) => (
                     <Card key={label} className="flex min-h-24 items-center justify-between border border-border p-4 shadow-sm sm:p-5">
@@ -134,12 +134,12 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
 
             <form method="get" action={routes.categorias} onSubmit={(event) => event.preventDefault()} className="mb-5 flex w-full flex-col gap-3 sm:flex-row">
                 <label htmlFor="category-search" className="sr-only">Buscar categorías</label>
-                <input id="category-search" name="buscar" value={buscar} onChange={(event) => setBuscar(event.target.value)} placeholder="Buscar categorías…" className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-4 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
+                <input id="category-search" name="buscar" value={buscar} onChange={(event) => setBuscar(event.target.value)} placeholder="Buscar categorías…" className="min-h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-4 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300" />
                 <input type="hidden" name="per_page" value={pageSize} />
                 <Button type="submit">Buscar</Button>
             </form>
             {liveSearch.searching && <p role="status" className="mb-3 text-sm text-muted">Buscando categorías…</p>}
-            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+            {liveSearch.searchError && <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-200">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
 
             {data.length === 0 ? (
                 <Card className="p-8 text-center sm:p-12">
@@ -159,7 +159,7 @@ export function CategoriaGrid({ categorias, routes, initialModal = false }) {
                             </div>
                             <div className="mt-5 flex flex-wrap items-center gap-1 border-t border-border pt-3">
                                 <Button href={`${routes.categorias}/${categoria.id}`} variant="ghost" className="px-3">Ver</Button>
-                                <Button href={`${routes.categorias}/${categoria.id}/edit`} onClick={(event) => openEdit(event, categoria)} variant="ghost" className="px-3 text-primary">Editar</Button>
+                                <Button href={`${routes.categorias}/${categoria.id}/edit`} onClick={(event) => openEdit(event, categoria)} variant="ghost" className="px-3 text-primary dark:text-primary-300">Editar</Button>
                                 {categoria.productos_count > 0 ? (
                                     <button type="button" disabled title="No se puede eliminar mientras tenga productos" className="ml-auto inline-flex min-h-11 cursor-not-allowed items-center rounded-control px-3 text-sm font-semibold text-muted opacity-70">No se puede eliminar</button>
                                 ) : (

@@ -5,7 +5,7 @@ const variants = {
     secondary: 'border border-border bg-surface text-ink hover:bg-surface-muted',
     danger: 'bg-red-600 text-white hover:bg-red-700',
     // Text-only destructive row action (delete / deactivate / cancel) readable in both themes.
-    'danger-ghost': 'text-red-600 hover:bg-red-50',
+    'danger-ghost': 'text-red-600 dark:text-red-200 hover:bg-red-50 dark:hover:bg-surface-muted',
     ghost: 'text-ink hover:bg-surface-muted',
     icon: 'text-muted hover:bg-surface-muted',
 };
