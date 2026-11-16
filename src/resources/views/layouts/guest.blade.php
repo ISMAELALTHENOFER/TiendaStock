@@ -32,8 +32,8 @@
     @vite('resources/css/app.css')
 </head>
 
-<body class="font-sans text-gray-900 antialiased">
-    <div @class(['login-react-host' => $isLogin, 'min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 bg-stone-50' => ! $isLogin]) @unless ($isLogin) style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));" @endunless>
+<body class="font-sans text-ink antialiased">
+    <div @class(['login-react-host' => $isLogin, 'min-h-dvh flex flex-col justify-center items-center px-3 py-6 sm:px-6 bg-canvas' => ! $isLogin]) @unless ($isLogin) style="padding-top: max(1.5rem, env(safe-area-inset-top)); padding-right: max(0.75rem, env(safe-area-inset-right)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); padding-left: max(0.75rem, env(safe-area-inset-left));" @endunless>
         @if ($isLogin)
         <button type="button" data-theme-toggle aria-pressed="false" data-login-theme-toggle aria-label="Activar modo oscuro" class="theme-toggle login-react__theme">
             <svg class="login-react__theme-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" /></svg>

@@ -15,7 +15,7 @@ function Field({ id, label, name = id, type = 'text', value, error, autoComplete
             <Input id={id} name={name} type={inputType} defaultValue={value} error={error} required={required} autoComplete={autoComplete} aria-describedby={error ? `${id}-error` : undefined} className="min-w-0" />
             {type === 'password' && <Button type="button" variant="secondary" className="shrink-0 whitespace-nowrap" aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? 'Ocultar' : 'Mostrar'}</Button>}
         </div>
-        {error && <p id={`${id}-error`} className="mt-1 text-sm text-red-700">{error}</p>}
+        {error && <p id={`${id}-error`} className="mt-1 text-sm text-red-700 dark:text-red-200">{error}</p>}
     </div>;
 }
 
