@@ -13,6 +13,9 @@
 @tailwind utilities;
 
 @layer base {
+    /* @tailwindcss/forms paints unchecked boxes white; use theme tokens so they follow the dark toggle. */
+    [type='checkbox'] { color: var(--primary); border-color: var(--border); border-radius: .3rem; }
+    [type='checkbox']:not(:checked) { background-color: var(--surface); }
     :root {
         color-scheme: light;
         --canvas-rgb: 248 249 255;
