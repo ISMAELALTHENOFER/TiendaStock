@@ -232,7 +232,8 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
                         </div>
-                        {routes.canViewProductCost ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
+                        {/* Control Stock enters the cost when creating, but never sees or edits it afterwards. */}
+                        {routes.canViewProductCost || !isEdit ? <MoneyInput label="Costo" name="precio_compra" initial={producto?.precio_compra ?? 0} error={errors?.precio_compra?.[0]} /> : <input type="hidden" name="precio_compra" value="0" />}
                         <MoneyInput label="Precio de Venta" name="precio_venta" initial={producto?.precio_venta ?? 0} error={errors?.precio_venta?.[0]} />
                         <div>
                             <label htmlFor="talle-field" className="block text-sm font-medium text-ink">Talle</label>

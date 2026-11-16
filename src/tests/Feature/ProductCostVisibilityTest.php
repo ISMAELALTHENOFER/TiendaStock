@@ -65,7 +65,10 @@ class ProductCostVisibilityTest extends TestCase
             'precio_compra' => 700, 'precio_venta' => 900, 'cantidad' => 2,
         ]);
         $created->assertRedirect(route('productos.index'));
-        $this->assertDatabaseHas('productos', ['nombre' => 'New item', 'precio_compra' => 0]);
+        // Control Stock enters the cost on create (user decision 2026-11-16) but never sees it afterwards.
+        $this->assertDatabaseHas('productos', ['nombre' => 'New item', 'precio_compra' => 700]);
+        $this->get(route('productos.show', Producto::where('nombre', 'New item')->first()))->assertOk()
+            ->assertViewHas('producto', fn (Producto $p) => ! array_key_exists('precio_compra', $p->toArray()));
     }
 
     public function test_cost_is_hidden_from_any_product_serialization_by_default(): void

@@ -94,10 +94,8 @@ class ProductoController extends Controller
 
     public function store(StoreProductoRequest $request)
     {
+        // Every role that can create products enters the cost; only ADMIN can see or change it afterwards.
         $data = $request->validated();
-        if ($request->user()?->role !== 'ADMIN') {
-            $data['precio_compra'] = 0;
-        }
 
         return DB::transaction(function () use ($data, $request) {
             $file = $request->file('imagen');
