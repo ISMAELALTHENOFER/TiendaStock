@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Venta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,14 +11,23 @@ class VentaReactViewContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_sales_routes_render_the_react_host_when_enabled(): void
+    public function test_sales_routes_render_the_react_host(): void
     {
-        $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+        $user = User::factory()->ventas()->create();
+        $venta = Venta::factory()->create(['user_id' => $user->id]);
 
-        $this->assertStringContainsString("'ventas.index'", $source);
-        $this->assertStringContainsString("'ventas.pos'", $source);
-        $this->assertStringContainsString("'ventas.show'", $source);
-        $this->assertStringContainsString("@include('react.app'", $source);
+        foreach ([
+            ['/ventas', 'ventas.index'],
+            [route('ventas.pos'), 'ventas.pos'],
+            [route('ventas.show', $venta), 'ventas.show'],
+        ] as [$url, $page]) {
+            $response = $this->actingAs($user)->get($url)->assertOk()->assertSee('id="react-root"', false);
+            preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+            $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame($page, $props['page']);
+        }
+
+        $this->assertSame($venta->id, $props['sale']['id']);
     }
 
     public function test_react_sales_host_receives_search_and_page_size_query_values(): void
@@ -25,26 +35,6 @@ class VentaReactViewContractTest extends TestCase
         $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
 
         $this->assertStringContainsString("'query' => request()->only(['desde', 'hasta', 'estado', 'buscar', 'per_page', 'inactivos'])", $source);
-    }
-
-    public function test_sales_index_can_roll_back_to_the_legacy_blade_surface(): void
-    {
-        $user = User::factory()->ventas()->create();
-        config(['frontend.routes.ventas.index' => 'blade']);
-
-        $response = $this->actingAs($user)->get('/ventas');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Historial de Ventas');
-    }
-
-    public function test_global_blade_driver_restores_the_sales_surface(): void
-    {
-        $user = User::factory()->ventas()->create();
-        config(['frontend.driver' => 'blade']);
-
-        $response = $this->actingAs($user)->get('/ventas');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Historial de Ventas');
     }
 
     public function test_react_sales_app_contains_the_three_sales_surfaces_and_contracts(): void
@@ -172,17 +162,13 @@ class VentaReactViewContractTest extends TestCase
         $this->assertSame(2, substr_count($source, 'paidCents < totalCents'));
     }
 
-    public function test_pos_search_debounces_and_aborts_stale_requests_in_both_hosts(): void
+    public function test_pos_search_debounces_and_aborts_stale_requests(): void
     {
         $react = file_get_contents(resource_path('js/react/sales.jsx'));
-        $blade = file_get_contents(resource_path('views/ventas/pos.blade.php'));
 
         $this->assertStringContainsString('signal: controller.signal', $react);
         $this->assertStringContainsString('window.setTimeout(async () =>', $react);
         $this->assertStringContainsString('}, 250);', $react);
-        $this->assertStringContainsString('this.searchController?.abort()', $blade);
-        $this->assertStringContainsString('}, 250);', $blade);
-        $this->assertStringContainsString('request === this.searchRequest', $blade);
     }
 
     public function test_pos_delivery_and_payment_use_accessible_choice_tiles(): void

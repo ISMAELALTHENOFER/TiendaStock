@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Producto;
 use App\Models\User;
 use App\Models\Venta;
+use App\Models\VentaItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -50,6 +52,18 @@ class VentaOwnershipTest extends TestCase
         $this->getJson('/ventas/'.$other->id)->assertForbidden();
         $this->actingAs(User::factory()->admin()->create())->get('/ventas/'.$other->id)->assertOk();
         $this->getJson('/ventas/'.$other->id)->assertOk();
+    }
+
+    public function test_sale_detail_hides_product_cost_from_sellers(): void
+    {
+        $seller = User::factory()->ventas()->create();
+        $venta = Venta::factory()->create(['user_id' => $seller->id]);
+        VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => Producto::factory()->create(['precio_compra' => 4321.98])->id]);
+
+        $this->actingAs($seller)->get('/ventas/'.$venta->id)->assertOk()
+            ->assertDontSee('precio_compra', false)->assertDontSee('4321.98', false);
+        $this->actingAs(User::factory()->admin()->create())->get('/ventas/'.$venta->id)->assertOk()
+            ->assertSee('4321.98', false);
     }
 
     public function test_guests_and_stock_users_cannot_access_sales(): void

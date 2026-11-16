@@ -10,12 +10,14 @@ import { Modal } from './components/ui/Modal.jsx';
 import { Select } from './components/ui/Select.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
+import { Toast } from './components/ui/Toast.jsx';
 import { api, csrf } from './lib/api.js';
 import { productMoneyInput } from './lib/productMoneyInput.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { stockTone } from './lib/stockTone.js';
 import { formatMoney } from './lib/formatMoney.js';
+import { useConfirm } from './lib/useConfirm.jsx';
 
 /**
  * Money input with the same live mask semantics as the legacy Alpine
@@ -98,9 +100,8 @@ function ProductImage({ value, error }) {
 }
 
 /**
- * Shared create/edit form. Create posts directly to productos.store; edit
- * asks for confirmation (matching the legacy confirmDialogShow flow) and
- * then posts to productos.update. Error responses (422 JSON) keep the
+ * Shared create/edit form. Both create and edit ask for confirmation with
+ * the shared dialog before posting to productos.store / productos.update. Error responses (422 JSON) keep the
  * typed state and render inline field errors instead of redirecting back.
  */
 export function ProductForm({ routes, categorias = [], producto = null, modal = false, onClose, onSaved, onCategoryCreated }) {
@@ -109,31 +110,39 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
     const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [categoryId, setCategoryId] = useState(String(producto?.categoria_id ?? ''));
     const [submitting, setSubmitting] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
     const [inlineOpen, setInlineOpen] = useState(false);
     const [inlineNombre, setInlineNombre] = useState('');
     const [inlineError, setInlineError] = useState('');
     const [inlineSubmitting, setInlineSubmitting] = useState(false);
     const [duplicado, setDuplicado] = useState(null);
     const lastCheckedName = useRef(null);
+    const duplicateCheck = useRef(Promise.resolve(null));
     const formRef = useRef(null);
     const closeInline = useCallback(() => setInlineOpen(false), []);
 
-    const verificarDuplicado = async () => {
-        if (isEdit) return;
+    // Resolves to the existing product (or null). The same name reuses the in-flight/finished
+    // check, so the blur fired by clicking "Guardar" and the submit share one request.
+    const verificarDuplicado = () => {
+        if (isEdit) return Promise.resolve(null);
         const nombre = formRef.current?.querySelector('[name="nombre"]')?.value.trim();
-        if (!nombre || nombre.length < 2 || nombre === lastCheckedName.current) return;
+        if (!nombre || nombre.length < 2) return Promise.resolve(null);
+        if (nombre === lastCheckedName.current) return duplicateCheck.current;
         lastCheckedName.current = nombre;
-        try {
-            const dato = await api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`);
-            if (dato.exists) setDuplicado(dato);
-        } catch {
+        duplicateCheck.current = api.get(`${routes.productoDuplicateCheck}?nombre=${encodeURIComponent(nombre)}`)
+            .then((dato) => (dato.exists ? dato : null))
             // Advisory only: the database unique rule is the final guard.
-        }
+            .catch(() => null);
+        duplicateCheck.current.then((dato) => { if (dato) setDuplicado(dato); });
+        return duplicateCheck.current;
     };
 
-    const crearCategoria = async (event) => {
+    const pedirCrearCategoria = (event) => {
         event.preventDefault();
+        confirm(crearCategoria, { title: '¿Guardar categoría?', message: `Se creará la categoría «${inlineNombre.trim()}».` });
+    };
+
+    const crearCategoria = async () => {
         setInlineSubmitting(true);
         setInlineError('');
         try {
@@ -174,13 +183,12 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
         }
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        if (isEdit) {
-            setConfirmOpen(true);
-            return;
-        }
-        submit();
+        const dato = await verificarDuplicado();
+        // A duplicate shows only its own prompt; the save confirmation never stacks on it.
+        if (dato) { setDuplicado(dato); return; }
+        confirm(submit, isEdit ? {} : { title: '¿Guardar producto?', message: 'Se creará el producto con los datos ingresados.' });
     };
 
     const action = isEdit ? `${routes.productos}/${producto.id}` : routes.productos;
@@ -203,12 +211,12 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     </div>
                 ) : (
                     <div className="bg-gradient-to-r from-primary to-primary-700 px-6 py-8">
-                        <h1 className="text-lg font-bold text-white">Información del Producto</h1>
+                        <h2 className="text-lg font-bold text-white">Información del Producto</h2>
                         <p className="mt-1 text-sm text-white/80">Ingresa todos los detalles del producto</p>
                     </div>
                 )}
 
-                <form ref={formRef} action={action} method="POST" enctype="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
+                <form ref={formRef} action={action} method="POST" encType="multipart/form-data" onSubmit={handleSubmit} noValidate className={modal ? 'space-y-4 p-4 sm:p-6' : 'space-y-6 p-4 sm:p-8'}>
                     {isEdit && <input type="hidden" name="stock_original" value={producto.cantidad} />}
                     {errors.stock_original && <div role="alert" className="rounded-card bg-red-50 p-3 text-sm text-red-700">{errors.stock_original[0]}</div>}
                     {errors._general && (
@@ -233,7 +241,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         {errors?.categoria_id && <p className="mt-1 text-sm text-red-600">{errors.categoria_id[0]}</p>}
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className={`grid gap-4 sm:grid-cols-2 ${modal ? '' : 'lg:grid-cols-3'}`}>
                         <div>
                             <label htmlFor="cantidad-field" className="block text-sm font-medium text-ink">Cantidad</label>
                             <Input id="cantidad-field" type="number" name="cantidad" min="0" defaultValue={producto?.cantidad ?? 1} error={errors?.cantidad?.[0]} className="mt-1" />
@@ -261,7 +269,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                         {modal ? (
                             <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
                         ) : (
-                            <a href={routes.productos} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border px-4 text-sm font-semibold text-ink">Cancelar</a>
+                            <Button href={routes.productos} variant="secondary">Cancelar</Button>
                         )}
                         <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : (isEdit ? 'Guardar Cambios' : 'Guardar Producto')}</Button>
                     </div>
@@ -269,13 +277,13 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
             </div>
 
             <Modal open={inlineOpen} title="Nueva Categoría" onClose={closeInline}>
-                <form onSubmit={crearCategoria} className="mt-4 space-y-4">
+                <form onSubmit={pedirCrearCategoria} className="mt-4 space-y-4">
                     <div>
                         <label htmlFor="inline-nombre-field" className="block text-sm font-medium text-ink">Nombre</label>
                         <Input id="inline-nombre-field" value={inlineNombre} onChange={(event) => setInlineNombre(event.target.value)} placeholder="Ej: Accesorios" required className="mt-1" />
                     </div>
                     {inlineError && <p className="text-sm text-red-600">{inlineError}</p>}
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <Button type="button" variant="secondary" onClick={() => setInlineOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={inlineSubmitting}>{inlineSubmitting ? 'Creando...' : 'Crear Categoría'}</Button>
                     </div>
@@ -291,15 +299,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                 onClose={() => setDuplicado(null)}
             />
 
-            <ConfirmDialog
-                open={confirmOpen}
-                title="Editar producto"
-                message="¿Confirmar los cambios en este producto?"
-                confirmLabel="Sí, guardar"
-                tone="primary"
-                onConfirm={submit}
-                onClose={() => setConfirmOpen(false)}
-            />
+            {confirmDialog}
         </div>
     );
     return modal ? (
@@ -316,7 +316,7 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
             <a href={`${routes.productos}/${producto.id}`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setProductoViendo(producto); }} className="data-table-action text-ink hover:bg-surface-muted" aria-label={`Ver ${nombre}`}>Ver</a>
             <a href={`${routes.productos}/${producto.id}/edit`} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setEditingProducto(producto); }} className="data-table-action text-primary hover:bg-surface-muted" aria-label={`Editar ${nombre}`}>Editar</a>
             {producto.activo ? (
-                <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
+                <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 hover:bg-red-50" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
                 <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
             )}
@@ -347,10 +347,12 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [toggle, setToggle] = useState(null);
     const [activationError, setActivationError] = useState('');
     const [activating, setActivating] = useState(false);
-    const activationDialog = useRef(null);
     const [crearAbierto, setCrearAbierto] = useState(false);
     const [categoryOptions, setCategoryOptions] = useState(categorias);
     const [productoEditando, setProductoEditando] = useState(null);
+    // In-place saves never reload the page, so the server flash toast cannot show them.
+    const [aviso, setAviso] = useState('');
+    const cerrarAviso = useCallback(() => setAviso(''), []);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
 
@@ -381,9 +383,6 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
         }, busqueda ? 250 : 0);
         return () => { window.clearTimeout(timeout); controller.abort(); };
     }, [verInactivos, busqueda, filtroCategoria, filtroTalle, filtroColor, paginaActual, pageSize, reload, routes.productosData]);
-    useEffect(() => {
-        if (toggle?.tipo === 'activar') activationDialog.current?.showModal();
-    }, [toggle]);
     const visibles = catalogo?.data || [];
     const total = catalogo?.total || 0;
     const talies = catalogo?.filters?.talles || [];
@@ -412,6 +411,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
         document.getElementById(formId)?.submit();
     };
 
+    const cerrarActivacion = () => { setToggle(null); setActivationError(''); };
+
     const activar = async (event) => {
         event.preventDefault();
         setActivating(true);
@@ -424,8 +425,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             });
             const body = await response.json();
             if (!response.ok) throw new Error(body.errors?.cantidad?.[0] || body.message || 'No se pudo activar el producto.');
-            activationDialog.current.close();
-            setToggle(null);
+            cerrarActivacion();
+            setAviso('Producto activado correctamente.');
             await cargar();
         } catch (error) {
             setActivationError(error.message);
@@ -438,7 +439,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
         <div className="py-4 sm:py-8">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="page-title">Inventario de Productos</h1>
+                    <p className="eyebrow">Inventario</p>
+                    <h1 className="page-title mt-2">Inventario de Productos</h1>
                     <p className="mt-1 text-sm text-muted">Gestiona todos tus productos en un solo lugar</p>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -446,9 +448,9 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                         <input id="show-inactive-products" type="checkbox" checked={verInactivos} onChange={(event) => { setVerInactivos(event.target.checked); setPaginaActual(1); }} className="h-4 w-4 rounded border-border accent-primary" />
                         Ver inactivos
                     </label>
-                    <a href={routes.productosCreate} onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCrearAbierto(true); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:outline-offset-4">
+                    <Button href={routes.productosCreate} variant="primary" onClick={(event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); setCrearAbierto(true); }} className="px-5 shadow-sm">
                         Nuevo Producto
-                    </a>
+                    </Button>
                 </div>
             </div>
 
@@ -499,9 +501,9 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <th className="px-4 py-3">Categoría</th>
                                     <th className="px-4 py-3">Talle</th>
                                     <th className="px-4 py-3">Color</th>
-                                    <th className="px-4 py-3 text-right">P. Compra</th>
+                                    {routes.canViewProductCost && <th className="px-4 py-3 text-right">P. Compra</th>}
                                     <th className="px-4 py-3 text-right">P. Venta</th>
-                                    <th className="px-4 py-3 text-right">Ganancia</th>
+                                    {routes.canViewProductCost && <th className="px-4 py-3 text-right">Ganancia</th>}
                                     <th className="px-4 py-3 text-right">Stock</th>
                                     <th className="px-4 py-3 text-center">Acciones</th>
                                 </tr>
@@ -595,7 +597,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
 
             {visibles.map((producto) => (
                 <div key={producto.id} className="hidden">
-                    <form id={`desactivar-${producto.id}`} action={`/productos/${producto.id}`} method="POST">
+                    <form id={`desactivar-${producto.id}`} action={`${routes.productos}/${producto.id}`} method="POST">
                         <input type="hidden" name="_token" value={csrf()} />
                         <input type="hidden" name="_method" value="DELETE" />
                         <input type="hidden" name="stock_original" value={producto.cantidad} />
@@ -613,20 +615,21 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 onClose={() => setToggle(null)}
             />
 
-            <dialog ref={activationDialog} aria-labelledby="activation-title" onCancel={(event) => { if (activating) event.preventDefault(); }} onClose={() => { setToggle(null); setActivationError(''); }} className="w-[calc(100%-2rem)] max-w-md rounded-card p-5 shadow-subtle backdrop:bg-black/50">
-                <form onSubmit={activar} className="space-y-4">
-                    <h2 id="activation-title" className="text-lg font-bold">Activar producto</h2>
-                    <p>Ingresa el stock de «{toggle?.producto?.nombre}» y confirma la activación.</p>
-                    <label htmlFor="activation-stock" className="block font-medium">Stock</label>
-                    <input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required autoFocus aria-invalid={Boolean(activationError)} aria-describedby={activationError ? 'activation-error' : undefined} className="w-full rounded-control border border-border px-3 py-2" />
+            <Modal open={toggle?.tipo === 'activar'} title="Activar producto" onClose={() => { if (!activating) cerrarActivacion(); }}>
+                <form onSubmit={activar} className="mt-2 space-y-4">
+                    <p className="text-sm text-muted">Ingresa el stock de «{toggle?.producto?.nombre}» y confirma la activación.</p>
+                    <div>
+                        <label htmlFor="activation-stock" className="block text-sm font-medium text-ink">Stock</label>
+                        <Input id="activation-stock" name="cantidad" type="number" min="1" max="2147483647" step="1" required error={activationError} aria-describedby={activationError ? 'activation-error' : undefined} className="mt-1" />
+                    </div>
                     <input type="hidden" name="_method" value="PATCH" />
                     {activationError && <p id="activation-error" role="alert" className="text-sm text-red-700">{activationError}</p>}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                        <Button type="button" variant="secondary" disabled={activating} onClick={() => activationDialog.current.close()}>Cancelar</Button>
+                        <Button type="button" variant="secondary" disabled={activating} onClick={cerrarActivacion}>Cancelar</Button>
                         <Button type="submit" disabled={activating}>Sí, activar</Button>
                     </div>
                 </form>
-            </dialog>
+            </Modal>
 
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
@@ -667,12 +670,14 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                     modal
                     onClose={() => { setCrearAbierto(false); setProductoEditando(null); }}
                     onSaved={async () => {
+                        setAviso(productoEditando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.');
                         setCrearAbierto(false);
                         setProductoEditando(null);
                         await cargar();
                     }}
                 />
             )}
+            <Toast type="success" message={aviso} onClose={cerrarAviso} />
         </div>
     );
 }

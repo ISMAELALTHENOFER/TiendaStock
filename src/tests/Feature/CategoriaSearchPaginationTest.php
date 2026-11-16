@@ -15,7 +15,6 @@ class CategoriaSearchPaginationTest extends TestCase
     {
         parent::setUp();
 
-        config(['frontend.driver' => 'blade']);
         $this->actingAs(User::factory()->admin()->create());
     }
 
@@ -55,8 +54,18 @@ class CategoriaSearchPaginationTest extends TestCase
     {
         Categoria::factory()->count(35)->create(['descripcion' => 'Ropa de verano']);
 
-        $this->get(route('categorias.index', ['buscar' => 'verano', 'per_page' => 15]))
-            ->assertOk()
-            ->assertSee(route('categorias.index', ['buscar' => 'verano', 'per_page' => 15, 'page' => 2]));
+        $response = $this->get(route('categorias.index', ['buscar' => 'verano', 'per_page' => 15]))->assertOk();
+
+        $this->assertSame(
+            route('categorias.index', ['buscar' => 'verano', 'per_page' => 15, 'page' => 2]),
+            $this->reactProps($response)['categorias']['next_page_url']
+        );
+    }
+
+    private function reactProps(\Illuminate\Testing\TestResponse $response): array
+    {
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+
+        return json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true, flags: JSON_THROW_ON_ERROR);
     }
 }

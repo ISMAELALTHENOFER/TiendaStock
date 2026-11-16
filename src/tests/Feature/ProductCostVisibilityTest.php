@@ -12,15 +12,6 @@ class ProductCostVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config([
-            'frontend.routes.productos.show' => 'blade',
-            'frontend.routes.categorias.show' => 'blade',
-        ]);
-    }
-
     public function test_control_stock_cannot_view_cost_in_product_or_category_pages(): void
     {
         $category = Categoria::factory()->create();
@@ -43,7 +34,7 @@ class ProductCostVisibilityTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)->get(route('productos.show', $product))->assertOk()
-            ->assertSee('Costo')->assertSee('Ganancia por Unidad');
+            ->assertSee('canViewProductCost&quot;:true', false)->assertSee('precio_compra&quot;:', false);
         $this->get(route('productos.edit', $product))->assertOk()->assertSee('canViewProductCost&quot;:true', false);
         $this->actingAs(User::factory()->controlStock()->create())->put(route('productos.update', $product), [
             'nombre' => $product->nombre,

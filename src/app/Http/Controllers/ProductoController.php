@@ -23,7 +23,7 @@ class ProductoController extends Controller
         // el select de filtros).
         $categorias = Categoria::orderBy('nombre')->get();
 
-        return view('productos.index', compact('categorias'));
+        return view('layouts.app', compact('categorias'));
     }
 
     public function data(Request $request)
@@ -91,7 +91,7 @@ class ProductoController extends Controller
     {
         $categorias = Categoria::orderBy('nombre')->get();
 
-        return view('productos.create', compact('categorias'));
+        return view('layouts.app', compact('categorias'));
     }
 
     public function store(StoreProductoRequest $request)
@@ -115,6 +115,9 @@ class ProductoController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Producto creado correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
             }
 
@@ -129,7 +132,7 @@ class ProductoController extends Controller
         if (request()->user()?->role !== 'ADMIN') {
             $producto->makeHidden(['precio_compra', 'ganancia']);
         }
-        return view('productos.show', compact('producto'));
+        return view('layouts.app', compact('producto'));
     }
 
     public function edit(Producto $producto)
@@ -140,7 +143,7 @@ class ProductoController extends Controller
         }
         $categorias = Categoria::orderBy('nombre')->get();
 
-        return view('productos.edit', compact('producto', 'categorias'));
+        return view('layouts.app', compact('producto', 'categorias'));
     }
 
     public function update(UpdateProductoRequest $request, Producto $producto)
@@ -170,6 +173,9 @@ class ProductoController extends Controller
             );
 
             if ($request->expectsJson()) {
+                // React follows `redirect` itself, so flash here for the toast on the next page.
+                $request->session()->flash('success', 'Producto actualizado correctamente.');
+
                 return response()->json(['saved' => true, 'redirect' => route('productos.index')]);
             }
 

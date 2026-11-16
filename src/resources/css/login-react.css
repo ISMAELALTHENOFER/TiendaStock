@@ -27,7 +27,10 @@
 .login-react__input input:last-child { padding-right: 1rem; }
 .login-react__reveal { display: grid; flex: none; place-items: center; width: 3rem; min-height: 3rem; color: var(--muted); }
 .login-react__remember { display: flex; align-items: center; gap: .65rem; min-height: 2.75rem; color: var(--muted); font-size: .875rem; cursor: pointer; }
-.login-react__remember input { width: 1.1rem; height: 1.1rem; accent-color: #006948; }
+.login-react__remember input { width: 1.1rem; height: 1.1rem; border-color: var(--border); border-radius: .3rem; background-color: var(--surface); color: #006948; accent-color: #006948; }
+.login-react__remember input:focus { --tw-ring-color: #006948; --tw-ring-offset-color: var(--surface); }
+/* Browser autofill paints its own background; repaint it with the field surface so it matches in both themes. */
+.login-react__input input:-webkit-autofill, .login-react__input input:-webkit-autofill:hover, .login-react__input input:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 100px var(--surface) inset; -webkit-text-fill-color: var(--ink); caret-color: var(--ink); transition: background-color 9999s ease-out; }
 .login-react__submit { display: flex; align-items: center; justify-content: center; gap: .75rem; width: 100%; min-height: 3.25rem; border-radius: .65rem; background: #006948; color: #fff; font-weight: 700; }
 .login-react__submit:hover:not(:disabled) { background: #005137; }
 .login-react__submit:disabled { cursor: wait; opacity: .7; }
@@ -41,25 +44,12 @@
 @media (min-width: 60rem) {
     .login-react { display: grid; grid-template-columns: 55fr 45fr; }
     .login-react__visual { display: flex; align-items: center; min-width: 0; padding: 3rem clamp(2rem, 5vw, 5rem); }
-    .login-react__visual-inner { width: min(100%, 39rem); margin: auto; }
-    .login-react__intro { margin: clamp(3rem, 6vh, 5rem) 0 2rem; }
-    .login-react__intro p, .login-preview__header span { color: #b6dfcf; font-size: .7rem; font-weight: 700; letter-spacing: .1em; }
-    .login-react__intro h2 { max-width: 15ch; margin: .8rem 0; font-size: clamp(2rem, 3.2vw, 3.3rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.1; }
-    .login-react__intro > span, .login-react__visual-note { color: #d3e8df; line-height: 1.6; }
-    .login-preview { padding: 1.4rem; border: 1px solid #4c7c6c; border-radius: 1rem; background: #104c3e; box-shadow: 0 18px 48px rgb(0 0 0 / .18); }
-    .login-preview__header, .login-preview__inventory > div { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-    .login-preview__header h3 { margin-top: .4rem; font-size: 1.05rem; font-weight: 700; }
-    .login-preview__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.3rem; }
-    .login-preview__stats > div { display: grid; gap: .4rem; padding: 1rem; border-radius: .65rem; background: #1b5b4a; }
-    .login-preview__stats span, .login-preview__stats small, .login-preview__inventory p, .login-preview__inventory span { color: #d3e8df; font-size: .75rem; }
-    .login-preview__stats strong { font-size: clamp(1.1rem, 1.7vw, 1.6rem); }
-    .login-preview__chart { display: block; width: 100%; height: 4rem; margin-top: 1rem; }
-    .login-preview__inventory { margin-top: 1.4rem; }
-    .login-preview__inventory > div { justify-content: flex-start; margin-bottom: .8rem; }
-    .login-preview__inventory > div span { margin-left: auto; }
-    .login-preview__inventory p { display: flex; justify-content: space-between; gap: .5rem; padding: .65rem 0; border-top: 1px solid #4c7c6c; }
-    .login-preview__inventory b { color: #fff; font-weight: 600; }
-    .login-react__visual-note { margin-top: 1.5rem; font-size: .8rem; }
+    /* Brand pinned top, message vertically centred in the remaining height. */
+    .login-react__visual-inner { display: flex; flex-direction: column; width: min(100%, 39rem); min-height: calc(100dvh - 6rem); margin: auto; }
+    .login-react__intro { margin-block: auto; padding-bottom: 3rem; }
+    .login-react__intro p { color: #b6dfcf; font-size: .7rem; font-weight: 700; letter-spacing: .1em; }
+    .login-react__intro h2 { max-width: 15ch; margin: .8rem 0 1rem; font-size: clamp(2.25rem, 3.6vw, 3.5rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.08; }
+    .login-react__intro > span { display: block; max-width: 34ch; color: #d3e8df; font-size: 1.05rem; line-height: 1.6; }
     .login-react__content { padding-inline: clamp(2rem, 5vw, 5rem); }
     .login-react__mobile-brand { display: none; }
 }

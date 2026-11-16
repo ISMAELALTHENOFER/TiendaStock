@@ -10,12 +10,6 @@ class RootRedirectTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(['frontend.routes.login' => 'blade']);
-    }
-
     public function test_public_root_redirects_to_login(): void
     {
         $response = $this->get('/');
@@ -25,19 +19,20 @@ class RootRedirectTest extends TestCase
 
     public function test_guest_login_has_a_heading_and_named_form_controls(): void
     {
-        $content = $this->get('/login')->assertOk()->getContent();
+        $this->get('/login')->assertOk()->assertSee('id="react-root"', false);
+        $auth = file_get_contents(resource_path('js/react/auth.jsx'));
 
-        $this->assertSame(1, preg_match_all('/<h1\b[^>]*>.*?<\/h1>/is', $content));
-        $this->assertStringContainsString('for="username"', $content);
-        $this->assertStringContainsString('for="password"', $content);
-        $this->assertStringContainsString('action="'.route('login').'"', $content);
+        $this->assertSame(1, substr_count($auth, '<h1 id="login-title">'));
+        $this->assertStringContainsString('htmlFor="username"', $auth);
+        $this->assertStringContainsString('htmlFor="password"', $auth);
+        $this->assertStringContainsString('action={props.routes.login}', $auth);
     }
 
     public function test_login_explains_its_purpose(): void
     {
-        $content = $this->get('/login')->getContent();
+        $auth = file_get_contents(resource_path('js/react/auth.jsx'));
 
-        $this->assertStringContainsString('Ingresa a TiendaStock para gestionar tu negocio.', $content);
+        $this->assertStringContainsString('Ingresa tus datos para continuar a TiendaStock.', $auth);
     }
 
     public function test_logout_redirects_through_root_to_login(): void
@@ -74,7 +69,7 @@ class RootRedirectTest extends TestCase
 
         $this->assertIsString($stylesheet);
         $this->assertStringContainsString('name="viewport"', $content);
-        $this->assertStringContainsString('class="login-form"', $content);
+        $this->assertStringContainsString('class="login-react-host"', $content);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $stylesheet);
         $this->assertStringContainsString(':focus-visible', $stylesheet);
     }

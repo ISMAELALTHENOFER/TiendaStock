@@ -219,25 +219,44 @@
     .data-table tbody tr { transition: background-color 180ms ease; }
     .data-table tbody tr:hover, .data-table tbody tr:focus-within { background: var(--surface-muted); }
     .data-table th, .data-table td { vertical-align: middle; }
-    .data-table td { border-bottom: 1px solid var(--border); }
+    /* Headers, figures and actions never break mid-word; the card scrolls horizontally instead. */
+    .data-table th, .data-table .tabular-nums, .data-table-actions { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+    /* body's `anywhere` lets cells shrink to one character; break-word only splits words that overflow. */
+    .data-table td { border-bottom: 1px solid var(--border); overflow-wrap: break-word; }
     .data-table tbody tr:last-child td { border-bottom: 0; }
-    .data-table-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem; padding-left: 1.25rem !important; }
+    .data-table-actions { display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: .25rem; padding-left: 1.25rem !important; }
     .data-table-action { min-height: 2.75rem; border-radius: .5rem; padding: .5rem .75rem; font-size: .875rem; font-weight: 700; }
     .data-card-field { border-top: 1px solid var(--border); padding-top: .75rem; }
     .data-card-field dt { color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .data-card-field dd { margin-top: .25rem; color: var(--ink); font-weight: 600; }
-    .pagination-controls { display: flex; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid var(--border); padding: 1rem 0; }
-    .pagination-summary { flex: 1 1 100%; color: var(--muted); font-size: .875rem; }
-    .pagination-actions { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; justify-content: center; gap: .375rem; }
-    .pagination-actions > a, .pagination-actions > button { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); padding: .5rem .75rem; color: var(--ink); font-size: .875rem; font-weight: 600; line-height: 1.25; text-decoration: none; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
-    .pagination-actions > a:hover, .pagination-actions > button:hover:not(:disabled) { border-color: var(--primary); background: var(--surface-muted); }
+    /* Mobile: summary + page size on one row, page buttons below. sm+: summary | pages | size, wrapping (never squeezing the summary) when space runs out. */
+    .pagination-controls { display: flex; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; border-top: 1px solid var(--border); padding: .875rem 0 .25rem; }
+    .pagination-summary { order: 1; color: var(--muted); font-size: .8125rem; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pagination-actions { order: 3; flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .25rem; }
+    .pagination-actions > a, .pagination-actions > button { display: inline-flex; min-width: 2.5rem; min-height: 2.5rem; align-items: center; justify-content: center; gap: .25rem; border: 1px solid transparent; border-radius: .5rem; background: transparent; padding: .375rem .625rem; color: var(--ink); font-size: .875rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; text-decoration: none; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+    .pagination-actions > a:hover, .pagination-actions > button:hover:not(:disabled) { background: var(--surface-muted); }
+    .pagination-actions > .pagination-step { border-color: var(--border); background: var(--surface); }
+    .pagination-actions > .pagination-step:hover:not(:disabled) { border-color: var(--primary); }
     .pagination-actions > a:focus-visible, .pagination-actions > button:focus-visible, .pagination-size select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-    .pagination-actions > [aria-current="page"] { border-color: var(--primary); background: var(--primary); color: white; }
-    .pagination-actions > button:disabled { cursor: not-allowed; color: var(--muted); opacity: .55; }
-    .pagination-size { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .5rem; color: var(--muted); font-size: .875rem; white-space: nowrap; }
-    .pagination-size select { min-height: 2.75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); padding: .375rem .625rem; color: var(--ink); font: inherit; }
-    @media (min-width: 40rem) { .pagination-summary { flex: 1 1 12rem; } }
-    @media (max-width: 24rem) { .pagination-actions > a, .pagination-actions > button { min-width: 2.5rem; padding-inline: .5rem; } }
+    .pagination-actions > [aria-current="page"], .pagination-actions > [aria-current="page"]:hover { border-color: var(--primary); background: var(--primary); color: white; }
+    .pagination-actions > button:disabled { cursor: not-allowed; color: var(--muted); opacity: .45; }
+    .pagination-step-text { display: none; }
+    .pagination-gap, .pagination-position { display: inline-flex; min-width: 1.5rem; justify-content: center; color: var(--muted); font-size: .875rem; }
+    .pagination-position { padding-inline: .5rem; font-variant-numeric: tabular-nums; }
+    .pagination-size { order: 2; display: inline-flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .8125rem; white-space: nowrap; }
+    .pagination-size select { min-height: 2.5rem; border: 1px solid var(--border); border-radius: .5rem; background-color: var(--surface); padding: .25rem 2rem .25rem .625rem; color: var(--ink); font-size: .875rem; font-weight: 600; }
+    /* Phones: arrows + "Página X de Y". sm+: numbered pages. Below xl: summary/size row, pages row. xl+: one row. */
+    .pagination-actions > .pagination-num { display: none; }
+    @media (min-width: 40rem) {
+        .pagination-actions { justify-content: flex-end; }
+        .pagination-actions > .pagination-num { display: inline-flex; }
+        .pagination-compact { display: none; }
+        .pagination-step-text { display: inline; }
+    }
+    @media (min-width: 80rem) {
+        .pagination-actions { order: 2; flex-basis: auto; margin-left: auto; }
+        .pagination-size { order: 3; }
+    }
     .login-page { --primary: #006948; --primary-hover: #005b3e; --focus: #006948; background: #f8fafc; }
     .login-frame { max-width: 28rem; }
     .login-footer { line-height: 1.75; overflow-wrap: anywhere; }
@@ -294,6 +313,7 @@
 .dark .focus-visible\:outline-primary:focus-visible { outline-color: var(--focus); }
 .dark .bg-red-50, .dark .bg-red-100 { background-color: #451a1a; }
 .dark .text-red-600, .dark .text-red-700, .dark .text-red-800, .dark .text-red-900 { color: #ffb4b4; }
+.dark .hover\:bg-red-50:hover, .dark .hover\:bg-green-50:hover { background-color: var(--surface-muted); }
 .dark .bg-green-50, .dark .bg-green-100, .dark .bg-primary-50, .dark .bg-primary-100, .dark .bg-brand-50, .dark .bg-brand-100 { background-color: #123d30; }
 .dark .text-green-700, .dark .text-green-800, .dark .text-primary-600, .dark .text-primary-700, .dark .text-primary-800, .dark .text-brand-600, .dark .text-brand-700, .dark .text-brand-800 { color: #a3f3cb; }
 .dark .bg-amber-50, .dark .bg-amber-100 { background-color: #49320b; }
@@ -304,10 +324,6 @@
 .dark .hover\:bg-red-50:hover, .dark .hover\:bg-green-50:hover, .dark .hover\:bg-brand-50:hover, .dark .hover\:bg-brand-100:hover, .dark .hover\:bg-sky-50:hover, .dark .hover\:bg-sky-50\/50:hover, .dark .hover\:bg-sky-100:hover, .dark .hover\:bg-gray-100:hover, .dark .hover\:bg-gray-200:hover, .dark .hover\:bg-gray-300:hover, .dark .hover\:bg-slate-200:hover { background-color: var(--surface-muted); }
 .dark .fixed.inset-0.bg-ink\/60 { background-color: rgb(0 0 0 / .65); }
 .dark .fixed.inset-0.bg-ink\/50 { background-color: rgb(0 0 0 / .65); }
-@media (max-width: 39.99rem) {
-    .theme-toggle { width: 2.75rem; padding: .5rem; font-size: 0; }
-    .theme-toggle::before { content: '◐'; font-size: 1.25rem; }
-}
 
 @media (max-width: 48rem) {
     .page-shell { padding-inline: clamp(1rem, 4vw, 1.5rem); }

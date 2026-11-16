@@ -4,6 +4,7 @@ import { api } from './lib/api.js';
 import { Badge } from './components/ui/Badge.jsx';
 import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
+import { EmptyState } from './components/ui/EmptyState.jsx';
 import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
 import { Input } from './components/ui/Input.jsx';
 import { Select } from './components/ui/Select.jsx';
@@ -14,11 +15,13 @@ import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 import { stockTone } from './lib/stockTone.js';
 import { isValidDateRange } from './lib/dateRange.js';
 import { formatMoney } from './lib/formatMoney.js';
+import { useConfirm } from './lib/useConfirm.jsx';
+import { productMoneyInput } from './lib/productMoneyInput.js';
 
-const maskMoney = (value) => {
-    const digits = String(value).replace(/\D/g, '');
-    return digits ? (Number(digits) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
-};
+const pesos = (value) => value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Natural typing: digits are whole pesos, a comma starts decimals ("20000,5" -> "20.000,5"); invalid input keeps the previous value.
+const typeMoney = (value, previous) => productMoneyInput(value)?.display ?? previous;
+const blurMoney = (value) => value ? pesos(parseMoney(value)) : '';
 const parseMoney = (value) => Number(String(value).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 const formatDate = (value) => value ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
@@ -35,7 +38,9 @@ function CancelForm({ sale, routes, compact = false }) {
     return <>
         <form ref={formRef} action={`${routes.ventas}/${sale.id}/cancel`} method="post">
             <input type="hidden" name="_token" value={csrf()} />
-            <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className={compact ? 'block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50' : 'min-h-11 rounded-control px-4 text-sm font-semibold text-red-700 hover:bg-red-50'}>Cancelar venta #{sale.id}</button>
+            {compact
+                ? <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className="block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 hover:bg-surface-muted">Cancelar venta #{sale.id}</button>
+                : <Button type="button" variant="danger-ghost" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`}>Cancelar venta #{sale.id}</Button>}
         </form>
         <ConfirmDialog
             open={confirmOpen}
@@ -51,7 +56,7 @@ function CancelForm({ sale, routes, compact = false }) {
 
 function SaleActions({ sale, routes }) {
     return <div className="flex items-center justify-start gap-2">
-        <a href={`${routes.ventas}/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-green-50" aria-label={`Ver venta #${sale.id}`}>Ver</a>
+        <a href={`${routes.ventas}/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary hover:bg-surface-muted" aria-label={`Ver venta #${sale.id}`}>Ver</a>
         {sale.estado === 'completada' && <Dropdown portal ariaLabel={`Acciones de venta #${sale.id}`} label="⋮"><CancelForm sale={sale} routes={routes} compact /></Dropdown>}
     </div>;
 }
@@ -85,8 +90,8 @@ export function SalesHistory({ sales, query = {}, routes }) {
     };
     return <div className="space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Historial de Ventas</h1><p className="mt-2 text-sm text-muted">Consulta y gestiona todas las ventas realizadas</p></div>
-            <a href={routes.ventasPos} className="inline-flex min-h-11 items-center justify-center rounded-control bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-700">Nueva Venta</a>
+            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Historial de Ventas</h1><p className="mt-1 text-sm text-muted">Consulta y gestiona todas las ventas realizadas</p></div>
+            <Button href={routes.ventasPos} className="px-5">Nueva Venta</Button>
         </header>
         <Card>
             <form method="get" action={routes.ventas} onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
@@ -95,13 +100,13 @@ export function SalesHistory({ sales, query = {}, routes }) {
                 <label className="text-sm font-medium text-ink" htmlFor="sales-to">Hasta<Input id="sales-to" type="date" name="hasta" value={filters.hasta} onChange={(event) => setFilters({ ...filters, hasta: event.target.value })} className="mt-1" /></label>
                 <label className="text-sm font-medium text-ink" htmlFor="sales-status">Estado<Select id="sales-status" name="estado" value={filters.estado} onChange={(event) => setFilters({ ...filters, estado: event.target.value })} className="mt-1"><option value="">Todos los estados</option><option value="completada">Completadas</option><option value="anulada">Anuladas</option></Select></label>
                 <input type="hidden" name="per_page" value={pageSize} />
-                <Button type="submit">Filtrar</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted">Limpiar</a>
+                <Button type="submit">Filtrar</Button><Button href={routes.ventas} variant="secondary">Limpiar</Button>
             </form>
             {dateError && <p className="mt-3 text-sm text-red-700" role="alert">{dateError}</p>}
         </Card>
         {liveSearch.searching && <p role="status" className="text-sm text-muted">Buscando ventas…</p>}
         {liveSearch.searchError && <p role="alert" className="text-sm text-red-700">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
-        {data.length === 0 ? <Card className="py-12 text-center"><p className="text-lg font-semibold text-ink">No hay ventas registradas.</p><p className="mt-1 text-sm text-muted">Las ventas realizadas aparecerán aquí.</p><a href={routes.ventasPos} className="mt-6 inline-flex min-h-11 items-center rounded-control bg-primary px-5 text-sm font-semibold text-white">Realizar primera venta</a></Card> : <>
+        {data.length === 0 ? <div className="space-y-4 text-center"><EmptyState title="No hay ventas registradas." description="Las ventas realizadas aparecerán aquí." /><Button href={routes.ventasPos} className="px-5">Realizar primera venta</Button></div> : <>
             <div className="hidden overflow-x-auto rounded-card border border-border bg-surface shadow-subtle md:block">
                  <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Artículos', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
                       <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items_count ?? sale.items?.length ?? 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} routes={routes} /></td></tr>)}</tbody>
@@ -135,15 +140,19 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
     const cartBusy = useRef(false);
     const [delivery, setDelivery] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('efectivo');
-    const [paid, setPaid] = useState('');
+    const [cashPaid, setCashPaid] = useState('');
     const [discount, setDiscount] = useState('');
     const [errors, setErrors] = useState(initialErrors);
     const [searching, setSearching] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
     const choiceTileClass = (selected) => `flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-control border px-2 py-2 text-center text-xs font-semibold leading-tight focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${selected ? 'border-primary bg-green-50 text-primary-700' : 'border-border bg-surface-muted text-ink hover:bg-border'}`;
     const subtotal = useMemo(() => Math.round(cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0) * 100) / 100, [cart]);
     const totalCents = Math.max(0, Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100));
     const total = totalCents / 100;
+    const isCash = paymentMethod === 'efectivo';
+    // Card/transfer are charged exactly the total; only cash needs the amount received.
+    const paid = isCash ? cashPaid : pesos(total);
     const paidCents = Math.round(parseMoney(paid) * 100);
     const change = Math.max(0, parseMoney(paid) - total);
     useEffect(() => {
@@ -195,7 +204,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
             if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
             const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
             setCart(remaining);
-            if (!remaining.length) { setCartId(null); setPaid(''); setDiscount(''); }
+            if (!remaining.length) { setCartId(null); setCashPaid(''); setDiscount(''); }
         } catch { setErrors({ form: ['No se pudo actualizar el carrito. Intenta nuevamente.'] }); }
         finally { cartBusy.current = false; setAdding(false); }
     };
@@ -212,10 +221,12 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
             setSubmitting(false);
         }
     };
+    // Rendered twice (mobile sticky bar / desktop summary card), only one is visible at a time.
+    const chargeButton = <Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting || adding} onClick={() => confirm(submit, { title: '¿Confirmar venta?', message: `Se registrará la venta por ${formatMoney(total)}.`, confirmLabel: 'Sí, cobrar' })} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>;
     return <div className="space-y-6">
         <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
-            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Punto de Venta</h1><p className="mt-2 text-sm text-muted">Registra nuevas ventas en el sistema</p></div>
-            <a href={routes.ventas} className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-control border border-border bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:self-auto"><ArrowLeft size={18} aria-hidden="true" />Volver</a>
+            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Punto de Venta</h1><p className="mt-1 text-sm text-muted">Registra nuevas ventas en el sistema</p></div>
+            <Button href={routes.ventas} variant="secondary" className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><ArrowLeft size={18} aria-hidden="true" />Volver</Button>
         </header>
         {Object.values(errors).flat().map((error, index) => <p key={index} role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>)}
         <div className="grid items-start gap-6 xl:grid-cols-12">
@@ -235,7 +246,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
                 <Card className="min-w-0 space-y-4 p-4 sm:p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 text-primary"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
                     {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2" role="region" aria-label="Artículos del carrito" tabIndex={0}>{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
-                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" disabled={adding || submitting} onClick={() => remove(item.producto_id)} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" disabled={adding || submitting} onClick={() => confirm(() => remove(item.producto_id), { title: '¿Quitar producto?', message: `Se quitará «${item.nombre}» del carrito.`, confirmLabel: 'Quitar', tone: 'danger' })} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
                         <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
                             <button type="button" disabled={adding || submitting || item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
                             <Input type="number" min="1" max={item.stock} step="1" disabled={adding || submitting} value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" />
@@ -262,7 +273,7 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
                 {!searching && !searchError && search.trim().length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}
             </section>
             <Card aria-label="Resumen y cobro" className="min-w-0 space-y-4 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-3 xl:p-4 [@media(max-height:47.999rem)]:xl:static">
-                 <div className="space-y-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(maskMoney(event.target.value))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
+                 <div className="space-y-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(typeMoney(event.target.value, discount))} onBlur={() => setDiscount(blurMoney(discount))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
                 <div className="space-y-3">
                     <fieldset>
                         <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend>
@@ -273,14 +284,38 @@ export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) 
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([value, label]) => <label key={value} className={`${choiceTileClass(paymentMethod === value)} last:col-span-2 sm:last:col-span-1`}><input type="radio" name="metodo_pago" value={value} checked={paymentMethod === value} onChange={() => setPaymentMethod(value)} className="sr-only" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
                     </fieldset>
                 </div>
-                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} onChange={(event) => setPaid(maskMoney(event.target.value))} aria-label="Monto recibido en pesos" placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Cambio</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
-                <div className="space-y-2"><Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting || adding} onClick={submit} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => remove()} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
+                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} readOnly={!isCash} onChange={(event) => setCashPaid(typeMoney(event.target.value, cashPaid))} onBlur={() => isCash && setCashPaid(blurMoney(cashPaid))} aria-label="Monto recibido en pesos" aria-describedby={isCash && cart.length > 0 && totalCents > paidCents ? 'pos-paid-hint' : undefined} placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" /></label>{isCash && cart.length > 0 && totalCents > paidCents && <p id="pos-paid-hint" className="text-xs text-red-700">El pago debe cubrir el total.</p>}{isCash && parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Vuelto</span><strong className="tabular-nums text-primary">{formatMoney(change)}</strong></div>}</div>
+                <div className="space-y-2"><div className="hidden lg:block">{chargeButton}</div>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => confirm(() => remove(), { title: '¿Vaciar carrito?', message: 'Se quitarán todos los productos del carrito.', confirmLabel: 'Vaciar', tone: 'danger' })} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
             </Card>
         </div>
+        <div className="sticky bottom-0 z-10 flex items-center gap-4 rounded-card border-t border-border bg-surface p-3 shadow-subtle lg:hidden">
+            <div className="min-w-0 shrink-0"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Total</p><p className="text-xl font-bold tabular-nums text-ink">{formatMoney(total)}</p></div>
+            <div className="min-w-0 flex-1">{chargeButton}</div>
+        </div>
+        {confirmDialog}
     </div>;
 }
 
 export function SaleShow({ sale, routes }) {
     if (!sale) return null;
-    return <div className="mx-auto max-w-2xl space-y-6"><header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print"><div><p className="eyebrow">Recibo</p><h1 className="page-title mt-2">Venta #{sale.id}</h1><p className="mt-2 text-sm text-muted">{formatDate(sale.created_at)}</p></div><div className="flex flex-wrap gap-2"><Button type="button" onClick={() => window.print()}>Imprimir</Button><a href={routes.ventas} className="inline-flex min-h-11 items-center rounded-control border border-border px-4 text-sm font-semibold">Volver</a></div></header><Card id="recibo" className="space-y-6"><div className="border-b border-border pb-4 text-center"><h2 className="text-2xl font-bold">TiendaStock</h2><p className="text-sm text-muted">Recibo de Venta #{sale.id}</p></div>{sale.cliente_nombre && <p className="text-sm"><strong>Cliente:</strong> {sale.cliente_nombre}</p>}<div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Producto</th><th className="py-2 text-right">Precio</th><th className="py-2 text-right">Cant.</th><th className="py-2 text-right">Subtotal</th></tr></thead><tbody>{(sale.items || []).map((item) => <tr key={item.id} className="border-b border-border"><td className="py-3">{item.producto?.nombre}</td><td className="py-3 text-right">{formatMoney(item.precio_unitario)}</td><td className="py-3 text-right">{item.cantidad}</td><td className="py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td></tr>)}</tbody></table></div><div className="space-y-2 border-t border-border pt-4 text-right text-sm"><p>Subtotal: {formatMoney(sale.subtotal)}</p>{Number(sale.descuento) > 0 && <p>Descuento: -{formatMoney(sale.descuento)}</p>}<p>Impuesto: {formatMoney(sale.impuesto)}</p><p className="border-t border-border pt-2 text-xl font-bold">Total: {formatMoney(sale.total)}</p><p>Pagó: {formatMoney(sale.pago_con)}</p><p>Cambio: {formatMoney(sale.cambio)}</p></div><div className="border-t border-border pt-4 text-sm text-muted"><p><strong>Método de pago:</strong> {paymentLabel(sale.metodo_pago)}</p><p><strong>Tipo de entrega:</strong> {detailDeliveryLabel(sale)}</p><p><strong>Procesado por:</strong> {sale.user?.name || '—'}</p><p><strong>Estado:</strong> {statusLabel(sale.estado)}</p></div><div className="text-center">{sale.estado === 'anulada' ? <Badge tone="danger">ANULADA</Badge> : <p className="text-sm text-muted">Gracias por tu compra</p>}</div></Card>{sale.estado === 'completada' && <div className="no-print text-center"><CancelForm sale={sale} routes={routes} /></div>}<style>{'@media print { .no-print { display: none !important; } #recibo { box-shadow: none; border: 0; } }'}</style></div>;
+    return <div className="space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print">
+            <div><p className="eyebrow">Recibo</p><h1 className="page-title mt-2">Venta #{sale.id}</h1><p className="mt-1 text-sm text-muted">{formatDate(sale.created_at)}</p></div>
+            <div className="flex flex-col gap-2 sm:flex-row"><Button type="button" onClick={() => window.print()}>Imprimir</Button><Button href={routes.ventas} variant="secondary">Volver</Button></div>
+        </header>
+        <Card id="recibo" className="space-y-6">
+            <div className="border-b border-border pb-4 text-center"><h2 className="text-2xl font-bold">TiendaStock</h2><p className="text-sm text-muted">Recibo de Venta #{sale.id}</p></div>
+            {sale.cliente_nombre && <p className="text-sm"><strong>Cliente:</strong> {sale.cliente_nombre}</p>}
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="min-w-0 overflow-x-auto lg:col-span-2"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Producto</th><th className="py-2 text-right">Precio</th><th className="py-2 text-right">Cant.</th><th className="py-2 text-right">Subtotal</th></tr></thead><tbody>{(sale.items || []).map((item) => <tr key={item.id} className="border-b border-border"><td className="py-3">{item.producto?.nombre}</td><td className="py-3 text-right">{formatMoney(item.precio_unitario)}</td><td className="py-3 text-right">{item.cantidad}</td><td className="py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td></tr>)}</tbody></table></div>
+                <div className="min-w-0 space-y-6">
+                    <div className="space-y-2 border-t border-border pt-4 text-right text-sm lg:border-t-0 lg:pt-0"><p>Subtotal: {formatMoney(sale.subtotal)}</p>{Number(sale.descuento) > 0 && <p>Descuento: -{formatMoney(sale.descuento)}</p>}<p>Impuesto: {formatMoney(sale.impuesto)}</p><p className="border-t border-border pt-2 text-xl font-bold">Total: {formatMoney(sale.total)}</p><p>Pagó: {formatMoney(sale.pago_con)}</p><p>Cambio: {formatMoney(sale.cambio)}</p></div>
+                    <div className="border-t border-border pt-4 text-sm text-muted"><p><strong>Método de pago:</strong> {paymentLabel(sale.metodo_pago)}</p><p><strong>Tipo de entrega:</strong> {detailDeliveryLabel(sale)}</p><p><strong>Procesado por:</strong> {sale.user?.name || '—'}</p><p><strong>Estado:</strong> {statusLabel(sale.estado)}</p></div>
+                </div>
+            </div>
+            <div className="text-center">{sale.estado === 'anulada' ? <Badge tone="danger">ANULADA</Badge> : <p className="text-sm text-muted">Gracias por tu compra</p>}</div>
+        </Card>
+        {sale.estado === 'completada' && <div className="no-print text-center"><CancelForm sale={sale} routes={routes} /></div>}
+        <style>{'@media print { .no-print { display: none !important; } #recibo { box-shadow: none; border: 0; } }'}</style>
+    </div>;
 }

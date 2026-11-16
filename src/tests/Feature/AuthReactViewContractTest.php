@@ -19,38 +19,24 @@ class AuthReactViewContractTest extends TestCase
         $this->assertStringContainsString("@viteReactRefresh\n@vite('resources/js/react/main.jsx')", $host);
     }
 
-    public function test_login_uses_react_by_default_and_keeps_blade_fallback(): void
+    public function test_login_renders_the_react_host(): void
     {
         $response = $this->get('/login')->assertOk()->assertSee('id="react-root"', false)->assertSee('data-theme-system', false);
         $this->assertSame(1, substr_count($response->getContent(), 'data-theme-toggle aria-pressed'));
         $response->assertSee('data-login-theme-toggle', false)->assertSee('login-react__theme-moon')->assertSee('login-react__theme-sun');
-
-        config(['frontend.routes.login' => 'blade']);
-        $fallback = $this->get('/login')->assertOk()->assertDontSee('id="react-root"')->assertSee('class="login-brand"', false)->assertSee('data-theme-system', false);
-        $this->assertSame(1, substr_count($fallback->getContent(), 'data-theme-toggle aria-pressed'));
-        $fallback->assertDontSee('data-login-theme-toggle aria-label=', false);
-
-        config(['frontend.routes.login' => 'react', 'frontend.driver' => 'blade']);
-        $this->get('/login')->assertOk()->assertDontSee('id="react-root"');
+        $response->assertDontSee('class="login-brand"', false);
     }
 
-    public function test_profile_uses_react_and_keeps_route_and_global_blade_fallbacks(): void
+    public function test_profile_renders_the_react_host(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user)->get('/profile')->assertOk()->assertSee('id="react-root"', false);
-
-        config(['frontend.routes.profile.edit' => 'blade']);
-        $this->assertSame('blade', config('frontend.routes.profile.edit'));
-        $this->actingAs($user)->get('/profile')->assertOk()->assertDontSee('id="react-root"')->assertSee('Información del perfil');
-
-        config(['frontend.routes.profile.edit' => 'react', 'frontend.driver' => 'blade']);
-        $this->actingAs($user)->get('/profile')->assertOk()->assertDontSee('id="react-root"');
     }
 
     public function test_react_auth_forms_keep_existing_server_endpoints_and_validation(): void
     {
         $auth = file_get_contents(resource_path('js/react/auth.jsx'));
-        $this->assertStringContainsString('Gestioná tu negocio de forma simple', $auth);
+        $this->assertStringContainsString('Gestiona tu negocio de forma simple', $auth);
         foreach (['props.routes.login', 'props.routes.profile', 'props.routes.passwordUpdate', 'name="_method"', 'current_password', 'password_confirmation', 'csrf-token', 'aria-describedby', 'aria-pressed'] as $contract) {
             $this->assertStringContainsString($contract, $auth);
         }
@@ -73,7 +59,7 @@ class AuthReactViewContractTest extends TestCase
         $this->assertStringContainsString("aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}", $auth);
     }
 
-    public function test_confirm_password_uses_react_and_keeps_route_specific_blade_fallback(): void
+    public function test_confirm_password_renders_the_react_host(): void
     {
         $user = User::factory()->create();
         $response = $this->actingAs($user)->get('/confirm-password');
@@ -81,24 +67,15 @@ class AuthReactViewContractTest extends TestCase
         $props = $this->reactProps($response->getContent());
         $this->assertSame(route('password.confirm'), $props['routes']['passwordConfirm']);
 
-        config(['frontend.routes.password.confirm' => 'blade']);
-        $this->assertSame('blade', config('frontend.routes.password.confirm'));
-        $this->actingAs($user)->get('/confirm-password')
-            ->assertOk()->assertDontSee('id="react-root"')->assertSee('confirm-password');
-
         $auth = file_get_contents(resource_path('js/react/auth.jsx'));
         $this->assertStringContainsString('props.routes.passwordConfirm', $auth);
         $this->assertStringContainsString('autoComplete="current-password"', $auth);
     }
 
-    public function test_auth_route_driver_environment_keys_are_retained_with_nested_config(): void
+    public function test_frontend_driver_switch_is_removed(): void
     {
-        $config = file_get_contents(config_path('frontend.php'));
-
-        $this->assertStringContainsString("'profile' => [", $config);
-        $this->assertStringContainsString("'password' => [", $config);
-        $this->assertStringContainsString("env('FRONTEND_PROFILE_EDIT_DRIVER', 'react')", $config);
-        $this->assertStringContainsString("env('FRONTEND_PASSWORD_CONFIRM_DRIVER', 'react')", $config);
+        $this->assertFileDoesNotExist(config_path('frontend.php'));
+        $this->assertNull(config('frontend.driver'));
     }
 
     public function test_auth_react_hosts_receive_laravel_generated_action_urls_and_root_still_redirects_to_login(): void
@@ -111,7 +88,7 @@ class AuthReactViewContractTest extends TestCase
         $this->assertSame(route('profile.update'), $profileProps['routes']['profile']);
         $this->assertSame(route('password.update'), $profileProps['routes']['passwordUpdate']);
 
-        $hosts = file_get_contents(resource_path('views/layouts/app.blade.php')) . file_get_contents(resource_path('views/auth/login.blade.php')) . file_get_contents(resource_path('views/auth/confirm-password.blade.php'));
+        $hosts = file_get_contents(resource_path('views/layouts/app.blade.php')) . file_get_contents(resource_path('views/layouts/guest.blade.php'));
         foreach (["'login' => route('login')", "'profile' => route('profile.update')", "'passwordUpdate' => route('password.update')", "'passwordConfirm' => route('password.confirm')"] as $contract) {
             $this->assertStringContainsString($contract, $hosts);
         }

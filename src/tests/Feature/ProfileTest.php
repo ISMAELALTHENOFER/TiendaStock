@@ -13,46 +13,17 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
-        config(['frontend.driver' => 'blade']);
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->get('/profile');
+        $response = $this->actingAs($user)->get('/profile');
 
-        $response->assertOk()
-            ->assertSee('images/tiendastock-mark.svg')
-            ->assertSee('aria-current="page"', false)
-            ->assertSee('bg-primary-container', false)
-            ->assertSee('Mi perfil')
-            ->assertSee('Administre sus credenciales corporativas, preferencias de seguridad y parámetros de identidad dentro del sistema de inventario TiendaStock.')
-            ->assertSee('aria-label="Breadcrumb"', false)
-            ->assertSee('Configuración personal')
-            ->assertSee('w-full space-y-6', false)
-            ->assertSee('p-4 sm:p-6 lg:p-8', false)
-            ->assertSee('text-xl font-bold text-ink', false)
-            ->assertSee('bg-surface-muted', false)
-            ->assertSee('login-input-icon', false)
-            ->assertSee('login-password-toggle', false)
-            ->assertSee('Mostrar contraseña', false)
-            ->assertSee('Ocultar contraseña', false)
-            ->assertSee('aria-pressed', false)
-            ->assertDontSee('Zona de peligro')
-            ->assertSee('Información del perfil')
-            ->assertSee('Nombre de usuario')
-            ->assertSee('Cambiar contraseña')
-            ->assertDontSee('Eliminar cuenta')
-            ->assertSee('Cerrar navegación');
-
-        $this->assertGreaterThanOrEqual(3, substr_count($response->getContent(), 'class="login-input-icon"'));
-        $this->assertGreaterThanOrEqual(1, substr_count($response->getContent(), 'class="login-password-toggle"'));
-        $this->assertGreaterThanOrEqual(5, substr_count($response->getContent(), 'required="required"'));
-        foreach (['current_password', 'password', 'password_confirmation'] as $field) {
-            $this->assertMatchesRegularExpression(
-                '/<input\b(?=[^>]*\bid="update_password_' . $field . '")(?=[^>]*\s+type="password")[^>]*>/',
-                $response->getContent()
-            );
-        }
+        $response->assertOk()->assertSee('id="react-root"', false);
+        preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+        $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame('profile.edit', $props['page']);
+        $this->assertSame($user->only(['name', 'username', 'email']), $props['userProfile']);
+        $this->assertSame(route('profile.update'), $props['routes']['profile']);
+        $this->assertSame(route('password.update'), $props['routes']['passwordUpdate']);
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -76,21 +47,6 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('testuser', $user->username);
         $this->assertSame('test@example.com', $user->email);
-    }
-
-    public function test_profile_forms_fill_the_available_content_width_without_changing_actions(): void
-    {
-        config(['frontend.driver' => 'blade']);
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($user)->get('/profile');
-
-        $response->assertOk()
-            ->assertSee('class="w-full space-y-6"', false)
-            ->assertDontSee('class="w-full lg:w-2/3 space-y-6"', false)
-            ->assertDontSee('class="max-w-xl"', false)
-            ->assertSee('action="'.route('profile.update').'"', false)
-            ->assertSee('action="'.route('password.update').'"', false);
     }
 
     public function test_user_cannot_delete_their_account_or_lose_their_sales(): void

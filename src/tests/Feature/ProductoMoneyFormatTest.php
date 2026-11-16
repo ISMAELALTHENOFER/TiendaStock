@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Categoria;
-use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -11,77 +9,6 @@ use Tests\TestCase;
 class ProductoMoneyFormatTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(['frontend.routes.productos.show' => 'blade']);
-    }
-
-    public function test_show_renders_precio_compra_with_argentine_format(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        $producto = Producto::factory()->create([
-            'categoria_id' => $categoria->id,
-            'precio_compra' => 1234.56,
-            'precio_venta' => 2000.00,
-        ]);
-
-        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
-
-        $response->assertOk();
-        // formato_pesos(1234.56) === "$1.234,56"; the broken number_format used "$1,234.56".
-        $response->assertSee('$1.234,56');
-        $response->assertDontSee('$1,234.56');
-        $response->assertDontSee('$1234.56');
-    }
-
-    public function test_show_renders_precio_venta_with_argentine_format(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        $producto = Producto::factory()->create([
-            'categoria_id' => $categoria->id,
-            'precio_compra' => 1000.00,
-            'precio_venta' => 5678.90,
-        ]);
-
-        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
-
-        $response->assertOk();
-        $response->assertSee('$5.678,90');
-    }
-
-    public function test_show_renders_ganancia_with_argentine_format(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        $producto = Producto::factory()->create([
-            'categoria_id' => $categoria->id,
-            'precio_compra' => 1000.00,
-            'precio_venta' => 1500.50,
-        ]);
-
-        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
-
-        $response->assertOk();
-        // ganancia = 1500.50 - 1000.00 = 500.50 → "$500,50"
-        $response->assertSee('$500,50');
-    }
-
-    public function test_show_uses_costo_label_for_precio_compra(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        $producto = Producto::factory()->create(['categoria_id' => $categoria->id]);
-
-        $response = $this->actingAs($admin)->get(route('productos.show', $producto));
-
-        $response->assertOk();
-        $response->assertSee('Costo');
-        $response->assertDontSee('Precio de Compra');
-    }
 
     /**
      * On the create form the cost/price inputs MUST initialize with 0 (not a

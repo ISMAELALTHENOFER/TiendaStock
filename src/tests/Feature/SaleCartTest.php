@@ -27,7 +27,8 @@ class SaleCartTest extends TestCase
             'metodo_pago' => 'efectivo', 'tipo_entrega' => 'local',
         ];
 
-        $this->postJson('/ventas', $payload)->assertSuccessful();
+        $venta = $this->postJson('/ventas', $payload)->assertSuccessful();
+        $venta->assertSessionHas('success', 'Venta #'.\App\Models\Venta::latest('id')->value('id').' registrada correctamente.');
         $this->assertDatabaseHas('ventas', ['user_id' => $user->id, 'subtotal' => 50, 'total' => 50, 'cambio' => 0]);
         $this->assertDatabaseHas('venta_items', ['producto_id' => $product->id, 'precio_unitario' => 25, 'subtotal' => 50]);
         $this->postJson('/ventas', $payload)->assertUnprocessable();

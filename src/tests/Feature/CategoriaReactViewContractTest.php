@@ -9,13 +9,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Coexistence contract for the migrated Categorías slice (react driver).
+ * React view contract for the Categorías slice.
  *
- * categorias.index is React-owned by default but MUST roll back to the legacy
- * Blade grid via the per-route override or the global FRONTEND_DRIVER=blade
- * switch (SH-R1). The React grid preserves the CRUD actions and replaces the
- * legacy native confirm() with the shared ConfirmDialog; the deletion rule
- * stays enforced server-side (SH-R3).
+ * Categoría pages render only through the React host. The React grid
+ * preserves the CRUD actions and uses the shared ConfirmDialog; the deletion
+ * rule stays enforced server-side (SH-R3).
  */
 class CategoriaReactViewContractTest extends TestCase
 {
@@ -29,7 +27,7 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString("@include('react.app'", $source);
     }
 
-    public function test_categoria_detail_uses_react_by_default_and_keeps_pagination_search_and_blade_fallback(): void
+    public function test_categoria_detail_renders_react_with_pagination_and_search(): void
     {
         $admin = User::factory()->admin()->create();
         $categoria = Categoria::factory()->create(['nombre' => 'Temporada', 'descripcion' => 'Colección de temporada']);
@@ -56,10 +54,6 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString('action={routes.categoriaDetail}', $source);
         $this->assertStringContainsString("name=\"buscar\"", $source);
         $this->assertStringContainsString('canViewProductCost &&', $source);
-
-        config(['frontend.routes.categorias.show' => 'blade']);
-        $this->actingAs($admin)->get(route('categorias.show', $categoria))
-            ->assertOk()->assertDontSee('id="react-root"', false)->assertSee('Productos en esta Categoría');
     }
 
     public function test_categoria_create_and_edit_routes_reuse_the_react_grid_modal_when_enabled(): void
@@ -79,63 +73,6 @@ class CategoriaReactViewContractTest extends TestCase
             $this->assertSame($page, $props['page'] ?? null);
             $this->assertNotEmpty($props['categorias']['data'] ?? []);
         }
-    }
-
-    public function test_categoria_create_and_edit_routes_keep_their_blade_fallbacks(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        config(['frontend.routes.categorias.create' => 'blade', 'frontend.routes.categorias.edit' => 'blade']);
-
-        $this->actingAs($admin)->get('/categorias/create')
-            ->assertOk()->assertDontSee('id="react-root"')->assertSee('Información de la Categoría');
-        $this->actingAs($admin)->get("/categorias/{$categoria->id}/edit")
-            ->assertOk()->assertDontSee('id="react-root"')->assertSee('Modificar Categoría');
-    }
-
-    public function test_global_blade_driver_keeps_create_and_edit_fallbacks_operational(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        config(['frontend.driver' => 'blade']);
-
-        $this->actingAs($admin)->get('/categorias/create')
-            ->assertOk()->assertDontSee('id="react-root"')->assertSee('Información de la Categoría');
-        $this->actingAs($admin)->get("/categorias/{$categoria->id}/edit")
-            ->assertOk()->assertDontSee('id="react-root"')->assertSee('Modificar Categoría');
-    }
-
-    public function test_categoria_index_can_roll_back_to_the_legacy_blade_grid(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.routes.categorias.index' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/categorias');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Categorías de Productos');
-    }
-
-    public function test_global_blade_driver_restores_the_categoria_grid(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.driver' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/categorias');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Categorías de Productos');
-    }
-
-    public function test_blade_categoria_grid_uses_styled_confirmation_for_delete(): void
-    {
-        $source = file_get_contents(base_path('resources/views/categorias/index.blade.php'));
-        $layout = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
-
-        $this->assertStringContainsString('<x-confirm-dialog />', $layout);
-        $this->assertStringContainsString('confirmDialogShow(', $source);
-        $this->assertStringNotContainsString('confirm(', $source, 'The Blade category delete must not use native confirm().');
-        $this->assertStringContainsString("route('categorias.destroy', \$categoria)", $source);
-        $this->assertStringContainsString('@method(\'DELETE\')', $source);
-        $this->assertStringContainsString('Eliminar', $source);
     }
 
     public function test_react_categoria_grid_keeps_crud_actions_and_replaces_native_confirm(): void
@@ -228,18 +165,14 @@ class CategoriaReactViewContractTest extends TestCase
         $this->assertStringContainsString('name="descripcion"', $source);
     }
 
-    public function test_category_direct_routes_open_the_corresponding_modal_and_show_uses_system_controls(): void
+    public function test_category_direct_routes_open_the_corresponding_modal(): void
     {
         $app = file_get_contents(base_path('resources/js/react/app.jsx'));
         $grid = file_get_contents(base_path('resources/js/react/categorias.jsx'));
-        $show = file_get_contents(base_path('resources/views/categorias/show.blade.php'));
 
         $this->assertStringContainsString("'categorias.create'", $app);
         $this->assertStringContainsString("'categorias.edit'", $app);
         $this->assertStringContainsString('initialModal', $grid);
-        $this->assertStringContainsString('bg-surface', $show);
-        $this->assertStringContainsString('border-border', $show);
-        $this->assertStringContainsString("route('productos.show', \$producto)", $show);
     }
 
     public function test_react_flash_toast_preserves_priority_and_type(): void
@@ -278,12 +211,14 @@ class CategoriaReactViewContractTest extends TestCase
             'descripcion' => 'Complementos',
         ], ['Accept' => 'application/json']);
         $created->assertOk()->assertJsonPath('saved', true)->assertJsonPath('redirect', route('categorias.index'));
+        $created->assertSessionHas('success', 'Categoría creada correctamente.');
         $categoria = Categoria::where('nombre', 'Accesorios')->firstOrFail();
 
         $this->put(route('categorias.update', $categoria), [
             'nombre' => 'Accesorios nuevos',
             'descripcion' => 'Descripción actualizada',
-        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true);
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('saved', true)
+            ->assertSessionHas('success', 'Categoría actualizada correctamente.');
         $this->assertDatabaseHas('categorias', [
             'id' => $categoria->id,
             'nombre' => 'Accesorios nuevos',

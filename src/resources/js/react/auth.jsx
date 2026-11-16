@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from './components/ui/Button.jsx';
 import { Card } from './components/ui/Card.jsx';
 import { Input } from './components/ui/Input.jsx';
-import { ArrowRight, BarChart3, Boxes, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
+import { useConfirm } from './lib/useConfirm.jsx';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
 
 function Field({ id, label, name = id, type = 'text', value, error, autoComplete, required = true }) {
     const [visible, setVisible] = useState(false);
@@ -29,17 +30,10 @@ export function Login({ props }) {
     const [submitting, setSubmitting] = useState(false);
 
     return <main className="login-react">
-        <aside className="login-react__visual" aria-label="Vista ilustrativa de TiendaStock">
+        <aside className="login-react__visual" aria-label="TiendaStock">
             <div className="login-react__visual-inner">
                 <div className="login-react__brand"><img src="/images/tiendastock-mark.svg" alt="" /><span>TiendaStock</span></div>
-                <div className="login-react__intro"><p>TODO EN UN SOLO LUGAR</p><h2>Gestioná tu negocio de forma simple</h2><span>Organiza tu inventario y mantén tus ventas a la vista.</span></div>
-                <div className="login-preview">
-                    <div className="login-preview__header"><div><span>VISTA DE EJEMPLO</span><h3>Resumen del negocio</h3></div><BarChart3 size={22} aria-hidden="true" /></div>
-                    <div className="login-preview__stats"><div><span>Ventas del día</span><strong>$ 124.500</strong><small>Ejemplo ilustrativo</small></div><div><span>Productos</span><strong>248</strong><small>Ejemplo ilustrativo</small></div></div>
-                    <svg className="login-preview__chart" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 50H400M0 25H400" fill="none" stroke="#4c7c6c" strokeWidth="1" /><path d="M0 56 L45 47 L90 50 L135 33 L180 38 L225 23 L270 29 L315 13 L360 19 L400 5" fill="none" stroke="#a3f3cb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /></svg>
-                    <div className="login-preview__inventory"><div><Boxes size={19} aria-hidden="true" /><strong>Inventario</strong><span>Ejemplo</span></div><p>Camisa clásica <b>32 unidades</b></p><p>Remera básica <b>18 unidades</b></p><p>Pantalón recto <b>12 unidades</b></p></div>
-                </div>
-                <p className="login-react__visual-note">Una vista más simple de tu negocio.</p>
+                <div className="login-react__intro"><p>TODO EN UN SOLO LUGAR</p><h2>Gestiona tu negocio de forma simple</h2><span>Organiza tu inventario y mantén tus ventas a la vista.</span></div>
             </div>
         </aside>
         <section className="login-react__content" aria-labelledby="login-title">
@@ -65,9 +59,13 @@ export function Login({ props }) {
 export function ConfirmPassword({ props }) {
     const error = props.errors?.password?.[0];
 
-    return <main className="space-y-5">
-        <h1 className="text-xl font-bold text-ink">Confirma tu contraseña</h1>
-        <p className="text-sm text-muted">Esta es una sección segura. Confirma tu contraseña para continuar.</p>
+    // The guest host centers a shrink-to-fit root, so the card sets its own fluid width.
+    return <main className="w-[min(28rem,calc(100vw-1.5rem))] space-y-5 rounded-card border border-border bg-surface p-5 shadow-subtle sm:p-8">
+        <div>
+            <p className="eyebrow">Cuenta</p>
+            <h1 className="mt-2 text-xl font-bold text-ink">Confirma tu contraseña</h1>
+            <p className="mt-1 text-sm text-muted">Esta es una sección segura. Confirma tu contraseña para continuar.</p>
+        </div>
         <form method="post" action={props.routes.passwordConfirm} className="space-y-5">
             <input type="hidden" name="_token" value={csrfToken()} />
             <Field id="confirm-password" name="password" label="Contraseña" type="password" autoComplete="current-password" error={error} />
@@ -80,6 +78,13 @@ export function Profile({ props }) {
     const profileErrors = props.errors || {};
     const passwordErrors = props.passwordErrors || {};
     const token = csrfToken();
+    const [confirm, confirmDialog] = useConfirm();
+    // Native submit() skips onSubmit, so the confirmed post goes straight to the server.
+    const confirmSubmit = (copy) => (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        confirm(() => form.submit(), copy);
+    };
     const profileFields = [
         ['name', 'Nombre', 'name'],
         ['username', 'Nombre de usuario', 'username'],
@@ -92,21 +97,21 @@ export function Profile({ props }) {
     ];
 
     return <div className="py-4 sm:py-8">
-        <header className="mb-8 border-b border-border pb-4">
-            <nav aria-label="Breadcrumb" className="mb-2 text-xs text-muted"><ol className="flex gap-2"><li>Cuenta</li><li aria-hidden="true">&gt;</li><li aria-current="page" className="font-semibold text-primary">Configuración personal</li></ol></nav>
-            <h1 className="page-title">Mi perfil</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted">Administra tu cuenta y actualiza tus datos personales y contraseña.</p>
+        <header className="mb-7 min-w-0">
+            <p className="eyebrow">Cuenta</p>
+            <h1 className="page-title mt-2">Mi perfil</h1>
+            <p className="mt-1 text-sm text-muted">Administra tu cuenta y actualiza tus datos personales y contraseña.</p>
         </header>
         <div className="w-full space-y-6">
             <Card className="p-4 sm:p-6 lg:p-8">
                 <section>
                     <h2 className="text-xl font-bold text-ink">Información del perfil</h2>
                     <p className="mt-1 text-sm text-muted">Actualiza tus datos personales y correo electrónico.</p>
-                    <form method="post" action={props.routes.profile} className="mt-6 space-y-5">
+                    <form method="post" action={props.routes.profile} onSubmit={confirmSubmit()} className="mt-6 space-y-5">
                         <input type="hidden" name="_token" value={token} />
                         <input type="hidden" name="_method" value="patch" />
-                        {profileFields.map(([key, label, autoComplete]) => <Field key={key} id={key} label={label} name={key} type={key === 'email' ? 'email' : 'text'} value={profileErrors[key] ? props.old?.[key] : props.userProfile?.[key]} error={profileErrors[key]?.[0]} autoComplete={autoComplete} />)}
-                        <div className="flex flex-wrap items-center gap-4"><Button type="submit">Guardar</Button>{props.status === 'profile-updated' && <span role="status" className="text-sm text-muted">Guardado.</span>}</div>
+                        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{profileFields.map(([key, label, autoComplete]) => <Field key={key} id={key} label={label} name={key} type={key === 'email' ? 'email' : 'text'} value={profileErrors[key] ? props.old?.[key] : props.userProfile?.[key]} error={profileErrors[key]?.[0]} autoComplete={autoComplete} />)}</div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><Button type="submit" className="w-full sm:w-auto">Guardar</Button>{props.status === 'profile-updated' && <span role="status" className="text-sm text-muted">Guardado.</span>}</div>
                     </form>
                 </section>
             </Card>
@@ -114,14 +119,15 @@ export function Profile({ props }) {
                 <section>
                     <h2 className="text-xl font-bold text-ink">Cambiar contraseña</h2>
                     <p className="mt-1 text-sm text-muted">Usa una contraseña larga y difícil de adivinar para proteger tu cuenta.</p>
-                    <form method="post" action={props.routes.passwordUpdate} className="mt-6 space-y-5">
+                    <form method="post" action={props.routes.passwordUpdate} onSubmit={confirmSubmit({ title: '¿Actualizar contraseña?', message: 'Tu contraseña será reemplazada por la nueva.', confirmLabel: 'Actualizar' })} className="mt-6 space-y-5">
                         <input type="hidden" name="_token" value={token} />
                         <input type="hidden" name="_method" value="put" />
-                        {passwordFields.map(([key, label, autoComplete]) => <Field key={key} id={`update_password_${key}`} label={label} name={key} type="password" autoComplete={autoComplete} error={passwordErrors[key]?.[0]} />)}
-                        <Button type="submit">Actualizar contraseña</Button>
+                        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{passwordFields.map(([key, label, autoComplete]) => <Field key={key} id={`update_password_${key}`} label={label} name={key} type="password" autoComplete={autoComplete} error={passwordErrors[key]?.[0]} />)}</div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><Button type="submit" className="w-full sm:w-auto">Actualizar contraseña</Button>{props.status === 'password-updated' && <span role="status" className="text-sm text-muted">Contraseña actualizada.</span>}</div>
                     </form>
                 </section>
             </Card>
         </div>
+        {confirmDialog}
     </div>;
 }

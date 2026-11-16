@@ -91,7 +91,7 @@ For testing compiled assets with `npm run build`, stop Vite and remove
 - **Desactivar vs. eliminar**: `destroy` setea `activo = false`; el registro NO se borra (preserva el histórico de ventas). Los productos inactivos no aparecen en POS (`productos.data` ni `productos.search`) por defecto. En el índice, el toggle *Ver inactivos* los incluye para gestión.
 - **Reactivar**: ejecutar `UPDATE productos SET activo = 1 WHERE activo = 0` (o editar el producto — al guardar sin imagen nueva se conserva el path existente).
 - **Imágenes**: se guardan en el disco `public` bajo `productos/` con un nombre generado (nunca el nombre del cliente). `max:2048` KB; mime `jpg,jpeg,png,webp`.
-- **Dinero**: el input visible muestra `$1.234,56` (Alpine mask); un input hidden envía el float numérico al backend. La validación `numeric` del Form Request rechaza cualquier string formateado adulterado (defense-in-depth → 422).
+- **Dinero**: el input visible muestra `$1.234,56` (máscara React); un input hidden envía el float numérico al backend. La validación `numeric` del Form Request rechaza cualquier string formateado adulterado (defense-in-depth → 422).
 
 ### Rollback (revert `productos-ux-fixes`)
 

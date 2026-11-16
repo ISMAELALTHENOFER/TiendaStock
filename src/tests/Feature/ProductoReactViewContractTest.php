@@ -9,11 +9,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Coexistence contract for the migrated Productos slice (react driver).
+ * React view contract for the Productos slice.
  *
- * The product routes (index/create/edit) are React-owned by default but MUST
- * roll back to the legacy Blade surface via the per-route override or the
- * global FRONTEND_DRIVER=blade switch (SH-R1). Pure client-side behavior
+ * The product routes (index/create/edit/show) render only through the React
+ * host. Pure client-side behavior
  * (search, pagination, money mask, duplicate check) is guarded as a source
  * contract on productos.jsx, mirroring the VentaReactViewContractTest pattern.
  */
@@ -21,61 +20,26 @@ class ProductoReactViewContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_product_routes_render_the_react_host_when_enabled(): void
-    {
-        $source = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
-
-        $this->assertStringContainsString("'productos.index'", $source);
-        $this->assertStringContainsString("'productos.create'", $source);
-        $this->assertStringContainsString("'productos.edit'", $source);
-        $this->assertStringContainsString("@include('react.app'", $source);
-    }
-
-    public function test_product_index_can_roll_back_to_the_legacy_blade_surface(): void
+    public function test_product_routes_render_the_react_host(): void
     {
         $admin = User::factory()->admin()->create();
-        config(['frontend.routes.productos.index' => 'blade']);
+        $producto = Producto::factory()->create(['categoria_id' => Categoria::factory()->create()->id]);
 
-        $response = $this->actingAs($admin)->get('/productos');
+        foreach ([
+            ['/productos', 'productos.index'],
+            ['/productos/create', 'productos.create'],
+            [route('productos.edit', $producto), 'productos.edit'],
+        ] as [$url, $page]) {
+            $response = $this->actingAs($admin)->get($url)->assertOk()->assertSee('id="react-root"', false);
+            preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);
+            $props = json_decode(html_entity_decode($matches[1] ?? '', ENT_QUOTES | ENT_HTML5), true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame($page, $props['page']);
+        }
 
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Inventario de Productos');
+        $this->assertSame($producto->id, $props['producto']['id']);
     }
 
-    public function test_global_blade_driver_restores_the_product_surface(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.driver' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/productos');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Inventario de Productos');
-    }
-
-    public function test_product_create_can_roll_back_to_the_legacy_blade_form(): void
-    {
-        $admin = User::factory()->admin()->create();
-        config(['frontend.routes.productos.create' => 'blade']);
-
-        $response = $this->actingAs($admin)->get('/productos/create');
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Nuevo Producto');
-        $response->assertSee('Información del Producto');
-    }
-
-    public function test_product_edit_can_roll_back_to_the_legacy_blade_form(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $categoria = Categoria::factory()->create();
-        $producto = Producto::factory()->create(['categoria_id' => $categoria->id]);
-
-        config(['frontend.routes.productos.edit' => 'blade']);
-
-        $response = $this->actingAs($admin)->get(route('productos.edit', $producto));
-
-        $response->assertOk()->assertDontSee('id="react-root"')->assertSee('Editar Producto');
-    }
-
-    public function test_product_detail_uses_react_by_default_and_keeps_blade_fallback_and_admin_cost_visibility(): void
+    public function test_product_detail_renders_react_with_admin_cost_visibility(): void
     {
         $admin = User::factory()->admin()->create();
         $staff = User::factory()->create(['role' => 'Control Stock']);
@@ -93,9 +57,6 @@ class ProductoReactViewContractTest extends TestCase
         $this->actingAs($staff)->get(route('productos.show', $producto))
             ->assertOk()->assertSee('id="react-root"', false)
             ->assertDontSee('"precio_compra"', false);
-        config(['frontend.routes.productos.show' => 'blade']);
-        $this->actingAs($admin)->get(route('productos.show', $producto))
-            ->assertOk()->assertDontSee('id="react-root"', false)->assertSee('Detalles del producto');
     }
 
     public function test_react_product_index_preserves_catalog_search_and_filters(): void
@@ -125,15 +86,6 @@ class ProductoReactViewContractTest extends TestCase
 
         $this->assertStringContainsString("from './components/ui/Pagination.jsx'", $source);
         $this->assertStringContainsString('<Pagination', $source);
-    }
-
-    public function test_product_blade_fallback_keeps_search_and_all_supported_page_sizes(): void
-    {
-        $source = file_get_contents(base_path('resources/views/productos/index.blade.php'));
-
-        foreach (['x-model="busqueda"', 'value="15"', 'value="30"', 'value="50"', 'per_page', 'paginaSiguiente()'] as $contract) {
-            $this->assertStringContainsString($contract, $source);
-        }
     }
 
     public function test_react_product_mobile_cards_keep_complete_information(): void
