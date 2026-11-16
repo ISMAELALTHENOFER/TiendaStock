@@ -144,7 +144,7 @@ class VentaController extends Controller
             foreach ($quantities as $id => $quantity) {
                 $product = $products->get($id);
                 $product->cantidad -= $quantity;
-                $product->save();
+                $product->syncActivoWithStock()->save();
             }
             DB::table('sale_carts')->where('id', $cart->id)->update(['consumed_at' => now(), 'updated_at' => now()]);
 
@@ -176,10 +176,7 @@ class VentaController extends Controller
         abort_unless($user->isAdmin() || ($user->isVentas() && $venta->user_id === $user->id), 403);
 
         $venta->load('user', 'items.producto');
-        if (! $user->isAdmin()) {
-            // The sale is serialized into data-props; purchase cost is ADMIN-only.
-            $venta->items->each(fn ($item) => $item->producto?->makeHidden(['precio_compra', 'ganancia']));
-        }
+        $venta->items->each(fn ($item) => $item->producto?->revealCostTo($user));
 
         return view('layouts.app', compact('venta'));
     }
@@ -205,8 +202,7 @@ class VentaController extends Controller
             foreach ($items as $productId => $productItems) {
                 $product = Producto::whereKey($productId)->lockForUpdate()->firstOrFail();
                 $product->cantidad += $productItems->sum('cantidad');
-                $product->activo = true;
-                $product->save();
+                $product->syncActivoWithStock()->save();
             }
 
             $venta->update(['estado' => 'anulada']);

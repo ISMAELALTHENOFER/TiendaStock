@@ -538,7 +538,7 @@ class VentaPosTest extends TestCase
             'user_id' => $this->userVentas->id,
         ]);
         $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
-        $this->producto->update(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0, 'activo' => false]);
 
         $response = $this->actingAs($this->userVentas)->post("/ventas/{$venta->id}/cancel");
 
@@ -554,7 +554,7 @@ class VentaPosTest extends TestCase
     {
         $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
         $other = Producto::factory()->create(['cantidad' => 0]);
-        $this->producto->update(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0, 'activo' => false]);
         $first = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $other->id, 'cantidad' => 2]);
         $second = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
         VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 1]);
@@ -576,7 +576,7 @@ class VentaPosTest extends TestCase
     {
         $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'completada']);
         $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
-        $this->producto->update(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0, 'activo' => false]);
 
         $this->actingAs(User::factory()->ventas()->create())->post("/ventas/{$venta->id}/cancel")->assertForbidden();
         $this->assertDatabaseHas('ventas', ['id' => $venta->id, 'estado' => 'completada']);
@@ -588,7 +588,7 @@ class VentaPosTest extends TestCase
     {
         $venta = Venta::factory()->create(['user_id' => $this->userVentas->id, 'estado' => 'pendiente']);
         $item = VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $this->producto->id, 'cantidad' => 3]);
-        $this->producto->update(['cantidad' => 0]);
+        $this->producto->update(['cantidad' => 0, 'activo' => false]);
 
         $this->actingAs($this->userVentas)->from('/ventas')->post("/ventas/{$venta->id}/cancel")
             ->assertRedirect('/ventas')->assertSessionHas('error');

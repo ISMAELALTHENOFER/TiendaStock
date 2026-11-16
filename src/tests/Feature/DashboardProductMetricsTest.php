@@ -18,9 +18,8 @@ class DashboardProductMetricsTest extends TestCase
         Producto::factory()->count(10)->create(['categoria_id' => $categoria->id, 'cantidad' => 1, 'precio_venta' => 10.25]);
         Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 2, 'precio_venta' => 7.50]);
         Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 0, 'precio_venta' => 900]);
-        $inactive = Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 1, 'precio_venta' => 500]);
-        // Bypass the stock lifecycle to exercise legacy inconsistent records.
-        Producto::whereKey($inactive->id)->update(['activo' => false]);
+        // Legacy inconsistent record: stock but inactive.
+        Producto::factory()->create(['categoria_id' => $categoria->id, 'cantidad' => 1, 'precio_venta' => 500, 'activo' => false]);
 
         $response = $this->actingAs(User::factory()->admin()->create())->get('/dashboard')->assertOk();
         preg_match('/data-props="([^"]*)"/', $response->getContent(), $matches);

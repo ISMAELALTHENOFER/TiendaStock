@@ -65,13 +65,12 @@ class ProductoModelTest extends TestCase
         $this->assertNotContains($inactive->id, $found);
     }
 
-    public function test_zero_stock_deactivates_product(): void
+    public function test_stock_rule_deactivates_zero_stock_product(): void
     {
         $producto = Producto::factory()->create(['activo' => true]);
 
-        $producto->update(['cantidad' => 0]);
+        $producto->fill(['cantidad' => 0])->syncActivoWithStock()->save();
 
-        $this->assertFalse($producto->fresh()->activo);
         $this->assertDatabaseHas('productos', ['id' => $producto->id, 'activo' => false]);
     }
 

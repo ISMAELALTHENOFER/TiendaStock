@@ -6,7 +6,6 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProductoSoftDisableTest extends TestCase
@@ -81,14 +80,9 @@ class ProductoSoftDisableTest extends TestCase
         $zeroStock = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Sin Stock Activo',
-            'cantidad' => 10,
-            'activo' => true,
+            'cantidad' => 0,
+            'activo' => true, // legacy inconsistent row: no stock but still flagged active
         ]);
-        // Forzar stock 0 bypassando el saving event (simula bypass por
-        // decrement u otro camino que no dispare el evento).
-        DB::table('productos')
-            ->where('id', $zeroStock->id)
-            ->update(['cantidad' => 0]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.data'));
 
@@ -110,18 +104,15 @@ class ProductoSoftDisableTest extends TestCase
             'activo' => false,
             'cantidad' => 0,
         ]);
-        // Producto con stock 0 y activo=true (bypass del saving event).
+        // Producto con stock 0 y activo=true (fila legacy inconsistente).
         // Debe aparecer en inactivos aunque activo sea true, porque no está
         // disponible para vender.
         $zeroStock = Producto::factory()->create([
             'categoria_id' => $this->categoria->id,
             'nombre' => 'Producto Sin Stock',
-            'cantidad' => 10,
-            'activo' => true,
+            'cantidad' => 0,
+            'activo' => true, // legacy inconsistent row: no stock but still flagged active
         ]);
-        DB::table('productos')
-            ->where('id', $zeroStock->id)
-            ->update(['cantidad' => 0]);
 
         $response = $this->actingAs($this->admin)->getJson(route('productos.data', ['inactivos' => 1]));
 

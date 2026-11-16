@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\User;
+use App\Models\Venta;
+use App\Models\VentaItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -64,5 +66,44 @@ class ProductCostVisibilityTest extends TestCase
         ]);
         $created->assertRedirect(route('productos.index'));
         $this->assertDatabaseHas('productos', ['nombre' => 'New item', 'precio_compra' => 0]);
+    }
+
+    public function test_cost_is_hidden_from_any_product_serialization_by_default(): void
+    {
+        $product = Producto::factory()->create(['precio_compra' => 4321.98]);
+        $item = VentaItem::factory()->create(['producto_id' => $product->id]);
+
+        $this->assertArrayNotHasKey('precio_compra', $product->toArray());
+        $this->assertArrayNotHasKey('precio_compra', Producto::find($product->id)->toArray());
+        $this->assertArrayNotHasKey('precio_compra', $item->load('producto')->toArray()['producto']);
+        $this->assertStringNotContainsString('4321.98', response()->json(Producto::all())->getContent());
+        $this->assertArrayNotHasKey('ganancia', $product->toArray());
+    }
+
+    public function test_admin_product_detail_includes_unit_profit_and_control_stock_does_not(): void
+    {
+        $product = Producto::factory()->create(['precio_compra' => 75, 'precio_venta' => 100, 'cantidad' => 3]);
+
+        $this->actingAs(User::factory()->admin()->create())->get("/productos/{$product->id}")->assertOk()
+            ->assertViewHas('producto', fn (Producto $p) => (float) ($p->toArray()['ganancia'] ?? -1) === 25.0);
+        $this->actingAs(User::factory()->controlStock()->create())->get("/productos/{$product->id}")->assertOk()
+            ->assertViewHas('producto', fn (Producto $p) => ! array_key_exists('ganancia', $p->toArray()) && ! array_key_exists('precio_compra', $p->toArray()));
+    }
+
+    public function test_admin_sees_cost_in_category_and_sale_detail_and_ventas_does_not(): void
+    {
+        $category = Categoria::factory()->create();
+        $product = Producto::factory()->create(['categoria_id' => $category->id, 'precio_compra' => 4321.98]);
+        $seller = User::factory()->ventas()->create();
+        $venta = Venta::factory()->create(['user_id' => $seller->id]);
+        VentaItem::factory()->create(['venta_id' => $venta->id, 'producto_id' => $product->id]);
+
+        $this->actingAs(User::factory()->admin()->create());
+        $this->get(route('categorias.show', $category))->assertOk()->assertSee('4321.98', false);
+        $this->get(route('ventas.show', $venta))->assertOk()->assertSee('4321.98', false);
+        $this->getJson(route('productos.data'))->assertOk()->assertJsonPath('data.0.precio_compra', '4321.98');
+        $this->actingAs($seller)->get(route('ventas.show', $venta))->assertOk()->assertDontSee('4321.98', false);
+        $this->actingAs(User::factory()->controlStock()->create())->get(route('categorias.show', $category))
+            ->assertOk()->assertDontSee('4321.98', false);
     }
 }
