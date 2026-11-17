@@ -237,6 +237,35 @@ class ProductoController extends Controller
         });
     }
 
+    /** Hard delete, ADMIN only (route middleware), and only for inactive products without sales history. */
+    public function forceDestroy(Request $request, Producto $producto)
+    {
+        $error = fn (string $message) => redirect()->route('productos.index')->with('error', $message);
+
+        return DB::transaction(function () use ($request, $producto, $error) {
+            $producto = Producto::whereKey($producto->id)->lockForUpdate()->firstOrFail();
+            if ($producto->activo) {
+                return $error('Solo se pueden eliminar productos inactivos.');
+            }
+            if ($producto->ventaItems()->exists()) {
+                return $error('No se puede eliminar un producto con ventas registradas.');
+            }
+
+            $producto->imagenRecord()->delete();
+            DB::table('sale_cart_items')->where('producto_id', $producto->id)->delete();
+            $producto->delete();
+            if ($producto->imagen) {
+                DB::afterCommit(fn () => Storage::disk('public')->delete($producto->imagen));
+            }
+
+            ActivityRecorder::recordAfterCommit(
+                $request->user(), 'product.deleted', 'Product deleted', "Product {$producto->nombre} was deleted.", $producto
+            );
+
+            return redirect()->route('productos.index')->with('success', 'Producto eliminado correctamente.');
+        });
+    }
+
     public function activate(Request $request, Producto $producto)
     {
         $data = $request->validate(['cantidad' => ['required', 'integer', 'min:1', 'max:2147483647']]);

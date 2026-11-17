@@ -16,6 +16,7 @@ import { productMoneyInput } from './lib/productMoneyInput.js';
 import { createDuplicateCheck } from './lib/duplicateCheck.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
+import { categoryMatches } from './lib/categoryMatches.js';
 import { stockTone } from './lib/stockTone.js';
 import { formatMoney } from './lib/formatMoney.js';
 import { useConfirm } from './lib/useConfirm.jsx';
@@ -95,6 +96,50 @@ function ProductImage({ value, error }) {
                     <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
                     {value && <p className="text-xs text-muted">Imagen actual. Si no eliges un archivo nuevo, se conserva.</p>}
                 </div>
+            )}
+        </div>
+    );
+}
+
+/** Type-ahead category picker: filters by prefix on every keystroke and posts the chosen id as categoria_id. */
+function CategoryCombobox({ options, value, onChange, error }) {
+    const selected = options.find((cat) => String(cat.id) === value);
+    const [text, setText] = useState(selected?.nombre ?? '');
+    const [open, setOpen] = useState(false);
+    const [active, setActive] = useState(0);
+    const inputRef = useRef(null);
+    const matches = categoryMatches(options, text);
+
+    // Keep the text in sync when the id changes from outside (e.g. inline "+ Nueva").
+    useEffect(() => { if (selected) setText(selected.nombre); }, [selected?.id]);
+    useEffect(() => { inputRef.current?.setCustomValidity(value ? '' : 'Selecciona una categoría de la lista.'); }, [value]);
+
+    const pick = (cat) => { onChange(String(cat.id)); setText(cat.nombre); setOpen(false); };
+    const type = (next) => {
+        setText(next);
+        setOpen(true);
+        setActive(0);
+        const exact = options.find((cat) => cat.nombre.toLocaleLowerCase() === next.trim().toLocaleLowerCase());
+        onChange(exact ? String(exact.id) : '');
+    };
+    const onKeyDown = (event) => {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); setActive((i) => Math.min(i + 1, matches.length - 1)); }
+        else if (event.key === 'ArrowUp') { event.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+        else if (event.key === 'Enter' && open && matches[active]) { event.preventDefault(); pick(matches[active]); }
+        else if (event.key === 'Escape') setOpen(false);
+    };
+
+    return (
+        <div className="relative min-w-0 flex-1 basis-40">
+            <Input ref={inputRef} id="categoria-field" required autoComplete="off" role="combobox" aria-expanded={open} aria-controls="categoria-options" aria-autocomplete="list" aria-activedescendant={open && matches[active] ? `categoria-option-${matches[active].id}` : undefined} value={text} placeholder="Escribe para buscar una categoría" error={error} onChange={(event) => type(event.target.value)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onKeyDown={onKeyDown} />
+            <input type="hidden" name="categoria_id" value={value} />
+            {open && (
+                <ul id="categoria-options" role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-control border border-border bg-surface py-1 shadow-lg">
+                    {matches.length === 0 && <li className="px-3 py-2 text-sm text-muted">Sin coincidencias. Usa «+ Nueva» para crearla.</li>}
+                    {matches.map((cat, index) => (
+                        <li key={cat.id} id={`categoria-option-${cat.id}`} role="option" aria-selected={String(cat.id) === value} onMouseDown={(event) => { event.preventDefault(); pick(cat); }} className={`cursor-pointer px-3 py-2 text-sm text-ink ${index === active ? 'bg-surface-muted' : ''}`}>{cat.nombre}</li>
+                    ))}
+                </ul>
             )}
         </div>
     );
@@ -218,10 +263,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600 dark:text-red-200">*</span></label>
                         <div className="mt-1 flex flex-wrap gap-2">
-                            <Select id="categoria-field" name="categoria_id" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="min-w-0 flex-1 basis-40">
-                                <option value="">Selecciona una categoría</option>
-                                {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
-                            </Select>
+                            <CategoryCombobox options={categoryOptions} value={categoryId} onChange={setCategoryId} error={errors?.categoria_id?.[0]} />
                             <Button type="button" variant="secondary" title="Crear categoría nueva" aria-label="Crear categoría nueva" onClick={() => setInlineOpen(true)}>+ Nueva</Button>
                         </div>
                         {errors?.categoria_id && <p className="mt-1 text-sm text-red-600 dark:text-red-200">{errors.categoria_id[0]}</p>}
@@ -306,6 +348,9 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
                 <button type="button" onClick={() => setToggle({ tipo: 'desactivar', producto })} className="data-table-action text-red-600 dark:text-red-200 hover:bg-red-50 dark:hover:bg-surface-muted" aria-label={`Desactivar ${nombre}`}>Desactivar</button>
             ) : (
                 <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 dark:text-primary-300 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
+            )}
+            {!producto.activo && routes.canViewProductCost && (
+                <button type="button" onClick={() => setToggle({ tipo: 'eliminar', producto })} className="data-table-action text-red-600 dark:text-red-200 hover:bg-red-50 dark:hover:bg-surface-muted" aria-label={`Eliminar ${nombre}`}>Eliminar</button>
             )}
         </div>
     );
@@ -394,8 +439,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const confirmarToggle = () => {
         if (!toggle) return;
         const id = toggle.producto.id;
-        const formId = toggle.tipo === 'activar' ? `activar-${id}` : `desactivar-${id}`;
-        document.getElementById(formId)?.submit();
+        document.getElementById(`${toggle.tipo}-${id}`)?.submit();
     };
 
     const cerrarActivacion = () => { setToggle(null); setActivationError(''); };
@@ -589,8 +633,24 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                         <input type="hidden" name="_method" value="DELETE" />
                         <input type="hidden" name="stock_original" value={producto.cantidad} />
                     </form>
+                    {!producto.activo && routes.canViewProductCost && (
+                        <form id={`eliminar-${producto.id}`} action={`${routes.productos}/${producto.id}/eliminar`} method="POST">
+                            <input type="hidden" name="_token" value={csrf()} />
+                            <input type="hidden" name="_method" value="DELETE" />
+                        </form>
+                    )}
                 </div>
             ))}
+
+            <ConfirmDialog
+                open={toggle?.tipo === 'eliminar'}
+                title="Eliminar producto"
+                message={`¿Eliminar definitivamente «${toggle?.producto?.nombre}»? Esta acción no se puede deshacer.`}
+                confirmLabel="Sí, eliminar"
+                tone="danger"
+                onConfirm={confirmarToggle}
+                onClose={() => setToggle(null)}
+            />
 
             <ConfirmDialog
                 open={toggle?.tipo === 'desactivar'}

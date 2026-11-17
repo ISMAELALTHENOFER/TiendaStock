@@ -96,6 +96,9 @@ class CategoriaController extends Controller
 
         $productos = $productosQuery->paginate($this->pageSize($request))->withQueryString();
         $productos->getCollection()->each(fn (Producto $producto) => $producto->revealCostTo($request->user()));
+        if ($request->expectsJson()) {
+            return response()->json($productos);
+        }
         $request->attributes->set('categoriaProductsPage', $productos);
 
         return view('layouts.app', compact('categoria', 'productos'));

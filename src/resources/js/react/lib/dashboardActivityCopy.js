@@ -5,6 +5,7 @@ const titles = {
     'product.updated': 'Producto actualizado',
     'product.deactivated': 'Producto desactivado',
     'product.activated': 'Producto activado',
+    'product.deleted': 'Producto eliminado',
     'category.created': 'Categoría creada',
     'category.updated': 'Categoría actualizada',
     'category.deleted': 'Categoría eliminada',
