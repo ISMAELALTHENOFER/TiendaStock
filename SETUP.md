@@ -93,7 +93,7 @@ php artisan view:cache
 Servir con un virtual host apuntando a `src/public/` o usar `php artisan serve` (solo dev).
 
 Seguridad en producción:
-- PHP **8.5.12 o superior** (o 8.4.27 / 8.3.36 / 8.2.35): las versiones anteriores son vulnerables a PHP2Shell (CVE-2026-109618 / CVE-2026-109619).
+- PHP **8.5.12 o superior** (o 8.4.27): las versiones anteriores son vulnerables a PHP2Shell (CVE-2026-109618 / CVE-2026-109619).
 - No publicar `public/hot` y revisar las dependencias con `composer audit` y `npm audit`.
 - `bootstrap/app.php` confía en cualquier proxy (`trustProxies(at: '*')`); en producción limitarlo a la IP del proxy real.
 

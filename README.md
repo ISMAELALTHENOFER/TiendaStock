@@ -4,7 +4,7 @@ Aplicación de inventario y ventas desarrollada con Laravel, React y MySQL/SQLit
 
 ## Requisitos
 
-- PHP 8.2 o posterior y Composer.
+- PHP 8.4 o posterior y Composer.
 - Node.js y npm.
 - SQLite para desarrollo local o MySQL para producción.
 
