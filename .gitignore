@@ -16,3 +16,18 @@ vendor/
 /skills-lock.json
 /.playwright-mcp/
 /dashboard-audit.png
+
+# Herramientas de IA y agentes
+/.claude/
+/.codegraph/
+/.opencode/
+/AGENTS.md
+/src/.atl/
+
+# Seguimiento de tareas, specs y notas de trabajo
+/odd/
+/src/openspec/
+/implementaciones/
+/ESTADO_GENERAL.md
+/MEJORAS_PENDIENTES.md
+/tiendastock-mejoras-ui-responsive.md
