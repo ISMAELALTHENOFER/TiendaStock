@@ -1,34 +1,35 @@
 # TiendaStock
 
-Sistema creado para el stock de la tienda en Amor Eterno Baby y en general
+Aplicación de inventario y ventas desarrollada con Laravel, React y MySQL/SQLite. El código Laravel vive en `src/`; este repositorio no usa los antiguos archivos `config.php`, `db.php` ni `index.php` descritos en versiones anteriores de este README.
 
-## Configuración y seguridad
+## Requisitos
 
-1. **Variables de entorno:**
-   - Copia el archivo `.env.example` como `.env` y completa los datos de conexión a la base de datos.
-   - Ejemplo:
-     ```env
-     DB_HOST=localhost
-     DB_USER=usuario
-     DB_PASS=contraseña
-     DB_NAME=nombre_base
-     ```
-2. **No subas archivos sensibles**: El archivo `.gitignore` ya está configurado para evitar subir `.env` y `src/config.php`.
+- PHP 8.2 o posterior y Composer.
+- Node.js y npm.
+- SQLite para desarrollo local o MySQL para producción.
 
-## Estructura del proyecto
+## Instalación y desarrollo
 
-- `src/config.php`: Lee las variables de entorno y define la configuración de la base de datos.
-- `src/db.php`: Capa de conexión a la base de datos (importa la configuración y crea la conexión).
-- `src/index.php`: Lógica y vista principal, importa la conexión desde `db.php`.
+Sigue [SETUP.md](SETUP.md) para preparar el entorno, configurar la base de datos y ejecutar la aplicación. Los comandos de Laravel, Composer y npm se ejecutan desde `src/`.
 
-## Primeros pasos
+Para desarrollo local se puede iniciar Laravel y Vite en terminales separadas. `composer dev` también inicia la cola y Pail en sistemas compatibles; en Windows usa `composer dev:win`.
 
-1. Clona el repositorio.
-2. Copia `.env.example` a `.env` y edítalo con tus datos.
-3. Instala dependencias si las hubiera (por ejemplo, Composer para PHP o npm para Node.js).
-4. Levanta el entorno con Docker o tu servidor local.
+## Presentación y permisos
 
-## Notas
+React es la interfaz principal de Dashboard, Ventas, Productos, Categorías y Usuarios. Las rutas conservan una alternativa Blade mediante `FRONTEND_DRIVER` y los drivers específicos de `src/config/frontend.php`. Autorización, validación y cambios de datos se aplican en Laravel; ocultar acciones en React no sustituye los controles del servidor.
 
-- Mantén tus credenciales fuera del código fuente.
-- Si cambias de entorno o PC, recuerda siempre configurar el archivo `.env`.
+Autenticación y perfil permanecen en Blade mientras continúa la migración del resto de las pantallas.
+
+## Verificación
+
+Desde `src/`:
+
+```bash
+composer test
+npm test
+npm run build
+```
+
+Las pruebas PHP usan SQLite en memoria por defecto. Para verificar también MySQL,
+inicia una instancia de prueba local en `127.0.0.1:3307` y ejecuta
+`composer test:mysql`. Consulta [SETUP.md](SETUP.md) para el despliegue.

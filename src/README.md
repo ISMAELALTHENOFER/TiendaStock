@@ -57,3 +57,54 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## TiendaStock — Operations Runbook
+
+### Setup (first run, after clone)
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate            # creates tables; idempotent
+php artisan storage:link       # creates public/storage -> storage/app/public symlink (HTTP-serving for product images)
+npm install && npm run build
+```
+
+### Mobile LAN development
+
+Vite listens on the LAN by default. Set `VITE_DEV_HOST`, `VITE_DEV_PORT`,
+`VITE_DEV_ORIGIN`, and/or `VITE_HMR_HOST` in the local `.env` when a phone
+needs a reachable development origin; never commit a private IP address.
+For testing compiled assets with `npm run build`, stop Vite and remove
+`public/hot` if it exists so Laravel does not keep using a stale dev-server URL.
+
+### Post-deploy checklist
+
+| Step | Command | Why |
+|------|---------|-----|
+| Apply schema changes | `php artisan migrate` | Adds the nullable `imagen` column to `productos` (no data backfill). |
+| Public storage symlink | `php artisan storage:link` | Enables `Storage::url('productos/...')` to resolve to a web-reachable URL. Without it, product image thumbnails in index/show render a broken link. |
+
+### Módulo Productos — comportamiento operativo
+
+- **Desactivar vs. eliminar**: `destroy` setea `activo = false`; el registro NO se borra (preserva el histórico de ventas). Los productos inactivos no aparecen en POS (`productos.data` ni `productos.search`) por defecto. En el índice, el toggle *Ver inactivos* los incluye para gestión.
+- **Reactivar**: ejecutar `UPDATE productos SET activo = 1 WHERE activo = 0` (o editar el producto — al guardar sin imagen nueva se conserva el path existente).
+- **Imágenes**: se guardan en el disco `public` bajo `productos/` con un nombre generado (nunca el nombre del cliente). `max:2048` KB; mime `jpg,jpeg,png,webp`.
+- **Dinero**: el input visible muestra `$1.234,56` (máscara React); un input hidden envía el float numérico al backend. La validación `numeric` del Form Request rechaza cualquier string formateado adulterado (defense-in-depth → 422).
+
+### Rollback (revert `productos-ux-fixes`)
+
+```bash
+php artisan migrate:rollback     # drops the nullable `imagen` column
+# Restaurar controladores/vistas/routes/Form Requests vía git revert del PR.
+# Opcional (solo si se revirtió el soft-disable): reactivar todos los productos
+#   UPDATE productos SET activo = 1 WHERE activo = 0;
+```
+
+### Tests
+
+```bash
+php artisan test                 # suite completa (Unit + Feature)
+composer test                   # alias con config:clear previo
+```

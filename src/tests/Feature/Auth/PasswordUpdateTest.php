@@ -48,4 +48,18 @@ class PasswordUpdateTest extends TestCase
             ->assertSessionHasErrorsIn('updatePassword', 'current_password')
             ->assertRedirect('/profile');
     }
+
+    public function test_empty_password_update_is_rejected(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->put('/password', []);
+
+        $response
+            ->assertSessionHasErrorsIn('updatePassword', ['current_password', 'password'])
+            ->assertRedirect('/profile');
+    }
 }

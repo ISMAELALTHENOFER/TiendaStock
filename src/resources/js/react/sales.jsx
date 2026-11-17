@@ -1,0 +1,316 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, CheckCircle2, CircleX, Minus, Package, Plus, Search, ShoppingBasket, ShoppingCart, Store, Trash2, Truck } from 'lucide-react';
+import { api } from './lib/api.js';
+import { Badge } from './components/ui/Badge.jsx';
+import { Button } from './components/ui/Button.jsx';
+import { Card } from './components/ui/Card.jsx';
+import { EmptyState } from './components/ui/EmptyState.jsx';
+import { ConfirmDialog } from './components/ui/ConfirmDialog.jsx';
+import { Input } from './components/ui/Input.jsx';
+import { Select } from './components/ui/Select.jsx';
+import { Pagination } from './components/ui/Pagination.jsx';
+import { Dropdown } from './components/ui/Dropdown.jsx';
+import { isInteractiveSearch } from './lib/interactiveSearch.js';
+import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
+import { stockTone } from './lib/stockTone.js';
+import { isValidDateRange } from './lib/dateRange.js';
+import { formatMoney } from './lib/formatMoney.js';
+import { useConfirm } from './lib/useConfirm.jsx';
+import { blurMoney, parseMoney, pesos, typeMoney } from './lib/money.js';
+
+const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+const formatDate = (value) => value ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
+const statusTone = (status) => status === 'completada' ? 'success' : 'danger';
+const statusLabel = (status) => status === 'completada' ? 'Completada' : 'Anulada';
+const deliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : sale.tipo_entrega === 'uber' ? 'Uber' : '—';
+const detailDeliveryLabel = (sale) => sale.tipo_entrega === 'local' ? 'En el local' : sale.tipo_entrega === 'uber' ? 'Envío por Uber' : '—';
+const paymentLabel = (method) => method ? method.charAt(0).toUpperCase() + method.slice(1) : '—';
+
+function CancelForm({ sale, routes, compact = false }) {
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const formRef = useRef(null);
+    if (sale.estado !== 'completada') return null;
+    return <>
+        <form ref={formRef} action={`${routes.ventas}/${sale.id}/cancel`} method="post">
+            <input type="hidden" name="_token" value={csrf()} />
+            {compact
+                ? <button type="button" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`} className="block w-full rounded-control px-3 py-2 text-left text-sm text-red-700 dark:text-red-200 hover:bg-surface-muted">Cancelar venta #{sale.id}</button>
+                : <Button type="button" variant="danger-ghost" onClick={() => setConfirmOpen(true)} aria-label={`Cancelar venta #${sale.id}`}>Cancelar venta #{sale.id}</Button>}
+        </form>
+        <ConfirmDialog
+            open={confirmOpen}
+            title={`Anular venta #${sale.id}`}
+            message={`¿Anular venta #${sale.id} por ${formatMoney(sale.total)}? Se restaurará el stock.`}
+            confirmLabel="Sí, anular"
+            tone="danger"
+            onConfirm={() => formRef.current?.submit()}
+            onClose={() => setConfirmOpen(false)}
+        />
+    </>;
+}
+
+function SaleActions({ sale, routes }) {
+    return <div className="flex items-center justify-start gap-2">
+        <a href={`${routes.ventas}/${sale.id}`} className="inline-flex min-h-11 items-center rounded-control px-3 text-sm font-semibold text-primary dark:text-primary-300 hover:bg-surface-muted" aria-label={`Ver venta #${sale.id}`}>Ver</a>
+        {sale.estado === 'completada' && <Dropdown portal ariaLabel={`Acciones de venta #${sale.id}`} label="⋮"><CancelForm sale={sale} routes={routes} compact /></Dropdown>}
+    </div>;
+}
+
+export function SalesHistory({ sales, query = {}, routes }) {
+    const [filters, setFilters] = useState({ desde: query.desde || '', hasta: query.hasta || '', estado: query.estado || '', buscar: query.buscar || '' });
+    const liveSearch = useLiveSearchResults(sales, {
+        query: filters.buscar,
+        route: routes.ventas,
+        pageSize: Number(sales?.per_page) || 15,
+        filters: { desde: filters.desde, hasta: filters.hasta, estado: filters.estado },
+        enabled: !(filters.desde && filters.hasta && filters.desde > filters.hasta),
+    });
+    const page = liveSearch.results || sales;
+    const data = page?.data || [];
+    const pageSize = Number(page?.per_page) || 15;
+    const paginationUrl = (page) => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(page));
+        params.set('per_page', String(pageSize));
+        return `${routes.ventas}?${params}`;
+    };
+    const [dateError, setDateError] = useState('');
+    const submit = (event) => {
+        if (!isValidDateRange(filters.desde, filters.hasta)) {
+            event.preventDefault();
+            setDateError('La fecha Desde debe ser anterior o igual a Hasta.');
+            return;
+        }
+        setDateError('');
+    };
+    return <div className="space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Historial de Ventas</h1><p className="mt-1 text-sm text-muted">Consulta y gestiona todas las ventas realizadas</p></div>
+            <Button href={routes.ventasPos} className="px-5">Nueva Venta</Button>
+        </header>
+        <Card>
+            <form method="get" action={routes.ventas} onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+                <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3" htmlFor="sales-search">Buscar ventas<Input id="sales-search" name="buscar" value={filters.buscar} onChange={(event) => setFilters({ ...filters, buscar: event.target.value })} placeholder="Cliente, usuario o número…" className="mt-1" /></label>
+                <label className="text-sm font-medium text-ink" htmlFor="sales-from">Desde<Input id="sales-from" type="date" name="desde" value={filters.desde} onChange={(event) => setFilters({ ...filters, desde: event.target.value })} className="mt-1" /></label>
+                <label className="text-sm font-medium text-ink" htmlFor="sales-to">Hasta<Input id="sales-to" type="date" name="hasta" value={filters.hasta} onChange={(event) => setFilters({ ...filters, hasta: event.target.value })} className="mt-1" /></label>
+                <label className="text-sm font-medium text-ink" htmlFor="sales-status">Estado<Select id="sales-status" name="estado" value={filters.estado} onChange={(event) => setFilters({ ...filters, estado: event.target.value })} className="mt-1"><option value="">Todos los estados</option><option value="completada">Completadas</option><option value="anulada">Anuladas</option></Select></label>
+                <input type="hidden" name="per_page" value={pageSize} />
+                <Button type="submit">Filtrar</Button><Button href={routes.ventas} variant="secondary">Limpiar</Button>
+            </form>
+            {dateError && <p className="mt-3 text-sm text-red-700 dark:text-red-200" role="alert">{dateError}</p>}
+        </Card>
+        {liveSearch.searching && <p role="status" className="text-sm text-muted">Buscando ventas…</p>}
+        {liveSearch.searchError && <p role="alert" className="text-sm text-red-700 dark:text-red-200">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+        {data.length === 0 ? <div className="space-y-4 text-center"><EmptyState title="No hay ventas registradas." description="Las ventas realizadas aparecerán aquí." /><Button href={routes.ventasPos} className="px-5">Realizar primera venta</Button></div> : <>
+            <div className="hidden overflow-x-auto rounded-card border border-border bg-surface shadow-subtle md:block">
+                 <table className="data-table w-full min-w-[920px] text-sm"><caption className="sr-only">Historial de ventas</caption><thead><tr>{[['#', 'text-left'], ['Fecha', 'text-left'], ['Artículos', 'text-right'], ['Total', 'text-right'], ['Entrega', 'text-left'], ['Procesado por', 'text-left'], ['Estado', 'text-left'], ['Acciones', 'text-left']].map(([heading, alignment]) => <th key={heading} scope="col" className={`whitespace-nowrap px-4 py-3 ${alignment}`}>{heading}</th>)}</tr></thead>
+                      <tbody className="divide-y divide-border">{data.map((sale) => <tr key={sale.id} className="hover:bg-surface-muted"><td className="px-4 py-4 font-semibold tabular-nums">{sale.id}</td><td className="whitespace-nowrap px-4 py-4">{formatDate(sale.created_at)}</td><td className="px-4 py-4 text-right tabular-nums">{sale.items_count ?? sale.items?.length ?? 0}</td><td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">{formatMoney(sale.total)}</td><td className="px-4 py-4">{deliveryLabel(sale)}</td><td className="px-4 py-4">{sale.user?.name || '—'}</td><td className="px-4 py-4"><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></td><td className="px-4 py-4"><SaleActions sale={sale} routes={routes} /></td></tr>)}</tbody>
+                </table>
+            </div>
+              <div className="grid gap-3 md:hidden">{data.map((sale) => <Card key={sale.id} className="min-w-0 space-y-3"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">Venta #{sale.id}</p><p className="font-semibold">{formatDate(sale.created_at)}</p></div><Badge tone={statusTone(sale.estado)}>{statusLabel(sale.estado)}</Badge></div><dl className="grid grid-cols-2 gap-3 text-sm"><div className="data-card-field min-w-0"><dt>Artículos</dt><dd>{sale.items_count ?? sale.items?.length ?? 0}</dd></div><div className="data-card-field min-w-0"><dt>Entrega</dt><dd>{deliveryLabel(sale)}</dd></div><div className="data-card-field min-w-0"><dt>Procesada por</dt><dd>{sale.user?.name || '—'}</dd></div><div className="data-card-field min-w-0 text-right"><dt>Total</dt><dd className="text-lg">{formatMoney(sale.total)}</dd></div></dl><SaleActions sale={sale} routes={routes} /></Card>)}</div>
+        </>}
+        <Pagination currentPage={page?.current_page || 1} lastPage={page?.last_page || 1} pageSize={pageSize} ariaLabel="Paginación de ventas" summary={`Mostrando ${page?.from ?? 0}–${page?.to ?? 0} de ${page?.total ?? 0} ventas`} hrefForPage={paginationUrl} onPageSizeChange={(size) => { const params = new URLSearchParams(window.location.search); params.set('per_page', String(size)); params.set('page', '1'); window.location.assign(`${routes.ventas}?${params}`); }} />
+    </div>;
+}
+
+async function postSale(payload, routes, onError) {
+    const response = await fetch(routes.ventas, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify(payload) });
+    if (response.redirected) { window.location.assign(response.url); return true; }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { onError(data.errors || { form: [data.message || 'No se pudo registrar la venta.'] }); return false; }
+    if (data.redirect) { window.location.assign(data.redirect); return true; }
+    window.location.reload();
+    return true;
+}
+
+export function SalesPos({ routes, initialErrors = {}, lowStockThreshold = 1 }) {
+    const [search, setSearch] = useState('');
+    const [results, setResults] = useState([]);
+    const searchRequest = useRef(0);
+    const searchInput = useRef(null);
+    const [searchError, setSearchError] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [cartId, setCartId] = useState(null);
+    const [adding, setAdding] = useState(false);
+    const cartBusy = useRef(false);
+    const [delivery, setDelivery] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('efectivo');
+    const [cashPaid, setCashPaid] = useState('');
+    const [discount, setDiscount] = useState('');
+    const [errors, setErrors] = useState(initialErrors);
+    const [searching, setSearching] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [confirm, confirmDialog] = useConfirm();
+    const choiceTileClass = (selected) => `flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-2 rounded-control border px-2 py-2 text-center text-xs font-semibold leading-tight focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${selected ? 'border-primary bg-green-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300' : 'border-border bg-surface-muted text-ink hover:bg-border'}`;
+    const subtotal = useMemo(() => Math.round(cart.reduce((sum, item) => sum + item.cantidad * Number(item.precio_venta), 0) * 100) / 100, [cart]);
+    const totalCents = Math.max(0, Math.round(subtotal * 100) - Math.round(parseMoney(discount) * 100));
+    const total = totalCents / 100;
+    const isCash = paymentMethod === 'efectivo';
+    // Card/transfer are charged exactly the total; only cash needs the amount received.
+    const paid = isCash ? cashPaid : pesos(total);
+    const paidCents = Math.round(parseMoney(paid) * 100);
+    const change = Math.max(0, parseMoney(paid) - total);
+    useEffect(() => {
+        const request = ++searchRequest.current;
+        const controller = new AbortController();
+        const query = search.trim();
+        setSearchError(false);
+        if (query.length < 2) {
+            setResults([]);
+            setSearching(false);
+            return () => controller.abort();
+        }
+
+        const timeout = window.setTimeout(async () => {
+            setSearching(true);
+            try {
+                const products = await api.get(`${routes.productosSearch}?q=${encodeURIComponent(query)}`, { cache: 'no-store', signal: controller.signal });
+                if (request === searchRequest.current) setResults(products);
+            } catch (error) {
+                if (error.name !== 'AbortError' && request === searchRequest.current) { setResults([]); setSearchError(true); }
+            } finally {
+                if (request === searchRequest.current) setSearching(false);
+            }
+        }, 250);
+
+        return () => { window.clearTimeout(timeout); controller.abort(); };
+    }, [search]);
+    const searchProducts = (value) => { setSearch(value); setSearchError(false); };
+    const add = async (product) => {
+        if (cartBusy.current) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch(`${routes.ventas}/cart`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ cart_id: cartId, producto_id: product.id, precio_venta: cart.find((item) => item.producto_id === product.id)?.precio_venta ?? product.precio_venta }) });
+            const data = await response.json();
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo agregar el producto.'] }); return; }
+            setCartId(data.id);
+            setCart((items) => items.some((item) => item.producto_id === product.id) ? items.map((item) => item.producto_id === product.id ? { ...item, cantidad: Math.min(item.cantidad + 1, product.cantidad) } : item) : [...items, { producto_id: product.id, nombre: product.nombre, precio_venta: data.precio_venta, cantidad: 1, stock: product.cantidad }]);
+        } catch { setErrors({ form: ['No se pudo agregar el producto. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
+    };
+    const remove = async (productId = null) => {
+        if (cartBusy.current || !cartId) return;
+        cartBusy.current = true;
+        setAdding(true); setErrors({});
+        try {
+            const response = await fetch(`${routes.ventas}/cart/${cartId}/items${productId === null ? '' : `/${productId}`}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) { setErrors(data.errors || { form: [data.message || 'No se pudo actualizar el carrito.'] }); return; }
+            const remaining = productId === null ? [] : cart.filter((item) => item.producto_id !== productId);
+            setCart(remaining);
+            if (!remaining.length) { setCartId(null); setCashPaid(''); setDiscount(''); }
+        } catch { setErrors({ form: ['No se pudo actualizar el carrito. Intenta nuevamente.'] }); }
+        finally { cartBusy.current = false; setAdding(false); }
+    };
+    const submit = async () => {
+        if (!cart.length || !delivery || total <= 0 || paidCents < totalCents || cartBusy.current) return;
+        cartBusy.current = true;
+        setSubmitting(true); setErrors({});
+        try {
+            await postSale({ cart_id: cartId, items: cart.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })), descuento: parseMoney(discount), pago_con: parseMoney(paid), metodo_pago: paymentMethod, tipo_entrega: delivery }, routes, setErrors);
+        } catch {
+            setErrors({ form: ['No se pudo registrar la venta. Intenta nuevamente.'] });
+        } finally {
+            cartBusy.current = false;
+            setSubmitting(false);
+        }
+    };
+    // Rendered twice (mobile sticky bar / desktop summary card), only one is visible at a time.
+    const chargeButton = <Button type="button" disabled={!cart.length || !delivery || total <= 0 || paidCents < totalCents || submitting || adding} onClick={() => confirm(submit, { title: '¿Confirmar venta?', message: `Se registrará la venta por ${formatMoney(total)}.`, confirmLabel: 'Sí, cobrar' })} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300"><CheckCircle2 size={18} aria-hidden="true" />{submitting ? 'Procesando...' : 'Cobrar'}</Button>;
+    return <div className="space-y-6">
+        <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="eyebrow">Operaciones</p><h1 className="page-title mt-2">Punto de Venta</h1><p className="mt-1 text-sm text-muted">Registra nuevas ventas en el sistema</p></div>
+            <Button href={routes.ventas} variant="secondary" className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300"><ArrowLeft size={18} aria-hidden="true" />Volver</Button>
+        </header>
+        {Object.values(errors).flat().map((error, index) => <p key={index} role="alert" className="rounded-control border border-red-200 bg-red-50 dark:bg-red-950 p-3 text-sm text-red-800 dark:text-red-200">{error}</p>)}
+        <div className="grid items-start gap-6 xl:grid-cols-12">
+            <section aria-label="Catálogo de productos" className="min-w-0 space-y-4 xl:col-span-7">
+                <Card className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <label htmlFor="pos-search" className="flex items-center gap-2 font-semibold text-ink"><Search size={18} className="text-primary dark:text-primary-300" aria-hidden="true" />Buscar productos</label>
+                        {search.trim().length >= 2 && !searching && !searchError && <span className="text-xs text-muted" aria-live="polite">Resultados mostrados: <strong className="text-ink">{results.length}</strong>{results.length === 10 ? ' (máximo 10)' : ''}</span>}
+                    </div>
+                    <div className="relative">
+                        <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
+                        <Input id="pos-search" ref={searchInput} value={search} onChange={(event) => searchProducts(event.target.value)} placeholder="Busca por nombre, color, talle o categoría" className="pl-10 pr-12 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300" />
+                        {search && <button type="button" onClick={() => { searchProducts(''); searchInput.current?.focus(); }} aria-label="Limpiar búsqueda" className="absolute right-1 top-1/2 flex min-h-10 min-w-10 -translate-y-1/2 items-center justify-center rounded-control text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300"><CircleX size={18} aria-hidden="true" /></button>}
+                    </div>
+                    <p className="text-xs text-muted">Escribe al menos 2 caracteres para buscar productos disponibles.</p>
+                </Card>
+                <Card className="min-w-0 space-y-4 p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-border pb-4"><h2 className="flex items-center gap-2 text-lg font-bold text-ink"><span className="flex h-9 w-9 items-center justify-center rounded-control bg-green-50 dark:bg-primary-900 text-primary dark:text-primary-300"><ShoppingBasket size={20} aria-hidden="true" /></span>Carrito</h2><span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-semibold text-muted">{cart.length} {cart.length === 1 ? 'artículo' : 'artículos'}</span></div>
+                    {!cart.length ? <p className="py-8 text-center text-sm text-muted">El carrito está vacío. Busca productos para agregar.</p> : <div className="space-y-3 xl:max-h-40 xl:overflow-y-auto xl:pr-2" role="region" aria-label="Artículos del carrito" tabIndex={0}>{cart.map((item, index) => <div key={item.producto_id} className="space-y-3 rounded-card bg-surface-muted p-3">
+                        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-ink">{item.nombre}</p><p className="text-xs text-muted">{formatMoney(item.precio_venta)} c/u</p></div><button type="button" disabled={adding || submitting} onClick={() => confirm(() => remove(item.producto_id), { title: '¿Quitar producto?', message: `Se quitará «${item.nombre}» del carrito.`, confirmLabel: 'Quitar', tone: 'danger' })} className="flex min-h-11 min-w-11 items-center justify-center rounded-control text-red-700 dark:text-red-200 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-700" aria-label={`Quitar ${item.nombre}`}><Trash2 size={17} aria-hidden="true" /></button></div>
+                        <div className="flex flex-wrap items-center justify-between gap-2"><div className="inline-flex items-center rounded-control bg-surface">
+                            <button type="button" disabled={adding || submitting || item.cantidad <= 1} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad - 1 } : current))} aria-label={`Reducir cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300 disabled:cursor-not-allowed disabled:opacity-40"><Minus size={16} aria-hidden="true" /></button>
+                            <Input type="number" min="1" max={item.stock} step="1" disabled={adding || submitting} value={item.cantidad} onChange={(event) => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: Math.min(item.stock, Math.max(1, Math.trunc(Number(event.target.value) || 1))) } : current))} aria-label={`Cantidad de ${item.nombre}`} className="w-16 border-0 px-1 text-center text-sm font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300" />
+                            <button type="button" disabled={adding || submitting || item.cantidad >= item.stock} onClick={() => setCart(cart.map((current, itemIndex) => itemIndex === index ? { ...current, cantidad: current.cantidad + 1 } : current))} aria-label={`Incrementar cantidad de ${item.nombre}`} className="flex min-h-11 min-w-11 items-center justify-center rounded-control hover:bg-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300 disabled:cursor-not-allowed disabled:opacity-40"><Plus size={16} aria-hidden="true" /></button>
+                        </div><strong className="ml-auto tabular-nums text-ink">{formatMoney(item.cantidad * item.precio_venta)}</strong></div>
+                    </div>)}</div>}
+                </Card>
+                {searching && <p role="status" className="p-6 text-center text-sm text-muted">Buscando...</p>}
+                {!searching && searchError && <p role="alert" className="rounded-control border border-red-200 bg-red-50 dark:bg-red-950 p-4 text-sm text-red-800 dark:text-red-200">No se pudo buscar. Modifica la búsqueda para reintentar.</p>}
+                {!searching && !searchError && results.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{results.map((product) => {
+                    const inCart = cart.find((item) => item.producto_id === product.id)?.cantidad || 0;
+                    const available = product.cantidad - inCart;
+                    return <Card key={product.id} className="flex min-w-0 flex-col justify-between gap-4 p-4 sm:p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-ink">{product.nombre}</h3><p className="mt-1 text-xs text-muted">{product.categoria?.nombre}{product.color ? ` · ${product.color}` : ''}{product.talle ? ` · ${product.talle}` : ''}</p></div>
+                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${stockTone(available, lowStockThreshold) === 'danger' ? 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200' : stockTone(available, lowStockThreshold) === 'warning' ? 'bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200' : 'bg-green-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300'}`}><Package size={14} aria-hidden="true" />{available === 0 ? 'Agotado' : available <= lowStockThreshold ? `${available} · Bajo` : `${available} un.`}</span>
+                        </div>
+                        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
+                            <div><p className="text-xs font-semibold uppercase text-muted">Precio unitario</p><p className="text-lg font-bold tabular-nums text-ink">{formatMoney(product.precio_venta)}</p></div>
+                            <Button type="button" disabled={available <= 0 || adding || submitting} onClick={() => add(product)} className="gap-2 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300"><ShoppingCart size={17} aria-hidden="true" />Agregar</Button>
+                        </div>
+                    </Card>;
+                })}</div>}
+                {!searching && !searchError && search.trim().length >= 2 && !results.length && <Card className="p-8 text-center text-sm text-muted">No se encontraron productos para “{search}”.</Card>}
+            </section>
+            <Card aria-label="Resumen y cobro" className="min-w-0 space-y-4 p-4 sm:p-5 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-3 xl:p-4 [@media(max-height:47.999rem)]:xl:static">
+                 <div className="space-y-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">Subtotal</span><strong className="tabular-nums text-ink">{formatMoney(subtotal)}</strong></div><label className="flex flex-wrap items-center justify-between gap-2 text-muted">Descuento (monto fijo)<Input type="text" inputMode="decimal" value={discount} onChange={(event) => setDiscount(typeMoney(event.target.value, discount))} onBlur={() => setDiscount(blurMoney(discount))} aria-label="Descuento en pesos" placeholder="0,00" className="w-32 bg-surface-muted text-right text-ink" /></label><div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3 font-bold text-ink"><span className="text-base">Total</span><span className="text-2xl tabular-nums">{formatMoney(total)}</span></div></div>
+                <div className="space-y-3">
+                    <fieldset>
+                        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Tipo de entrega</legend>
+                        <div className="grid grid-cols-2 gap-2">{[['local', 'En el local', Store], ['uber', 'Envío por Uber', Truck]].map(([value, label, Icon]) => <label key={value} className={choiceTileClass(delivery === value)}><input type="radio" name="tipo_entrega" value={value} checked={delivery === value} onChange={() => setDelivery(value)} required className="sr-only" /><Icon size={16} className="shrink-0" aria-hidden="true" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
+                    </fieldset>
+                    <fieldset>
+                        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Método de pago</legend>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[['efectivo', 'Efectivo'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([value, label]) => <label key={value} className={`${choiceTileClass(paymentMethod === value)} last:col-span-2 sm:last:col-span-1`}><input type="radio" name="metodo_pago" value={value} checked={paymentMethod === value} onChange={() => setPaymentMethod(value)} className="sr-only" /><span className="min-w-0 break-words">{label}</span></label>)}</div>
+                    </fieldset>
+                </div>
+                <div className="space-y-3 rounded-card bg-surface-muted p-3 text-sm"><label className="block font-medium text-muted">Pago con<Input type="text" inputMode="decimal" value={paid} readOnly={!isCash} onChange={(event) => setCashPaid(typeMoney(event.target.value, cashPaid))} onBlur={() => isCash && setCashPaid(blurMoney(cashPaid))} aria-label="Monto recibido en pesos" aria-describedby={isCash && cart.length > 0 && totalCents > paidCents ? 'pos-paid-hint' : undefined} placeholder="0,00" className="mt-2 w-full text-right text-lg font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300" /></label>{isCash && cart.length > 0 && totalCents > paidCents && <p id="pos-paid-hint" className="text-xs text-red-700 dark:text-red-200">El pago debe cubrir el total.</p>}{isCash && parseMoney(paid) > 0 && <div className="flex items-center justify-between border-t border-border pt-3"><span className="font-semibold text-muted">Vuelto</span><strong className="tabular-nums text-primary dark:text-primary-300">{formatMoney(change)}</strong></div>}</div>
+                <div className="space-y-2"><div className="hidden lg:block">{chargeButton}</div>{cart.length > 0 && <Button type="button" variant="secondary" disabled={adding || submitting} onClick={() => confirm(() => remove(), { title: '¿Vaciar carrito?', message: 'Se quitarán todos los productos del carrito.', confirmLabel: 'Vaciar', tone: 'danger' })} className="w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:focus-visible:outline-primary-300"><Trash2 size={17} aria-hidden="true" />Vaciar carrito</Button>}</div>
+            </Card>
+        </div>
+        <div className="sticky bottom-0 z-10 flex items-center gap-4 rounded-card border-t border-border bg-surface p-3 shadow-subtle lg:hidden">
+            <div className="min-w-0 shrink-0"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Total</p><p className="text-xl font-bold tabular-nums text-ink">{formatMoney(total)}</p></div>
+            <div className="min-w-0 flex-1">{chargeButton}</div>
+        </div>
+        {confirmDialog}
+    </div>;
+}
+
+export function SaleShow({ sale, routes }) {
+    if (!sale) return null;
+    return <div className="space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between no-print">
+            <div><p className="eyebrow">Recibo</p><h1 className="page-title mt-2">Venta #{sale.id}</h1><p className="mt-1 text-sm text-muted">{formatDate(sale.created_at)}</p></div>
+            <div className="flex flex-col gap-2 sm:flex-row"><Button type="button" onClick={() => window.print()}>Imprimir</Button><Button href={routes.ventas} variant="secondary">Volver</Button></div>
+        </header>
+        <Card id="recibo" className="space-y-6">
+            <div className="border-b border-border pb-4 text-center"><h2 className="text-2xl font-bold">TiendaStock</h2><p className="text-sm text-muted">Recibo de Venta #{sale.id}</p></div>
+            {sale.cliente_nombre && <p className="text-sm"><strong>Cliente:</strong> {sale.cliente_nombre}</p>}
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="min-w-0 overflow-x-auto lg:col-span-2"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b border-border text-left"><th className="py-2">Producto</th><th className="py-2 text-right">Precio</th><th className="py-2 text-right">Cant.</th><th className="py-2 text-right">Subtotal</th></tr></thead><tbody>{(sale.items || []).map((item) => <tr key={item.id} className="border-b border-border"><td className="py-3">{item.producto?.nombre}</td><td className="py-3 text-right">{formatMoney(item.precio_unitario)}</td><td className="py-3 text-right">{item.cantidad}</td><td className="py-3 text-right font-semibold">{formatMoney(item.subtotal)}</td></tr>)}</tbody></table></div>
+                <div className="min-w-0 space-y-6">
+                    <div className="space-y-2 border-t border-border pt-4 text-right text-sm lg:border-t-0 lg:pt-0"><p>Subtotal: {formatMoney(sale.subtotal)}</p>{Number(sale.descuento) > 0 && <p>Descuento: -{formatMoney(sale.descuento)}</p>}<p>Impuesto: {formatMoney(sale.impuesto)}</p><p className="border-t border-border pt-2 text-xl font-bold">Total: {formatMoney(sale.total)}</p><p>Pagó: {formatMoney(sale.pago_con)}</p><p>Cambio: {formatMoney(sale.cambio)}</p></div>
+                    <div className="border-t border-border pt-4 text-sm text-muted"><p><strong>Método de pago:</strong> {paymentLabel(sale.metodo_pago)}</p><p><strong>Tipo de entrega:</strong> {detailDeliveryLabel(sale)}</p><p><strong>Procesado por:</strong> {sale.user?.name || '—'}</p><p><strong>Estado:</strong> {statusLabel(sale.estado)}</p></div>
+                </div>
+            </div>
+            <div className="text-center">{sale.estado === 'anulada' ? <Badge tone="danger">ANULADA</Badge> : <p className="text-sm text-muted">Gracias por tu compra</p>}</div>
+        </Card>
+        {sale.estado === 'completada' && <div className="no-print text-center"><CancelForm sale={sale} routes={routes} /></div>}
+        <style>{'@media print { .no-print { display: none !important; } #recibo { box-shadow: none; border: 0; } }'}</style>
+    </div>;
+}

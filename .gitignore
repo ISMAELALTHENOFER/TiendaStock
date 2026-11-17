@@ -4,5 +4,30 @@ src/config.php
 # Archivos y carpetas comunes a ignorar
 node_modules/
 vendor/
+!src/resources/views/vendor/
+!src/resources/views/vendor/pagination/
+!src/resources/views/vendor/pagination/tailwind.blade.php
 .DS_Store
 *.log
+
+# Herramientas y artefactos locales
+/.agents/
+/.atl/
+/skills-lock.json
+/.playwright-mcp/
+/dashboard-audit.png
+
+# Herramientas de IA y agentes
+/.claude/
+/.codegraph/
+/.opencode/
+/AGENTS.md
+/src/.atl/
+
+# Seguimiento de tareas, specs y notas de trabajo
+/odd/
+/src/openspec/
+/implementaciones/
+/ESTADO_GENERAL.md
+/MEJORAS_PENDIENTES.md
+/tiendastock-mejoras-ui-responsive.md
