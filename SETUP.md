@@ -142,7 +142,7 @@ El comando de inicio ejecuta `migrate --force`, cachea la configuración y las
 rutas, y escucha en el puerto `$PORT` de Railway. Haz y prueba una restauración
 de respaldo antes de aplicar cambios de esquema a datos que deban conservarse.
 Activa backups de MySQL y valida su restauración. Los assets se construyen con
-`npm ci && npm run build`. La cola es síncrona por defecto; si agregas trabajos
+`npm install --include=dev && npm run build` (`npm ci` falla con `EBUSY` porque Railpack monta una caché en `node_modules/.cache`). La cola es síncrona por defecto; si agregas trabajos
 en segundo plano, configura un worker separado con
 `php artisan queue:work --sleep=3 --tries=3`.
 
