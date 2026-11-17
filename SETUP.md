@@ -101,10 +101,16 @@ Seguridad en producción:
 
 ## 4. Railway
 
-La aplicación Laravel está en `src/`. Crea el servicio web desde el repositorio y
-configura **Root Directory** como `/src`. El archivo de configuración Railway
-está en la raíz del repositorio y define build, inicio y health check. No subas
-`.env` ni credenciales.
+La aplicación Laravel está en `src/`. Crea el servicio web desde el repositorio y,
+en **Settings**, configura:
+
+- **Source → Root Directory**: `/src`. Sin esto Railpack no encuentra
+  `composer.json`, no instala PHP y el build falla con `composer: not found`.
+- **Config-as-code → Railway Config File**: `/railway.json`. Ese archivo está en
+  la raíz del repositorio y define build, inicio y health check; la ruta no sigue
+  al Root Directory.
+
+No subas `.env` ni credenciales.
 
 Agrega un servicio MySQL de Railway y configura estas variables en el servicio web:
 
