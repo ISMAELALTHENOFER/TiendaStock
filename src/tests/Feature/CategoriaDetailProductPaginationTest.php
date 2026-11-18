@@ -68,6 +68,18 @@ class CategoriaDetailProductPaginationTest extends TestCase
         );
     }
 
+    public function test_category_products_live_search_returns_json_page(): void
+    {
+        $categoria = Categoria::factory()->create();
+        Producto::factory()->create(['categoria_id' => $categoria->id, 'nombre' => 'Body rojo']);
+        Producto::factory()->create(['categoria_id' => $categoria->id, 'nombre' => 'Pantalón']);
+
+        $this->getJson(route('categorias.show', ['categoria' => $categoria, 'buscar' => 'bo', 'per_page' => 15]))
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.nombre', 'Body rojo');
+    }
+
     public function test_category_products_accept_only_supported_page_sizes(): void
     {
         $categoria = Categoria::factory()->create();

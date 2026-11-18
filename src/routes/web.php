@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:ADMIN')->group(function () {
         Route::get('/dashboard/activity', DashboardActivityController::class)->name('dashboard.activity');
         Route::get('/dashboard/analytics', DashboardAnalyticsController::class)->name('dashboard.analytics');
+        Route::delete('/productos/{producto}/eliminar', [ProductoController::class, 'forceDestroy'])->name('productos.force-destroy');
     });
 
     Route::middleware('role:ADMIN,Control Stock')->group(function () {
