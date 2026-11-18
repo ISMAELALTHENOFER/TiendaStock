@@ -624,6 +624,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                          <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                     </div>
                                 </div>
+                                {producto.descripcion && <p className="mt-3 whitespace-pre-line break-words text-sm text-muted">{producto.descripcion}</p>}
                                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Talle</dt>
