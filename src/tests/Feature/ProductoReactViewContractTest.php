@@ -156,8 +156,8 @@ class ProductoReactViewContractTest extends TestCase
             'error={errors?.imagen?.[0]}',
             'role="alert"',
             'saveResponse(response)',
-            'value={categoryId}',
-            'onChange={(event) => setCategoryId(event.target.value)}',
+            '<CategoryCombobox options={categoryOptions} value={categoryId} onChange={setCategoryId}',
+            'name="categoria_id" value={value}',
             'const closeInline = useCallback(() => setInlineOpen(false), []);',
             'onClose={closeInline}',
         ] as $contract) {
