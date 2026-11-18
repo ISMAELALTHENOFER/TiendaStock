@@ -192,6 +192,7 @@ class ProductoSoftDisableTest extends TestCase
         $this->assertStringContainsString('aria-label={`Desactivar ${nombre}`}', $source);
         $this->assertStringContainsString('Sí, desactivar', $source);
         $this->assertStringContainsString('{!producto.activo && routes.canViewProductCost && (', $source);
-        $this->assertStringContainsString('/eliminar`}', $source);
+        $this->assertStringContainsString('if (toggle.tipo === \'eliminar\') return eliminar(id);', $source);
+        $this->assertStringContainsString('/eliminar`, {', $source);
     }
 }

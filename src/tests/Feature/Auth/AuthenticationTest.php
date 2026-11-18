@@ -29,6 +29,19 @@ class AuthenticationTest extends TestCase
         $this->assertNull($props['authError']);
     }
 
+    public function test_remember_me_sets_a_persistent_login_cookie_only_when_checked(): void
+    {
+        $user = User::factory()->create();
+
+        $this->post('/login', ['username' => $user->username, 'password' => 'password', 'remember' => '1'])
+            ->assertCookie(auth()->guard()->getRecallerName());
+        $this->assertNotNull($user->fresh()->remember_token);
+
+        auth()->logout();
+        $this->post('/login', ['username' => $user->username, 'password' => 'password'])
+            ->assertCookieMissing(auth()->guard()->getRecallerName());
+    }
+
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create();

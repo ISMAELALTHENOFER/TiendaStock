@@ -27,6 +27,22 @@ class ProductoForceDeleteTest extends TestCase
         $this->assertDatabaseMissing('producto_imagenes', ['producto_id' => $producto->id]);
     }
 
+    public function test_json_delete_answers_in_place_without_redirect(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $producto = Producto::factory()->create(['activo' => false, 'cantidad' => 0]);
+        $conVentas = Producto::factory()->create(['activo' => false, 'cantidad' => 0]);
+        VentaItem::factory()->create(['producto_id' => $conVentas->id]);
+
+        $this->actingAs($admin)->deleteJson(route('productos.force-destroy', $producto))
+            ->assertOk()->assertJson(['message' => 'Producto eliminado correctamente.']);
+        $this->actingAs($admin)->deleteJson(route('productos.force-destroy', $conVentas))
+            ->assertStatus(409)->assertJson(['message' => 'No se puede eliminar un producto con ventas registradas.']);
+
+        $this->assertDatabaseMissing('productos', ['id' => $producto->id]);
+        $this->assertDatabaseHas('productos', ['id' => $conVentas->id]);
+    }
+
     public function test_non_admin_cannot_delete_product(): void
     {
         $producto = Producto::factory()->create(['activo' => false, 'cantidad' => 0]);

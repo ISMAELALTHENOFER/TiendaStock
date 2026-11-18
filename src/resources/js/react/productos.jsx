@@ -404,6 +404,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [productoEditando, setProductoEditando] = useState(null);
     // In-place saves never reload the page, so the server flash toast cannot show them.
     const [aviso, setAviso] = useState('');
+    const [avisoError, setAvisoError] = useState('');
+    const cerrarAvisoError = useCallback(() => setAvisoError(''), []);
     const cerrarAviso = useCallback(() => setAviso(''), []);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
@@ -459,7 +461,26 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const confirmarToggle = () => {
         if (!toggle) return;
         const id = toggle.producto.id;
+        if (toggle.tipo === 'eliminar') return eliminar(id);
         document.getElementById(`${toggle.tipo}-${id}`)?.submit();
+    };
+
+    // In place: keeps filters, page and scroll instead of redirecting to the index.
+    const eliminar = async (id) => {
+        setToggle(null);
+        try {
+            const response = await fetch(`${routes.productos}/${id}/eliminar`, {
+                method: 'DELETE',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(body.message || 'No se pudo eliminar el producto.');
+            setAviso(body.message);
+            if (visibles.length === 1 && paginaActual > 1) setPaginaActual((page) => page - 1);
+            else setReload((value) => value + 1);
+        } catch (error) {
+            setAvisoError(error.message);
+        }
     };
 
     const cerrarActivacion = () => { setToggle(null); setActivationError(''); };
@@ -532,7 +553,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 {hayFiltros && <Button variant="secondary" onClick={limpiarFiltros}>Limpiar filtros</Button>}
             </div>
 
-            {cargando ? (
+            {/* Only the first load swaps in the spinner; refreshes keep the list so the scroll position survives. */}
+            {cargando && !catalogo ? (
                 <LoadingState label="Cargando catálogo..." />
             ) : error ? (
                 <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisa tu conexión e intenta nuevamente." onRetry={() => cargar()} />
@@ -653,12 +675,6 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                         <input type="hidden" name="_method" value="DELETE" />
                         <input type="hidden" name="stock_original" value={producto.cantidad} />
                     </form>
-                    {!producto.activo && routes.canViewProductCost && (
-                        <form id={`eliminar-${producto.id}`} action={`${routes.productos}/${producto.id}/eliminar`} method="POST">
-                            <input type="hidden" name="_token" value={csrf()} />
-                            <input type="hidden" name="_method" value="DELETE" />
-                        </form>
-                    )}
                 </div>
             ))}
 
@@ -745,6 +761,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 />
             )}
             <Toast type="success" message={aviso} onClose={cerrarAviso} />
+            <Toast type="error" message={avisoError} onClose={cerrarAvisoError} />
         </div>
     );
 }
