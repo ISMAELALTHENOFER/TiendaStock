@@ -188,9 +188,11 @@ class ProductoSoftDisableTest extends TestCase
     {
         $source = file_get_contents(base_path('resources/js/react/productos.jsx'));
 
-        // The destroy action must be labeled "Desactivar", not "Eliminar".
-        $this->assertStringContainsString('Desactivar', $source);
-        $this->assertStringNotContainsString('Eliminar', $source);
+        // The soft-disable action stays "Desactivar"; "Eliminar" is reserved for the ADMIN hard delete of inactive products.
+        $this->assertStringContainsString('aria-label={`Desactivar ${nombre}`}', $source);
         $this->assertStringContainsString('Sí, desactivar', $source);
+        $this->assertStringContainsString('{!producto.activo && routes.canViewProductCost && (', $source);
+        $this->assertStringContainsString('if (toggle.tipo === \'eliminar\') return eliminar(id);', $source);
+        $this->assertStringContainsString('/eliminar`, {', $source);
     }
 }

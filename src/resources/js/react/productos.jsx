@@ -16,6 +16,9 @@ import { productMoneyInput } from './lib/productMoneyInput.js';
 import { createDuplicateCheck } from './lib/duplicateCheck.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
+import { categoryMatches } from './lib/categoryMatches.js';
+import { compressImage } from './lib/compressImage.js';
+import { ImageViewer } from './components/ui/ImageViewer.jsx';
 import { stockTone } from './lib/stockTone.js';
 import { formatMoney } from './lib/formatMoney.js';
 import { useConfirm } from './lib/useConfirm.jsx';
@@ -64,37 +67,99 @@ function MoneyInput({ label, name, initial = 0, error }) {
  */
 function ProductImage({ value, error }) {
     const [preview, setPreview] = useState(value || '');
+    const [status, setStatus] = useState('');
+    const [localError, setLocalError] = useState('');
     const previewUrl = useRef(null);
+    const fileRef = useRef(null);
     useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
 
-    const handleChange = (event) => {
-        const file = event.target.files?.[0];
-        if (file) {
+    // Pickers carry no name: only the compressed file in the hidden "imagen" input is posted.
+    const handlePick = async (event) => {
+        const source = event.target.files?.[0];
+        event.target.value = '';
+        if (!source) return;
+        setLocalError('');
+        setStatus('Optimizando imagen…');
+        try {
+            const file = await compressImage(source);
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            fileRef.current.files = transfer.files;
             if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
             previewUrl.current = URL.createObjectURL(file);
             setPreview(previewUrl.current);
+            setStatus(`Imagen lista (${Math.max(1, Math.round(file.size / 1024))} KB).`);
+        } catch (compressError) {
+            setStatus('');
+            setLocalError(compressError.message || 'No se pudo procesar la imagen.');
         }
     };
 
+    const shownError = localError || error;
+    const pickerClass = 'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border bg-surface-muted px-3 text-sm font-semibold text-ink hover:bg-surface focus-within:outline focus-within:outline-2 focus-within:outline-primary';
+
     return (
         <div>
-            <label htmlFor="imagen-field" className="block text-sm font-medium text-ink">Imagen</label>
-            <input
-                id="imagen-field"
-                type="file"
-                name="imagen"
-                accept="image/*"
-                onChange={handleChange}
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? 'imagen-error' : undefined}
-                className="mt-1 block w-full cursor-pointer text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
-            />
-            {error && <p id="imagen-error" className="mt-1 text-sm text-red-600 dark:text-red-200">{error}</p>}
-            {preview && (
-                <div className="mt-3 flex items-center gap-3">
-                    <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
-                    {value && <p className="text-xs text-muted">Imagen actual. Si no eliges un archivo nuevo, se conserva.</p>}
+            <p className="block text-sm font-medium text-ink">Imagen</p>
+            <input ref={fileRef} type="file" name="imagen" hidden />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+                {preview && <ImageViewer src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />}
+                <div className="flex flex-wrap gap-2">
+                    <label className={pickerClass}>
+                        {preview ? 'Cambiar foto (galería)' : 'Elegir de la galería'}
+                        <input type="file" accept="image/*" onChange={handlePick} aria-invalid={Boolean(shownError)} aria-describedby={shownError ? 'imagen-error' : undefined} className="sr-only" />
+                    </label>
+                    <label className={pickerClass}>
+                        Tomar foto
+                        <input type="file" accept="image/*" capture="environment" onChange={handlePick} className="sr-only" />
+                    </label>
                 </div>
+            </div>
+            <p className="mt-2 text-xs text-muted">{status || (value ? 'Imagen actual. Toca la foto para ampliarla; si no eliges otra, se conserva.' : 'Hasta 20 MB. Se optimiza automáticamente antes de subirla.')}</p>
+            {shownError && <p id="imagen-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-200">{shownError}</p>}
+        </div>
+    );
+}
+
+/** Type-ahead category picker: filters by prefix on every keystroke and posts the chosen id as categoria_id. */
+function CategoryCombobox({ options, value, onChange, error }) {
+    const selected = options.find((cat) => String(cat.id) === value);
+    const [text, setText] = useState(selected?.nombre ?? '');
+    const [open, setOpen] = useState(false);
+    const [active, setActive] = useState(0);
+    const inputRef = useRef(null);
+    const matches = categoryMatches(options, text);
+
+    // Keep the text in sync when the id changes from outside (e.g. inline "+ Nueva").
+    useEffect(() => { if (selected) setText(selected.nombre); }, [selected?.id]);
+    useEffect(() => { inputRef.current?.setCustomValidity(value ? '' : 'Selecciona una categoría de la lista.'); }, [value]);
+
+    const pick = (cat) => { onChange(String(cat.id)); setText(cat.nombre); setOpen(false); };
+    const type = (next) => {
+        setText(next);
+        setOpen(true);
+        setActive(0);
+        const exact = options.find((cat) => cat.nombre.toLocaleLowerCase() === next.trim().toLocaleLowerCase());
+        onChange(exact ? String(exact.id) : '');
+    };
+    const onKeyDown = (event) => {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); setActive((i) => Math.min(i + 1, matches.length - 1)); }
+        else if (event.key === 'ArrowUp') { event.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+        else if (event.key === 'Enter' && open && matches[active]) { event.preventDefault(); pick(matches[active]); }
+        else if (event.key === 'Escape') setOpen(false);
+    };
+
+    return (
+        <div className="relative min-w-0 flex-1 basis-40">
+            <Input ref={inputRef} id="categoria-field" required autoComplete="off" role="combobox" aria-expanded={open} aria-controls="categoria-options" aria-autocomplete="list" aria-activedescendant={open && matches[active] ? `categoria-option-${matches[active].id}` : undefined} value={text} placeholder="Escribe para buscar una categoría" error={error} onChange={(event) => type(event.target.value)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onKeyDown={onKeyDown} />
+            <input type="hidden" name="categoria_id" value={value} />
+            {open && (
+                <ul id="categoria-options" role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-control border border-border bg-surface py-1 shadow-lg">
+                    {matches.length === 0 && <li className="px-3 py-2 text-sm text-muted">Sin coincidencias. Usa «+ Nueva» para crearla.</li>}
+                    {matches.map((cat, index) => (
+                        <li key={cat.id} id={`categoria-option-${cat.id}`} role="option" aria-selected={String(cat.id) === value} onMouseDown={(event) => { event.preventDefault(); pick(cat); }} className={`cursor-pointer px-3 py-2 text-sm text-ink ${index === active ? 'bg-surface-muted' : ''}`}>{cat.nombre}</li>
+                    ))}
+                </ul>
             )}
         </div>
     );
@@ -218,10 +283,7 @@ export function ProductForm({ routes, categorias = [], producto = null, modal = 
                     <div>
                         <label htmlFor="categoria-field" className="block text-sm font-medium text-ink">Categoría <span className="text-red-600 dark:text-red-200">*</span></label>
                         <div className="mt-1 flex flex-wrap gap-2">
-                            <Select id="categoria-field" name="categoria_id" required value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="min-w-0 flex-1 basis-40">
-                                <option value="">Selecciona una categoría</option>
-                                {categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.nombre}</option>)}
-                            </Select>
+                            <CategoryCombobox options={categoryOptions} value={categoryId} onChange={setCategoryId} error={errors?.categoria_id?.[0]} />
                             <Button type="button" variant="secondary" title="Crear categoría nueva" aria-label="Crear categoría nueva" onClick={() => setInlineOpen(true)}>+ Nueva</Button>
                         </div>
                         {errors?.categoria_id && <p className="mt-1 text-sm text-red-600 dark:text-red-200">{errors.categoria_id[0]}</p>}
@@ -307,6 +369,9 @@ function acciones(producto, routes, setToggle, setEditingProducto, setProductoVi
             ) : (
                 <button type="button" onClick={() => setToggle({ tipo: 'activar', producto })} className="data-table-action text-green-700 dark:text-primary-300 hover:bg-surface-muted" aria-label={`Activar ${nombre}`}>Activar</button>
             )}
+            {!producto.activo && routes.canViewProductCost && (
+                <button type="button" onClick={() => setToggle({ tipo: 'eliminar', producto })} className="data-table-action text-red-600 dark:text-red-200 hover:bg-red-50 dark:hover:bg-surface-muted" aria-label={`Eliminar ${nombre}`}>Eliminar</button>
+            )}
         </div>
     );
 }
@@ -339,6 +404,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const [productoEditando, setProductoEditando] = useState(null);
     // In-place saves never reload the page, so the server flash toast cannot show them.
     const [aviso, setAviso] = useState('');
+    const [avisoError, setAvisoError] = useState('');
+    const cerrarAvisoError = useCallback(() => setAvisoError(''), []);
     const cerrarAviso = useCallback(() => setAviso(''), []);
     const [productoViendo, setProductoViendo] = useState(null);
     const searchRef = useRef(null);
@@ -394,8 +461,26 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
     const confirmarToggle = () => {
         if (!toggle) return;
         const id = toggle.producto.id;
-        const formId = toggle.tipo === 'activar' ? `activar-${id}` : `desactivar-${id}`;
-        document.getElementById(formId)?.submit();
+        if (toggle.tipo === 'eliminar') return eliminar(id);
+        document.getElementById(`${toggle.tipo}-${id}`)?.submit();
+    };
+
+    // In place: keeps filters, page and scroll instead of redirecting to the index.
+    const eliminar = async (id) => {
+        setToggle(null);
+        try {
+            const response = await fetch(`${routes.productos}/${id}/eliminar`, {
+                method: 'DELETE',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(body.message || 'No se pudo eliminar el producto.');
+            setAviso(body.message);
+            if (visibles.length === 1 && paginaActual > 1) setPaginaActual((page) => page - 1);
+            else setReload((value) => value + 1);
+        } catch (error) {
+            setAvisoError(error.message);
+        }
     };
 
     const cerrarActivacion = () => { setToggle(null); setActivationError(''); };
@@ -468,7 +553,8 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 {hayFiltros && <Button variant="secondary" onClick={limpiarFiltros}>Limpiar filtros</Button>}
             </div>
 
-            {cargando ? (
+            {/* Only the first load swaps in the spinner; refreshes keep the list so the scroll position survives. */}
+            {cargando && !catalogo ? (
                 <LoadingState label="Cargando catálogo..." />
             ) : error ? (
                 <ErrorState title="No se pudo cargar el catálogo de productos." description="Revisa tu conexión e intenta nuevamente." onRetry={() => cargar()} />
@@ -500,7 +586,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <tr key={producto.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                                         <td className="px-4 py-3">
                                             {producto.imagen
-                                                ? <img src={producto.imagen} alt={producto.nombre} width="48" height="48" loading="lazy" className="h-12 w-12 rounded-lg object-cover" />
+                                                ? <ImageViewer src={producto.imagen} alt={producto.nombre} width="48" height="48" className="h-12 w-12 rounded-lg object-cover" />
                                                 : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                         </td>
                                         <td className="px-4 py-3 font-semibold text-ink">
@@ -528,7 +614,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                             <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
-                                        ? <img src={producto.imagen} alt={producto.nombre} width="56" height="56" loading="lazy" className="h-14 w-14 rounded-lg object-cover" />
+                                        ? <ImageViewer src={producto.imagen} alt={producto.nombre} width="56" height="56" className="h-14 w-14 rounded-lg object-cover" />
                                         : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                     <div className="min-w-0">
                                         <p className="font-bold text-ink">{producto.nombre}</p>
@@ -538,6 +624,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                          <Badge tone={stockTone(producto.cantidad, lowStockThreshold)}>{producto.cantidad === 0 ? 'Sin stock' : producto.cantidad <= lowStockThreshold ? `${producto.cantidad} · Bajo` : producto.cantidad}</Badge>
                                     </div>
                                 </div>
+                                {producto.descripcion && <p className="mt-3 whitespace-pre-line break-words text-sm text-muted">{producto.descripcion}</p>}
                                 <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                      <div className="data-card-field">
                                         <dt className="text-xs uppercase tracking-wide text-muted">Talle</dt>
@@ -593,6 +680,16 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             ))}
 
             <ConfirmDialog
+                open={toggle?.tipo === 'eliminar'}
+                title="Eliminar producto"
+                message={`¿Eliminar definitivamente «${toggle?.producto?.nombre}»? Esta acción no se puede deshacer.`}
+                confirmLabel="Sí, eliminar"
+                tone="danger"
+                onConfirm={confirmarToggle}
+                onClose={() => setToggle(null)}
+            />
+
+            <ConfirmDialog
                 open={toggle?.tipo === 'desactivar'}
                 title={toggle?.tipo === 'activar' ? 'Activar producto' : 'Desactivar producto'}
                  message={`«${toggle?.producto?.nombre}» se desactivará y su stock pasará a cero. No se registrará una venta.`}
@@ -621,7 +718,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" loading="lazy" className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        {productoViendo.imagen && <ImageViewer src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" className="h-20 w-20 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-primary dark:text-primary-300">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>
@@ -665,6 +762,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                 />
             )}
             <Toast type="success" message={aviso} onClose={cerrarAviso} />
+            <Toast type="error" message={avisoError} onClose={cerrarAvisoError} />
         </div>
     );
 }
