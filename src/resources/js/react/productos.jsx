@@ -17,6 +17,8 @@ import { createDuplicateCheck } from './lib/duplicateCheck.js';
 import { saveResponse } from './lib/saveResponse.js';
 import { isInteractiveSearch } from './lib/interactiveSearch.js';
 import { categoryMatches } from './lib/categoryMatches.js';
+import { compressImage } from './lib/compressImage.js';
+import { ImageViewer } from './components/ui/ImageViewer.jsx';
 import { stockTone } from './lib/stockTone.js';
 import { formatMoney } from './lib/formatMoney.js';
 import { useConfirm } from './lib/useConfirm.jsx';
@@ -65,38 +67,56 @@ function MoneyInput({ label, name, initial = 0, error }) {
  */
 function ProductImage({ value, error }) {
     const [preview, setPreview] = useState(value || '');
+    const [status, setStatus] = useState('');
+    const [localError, setLocalError] = useState('');
     const previewUrl = useRef(null);
+    const fileRef = useRef(null);
     useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
 
-    const handleChange = (event) => {
-        const file = event.target.files?.[0];
-        if (file) {
+    // Pickers carry no name: only the compressed file in the hidden "imagen" input is posted.
+    const handlePick = async (event) => {
+        const source = event.target.files?.[0];
+        event.target.value = '';
+        if (!source) return;
+        setLocalError('');
+        setStatus('Optimizando imagen…');
+        try {
+            const file = await compressImage(source);
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            fileRef.current.files = transfer.files;
             if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
             previewUrl.current = URL.createObjectURL(file);
             setPreview(previewUrl.current);
+            setStatus(`Imagen lista (${Math.max(1, Math.round(file.size / 1024))} KB).`);
+        } catch (compressError) {
+            setStatus('');
+            setLocalError(compressError.message || 'No se pudo procesar la imagen.');
         }
     };
 
+    const shownError = localError || error;
+    const pickerClass = 'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-border bg-surface-muted px-3 text-sm font-semibold text-ink hover:bg-surface focus-within:outline focus-within:outline-2 focus-within:outline-primary';
+
     return (
         <div>
-            <label htmlFor="imagen-field" className="block text-sm font-medium text-ink">Imagen</label>
-            <input
-                id="imagen-field"
-                type="file"
-                name="imagen"
-                accept="image/*"
-                onChange={handleChange}
-                aria-invalid={Boolean(error)}
-                aria-describedby={error ? 'imagen-error' : undefined}
-                className="mt-1 block w-full cursor-pointer text-sm text-muted file:mr-3 file:cursor-pointer file:rounded-control file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink"
-            />
-            {error && <p id="imagen-error" className="mt-1 text-sm text-red-600 dark:text-red-200">{error}</p>}
-            {preview && (
-                <div className="mt-3 flex items-center gap-3">
-                    <img src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />
-                    {value && <p className="text-xs text-muted">Imagen actual. Si no eliges un archivo nuevo, se conserva.</p>}
+            <p className="block text-sm font-medium text-ink">Imagen</p>
+            <input ref={fileRef} type="file" name="imagen" hidden />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+                {preview && <ImageViewer src={preview} alt="Vista previa" width="80" height="80" className="h-20 w-20 rounded-lg border border-border object-cover" />}
+                <div className="flex flex-wrap gap-2">
+                    <label className={pickerClass}>
+                        {preview ? 'Cambiar foto (galería)' : 'Elegir de la galería'}
+                        <input type="file" accept="image/*" onChange={handlePick} aria-invalid={Boolean(shownError)} aria-describedby={shownError ? 'imagen-error' : undefined} className="sr-only" />
+                    </label>
+                    <label className={pickerClass}>
+                        Tomar foto
+                        <input type="file" accept="image/*" capture="environment" onChange={handlePick} className="sr-only" />
+                    </label>
                 </div>
-            )}
+            </div>
+            <p className="mt-2 text-xs text-muted">{status || (value ? 'Imagen actual. Toca la foto para ampliarla; si no eliges otra, se conserva.' : 'Hasta 20 MB. Se optimiza automáticamente antes de subirla.')}</p>
+            {shownError && <p id="imagen-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-200">{shownError}</p>}
         </div>
     );
 }
@@ -544,7 +564,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                                     <tr key={producto.id} className="border-b border-border last:border-0 hover:bg-surface-muted/50">
                                         <td className="px-4 py-3">
                                             {producto.imagen
-                                                ? <img src={producto.imagen} alt={producto.nombre} width="48" height="48" loading="lazy" className="h-12 w-12 rounded-lg object-cover" />
+                                                ? <ImageViewer src={producto.imagen} alt={producto.nombre} width="48" height="48" className="h-12 w-12 rounded-lg object-cover" />
                                                 : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                         </td>
                                         <td className="px-4 py-3 font-semibold text-ink">
@@ -572,7 +592,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
                             <Card key={producto.id} className="min-w-0">
                                 <div className="flex items-start gap-3">
                                     {producto.imagen
-                                        ? <img src={producto.imagen} alt={producto.nombre} width="56" height="56" loading="lazy" className="h-14 w-14 rounded-lg object-cover" />
+                                        ? <ImageViewer src={producto.imagen} alt={producto.nombre} width="56" height="56" className="h-14 w-14 rounded-lg object-cover" />
                                         : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs text-muted">—</div>}
                                     <div className="min-w-0">
                                         <p className="font-bold text-ink">{producto.nombre}</p>
@@ -681,7 +701,7 @@ export function ProductList({ categorias, routes, lowStockThreshold = 1 }) {
             {productoViendo && <Modal open title="Detalles del producto" onClose={() => setProductoViendo(null)} size="product">
                 <div className="space-y-6 p-4 sm:p-7">
                     <div className="flex min-w-0 flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-                        {productoViendo.imagen && <img src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" loading="lazy" className="h-20 w-20 shrink-0 rounded-card border border-border object-cover" />}
+                        {productoViendo.imagen && <ImageViewer src={productoViendo.imagen} alt={productoViendo.nombre} width="80" height="80" className="h-20 w-20 rounded-card border border-border object-cover" />}
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-primary dark:text-primary-300">{productoViendo.categoria?.nombre || 'Sin categoría'}</p>
                             <h3 className="mt-1 break-words text-2xl font-bold tracking-tight text-ink">{productoViendo.nombre}</h3>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from './components/ui/Button.jsx';
 import { Pagination } from './components/ui/Pagination.jsx';
+import { ImageViewer } from './components/ui/ImageViewer.jsx';
 import { formatMoney as money } from './lib/formatMoney.js';
 import { useLiveSearchResults } from './lib/useLiveSearchResults.js';
 
@@ -30,7 +31,7 @@ export function ProductShow({ producto, routes, lowStockThreshold = 1 }) {
                 {routes.canViewProductCost && <Field label="Costo">{money(producto.precio_compra)}</Field>}
                 <Field label="Precio de venta">{money(producto.precio_venta)}</Field>
                 {routes.canViewProductCost && <Field label="Ganancia por unidad">{money(producto.ganancia)}</Field>}
-                {routes.productoImage && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">Imagen</dt><dd className="mt-2"><img src={routes.productoImage} alt={producto.nombre} className="h-48 w-48 max-w-full rounded-xl border border-border object-cover" /></dd></div>}
+                {routes.productoImage && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-muted">Imagen</dt><dd className="mt-2"><ImageViewer src={routes.productoImage} alt={producto.nombre} className="h-48 w-48 max-w-full rounded-xl border border-border object-cover" /></dd></div>}
             </dl>
         </section>
         {producto.descripcion && <section className="rounded-card border border-border bg-surface p-5 shadow-subtle sm:p-7"><h2 className="text-lg font-bold text-ink">Descripción</h2><p className="mt-3 whitespace-pre-line break-words leading-7 text-ink">{producto.descripcion}</p></section>}
